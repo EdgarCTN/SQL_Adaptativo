@@ -176,11 +176,11 @@ def test_respuestas_completas_guardan_y_marcan_completada(client, db):
     r = _enviar(client, h, _payload_valido(_cuestionario(client, h)))
     assert r.status_code == 200, r.text
     j = r.json()
-    assert j["linea_base_completada"] is True and j["aviso"]
+    assert j["linea_base_completada"] is True and "nivel inicial" in j["mensaje"]
     assert _contar(db, LineaBaseRespuesta) == 23  # 6 + 11 + 6
     assert _contar(db, Omision) == 0
     assert _contar(db, NivelSoporte) == _contar(db, Concepto) == 10
-    assert set(db.scalars(select(NivelSoporte.ns))) == {1}
+    assert set(db.scalars(select(NivelSoporte.ns))) == {2}  # todo erróneo con confianza 3 → m 0.275 → NS2
     assert db.scalar(select(Usuario).where(Usuario.correo == "ana@uni.edu")).linea_base_completada is True
     assert client.get(f"{LB}/estado", headers=h).json()["siguiente_paso"] == "completado"
     assert client.get(f"{API}/auth/yo", headers=h).json()["linea_base_completada"] is True

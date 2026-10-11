@@ -8,21 +8,23 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.errores import ErrorApp
+from app.core.reglas import cargar_reglas
 from app.modules.auth.models import Usuario
 from app.modules.desafios.models import Concepto
 from app.modules.linea_base.models import (
     Consentimiento,
     LineaBaseCuestionario,
     LineaBaseRespuesta,
+    LineaBaseResultado,
     NivelSoporte,
     Omision,
 )
+from app.modules.linea_base.calculo import calcular_linea_base
 from app.modules.linea_base.schemas import RespuestaIn, RespuestasIn
 
 log = logging.getLogger("app.linea_base")
 
 VERSION_CONSENTIMIENTO = "1.0"  # versión vigente del texto de consentimiento (el texto lo muestra el frontend)
-NS_POR_DEFECTO = 1  # hasta que la entrega 3B calcule el nivel inicial
 
 MSG_SIN_CONSENTIMIENTO = "El consentimiento es necesario para completar el diagnóstico inicial."
 MSG_NO_ACEPTADO = "El consentimiento es necesario para completar el diagnóstico inicial. No guardamos nada."
@@ -31,10 +33,6 @@ MSG_YA_COMPLETADO = "Ya completaste el diagnóstico inicial."
 MSG_ERROR_GUARDADO = (
     "No fue posible completar el diagnóstico en este momento. "
     "Tus respuestas siguen en pantalla: inténtalo de nuevo en unos minutos."
-)
-AVISO_NIVEL = (
-    "Todavía no calculamos tu nivel inicial detallado: por ahora empiezas con nivel de soporte "
-    f"{NS_POR_DEFECTO} en todos los conceptos."
 )
 
 
@@ -152,6 +150,9 @@ class PreguntaInfo:
     opciones: dict[str, dict]
     concepto: str | None = None
     motivos: set[str] = field(default_factory=set)
+    correcta: str | None = None  # solo Parte 2; nunca se envía al cliente
+    nivel: int | None = None
+    dificultad: str | None = None
 
 
 def indexar_preguntas(contenido: dict) -> list[PreguntaInfo]:
@@ -169,6 +170,9 @@ def indexar_preguntas(contenido: dict) -> list[PreguntaInfo]:
                     opciones={o["id"]: o for o in p["opciones"]},
                     concepto=p.get("concepto"),
                     motivos=motivos,
+                    correcta=p.get("correcta"),
+                    nivel=p.get("nivel"),
+                    dificultad=p.get("dificultad"),
                 )
             )
     return salida
@@ -272,6 +276,7 @@ def guardar_respuestas(db: Session, usuario: Usuario, datos: RespuestasIn) -> di
 
     por_id = {r.pregunta_id: r for r in datos.respuestas}
     try:
+        reglas = cargar_reglas()
         conceptos = dict(db.execute(select(Concepto.codigo, Concepto.id)).all())
         for info in indice:
             r = por_id.get(info.id)
@@ -300,18 +305,37 @@ def guardar_respuestas(db: Session, usuario: Usuario, datos: RespuestasIn) -> di
                     es_no_se=no_se,
                 )
             )
-        # Mientras 3B no calcule el nivel inicial, todos los conceptos parten en NS por defecto.
-        con_ns = set(db.scalars(select(NivelSoporte.concepto_id).where(NivelSoporte.usuario_id == usuario.id)))
-        for concepto_id in conceptos.values():
-            if concepto_id not in con_ns:
+
+        calculo = calcular_linea_base(indice, por_id, list(conceptos), reglas)
+        db.add(
+            LineaBaseResultado(
+                usuario_id=usuario.id,
+                cuestionario_id=cuestionario.id,
+                m_por_item=calculo.m_por_item,
+                m_por_concepto=calculo.m_por_concepto,
+                m_por_nivel=calculo.m_por_nivel,
+                m_global=calculo.m_global,
+                dificultad_inicial=calculo.dificultad_inicial,
+                ns_inicial_por_concepto=calculo.ns_inicial,
+                preferencias=calculo.preferencias,
+                banderas_iniciales=calculo.banderas,
+                contexto=calculo.contexto,
+                reglas_version=reglas.get("version"),
+            )
+        )
+        # NS inicial (R0): un registro por concepto; el máximo histórico arranca igual.
+        existentes = {
+            n.concepto_id: n for n in db.scalars(select(NivelSoporte).where(NivelSoporte.usuario_id == usuario.id))
+        }
+        for codigo, concepto_id in conceptos.items():
+            ns = calculo.ns_inicial[codigo]
+            fila = existentes.get(concepto_id)
+            if fila is None:
                 db.add(
-                    NivelSoporte(
-                        usuario_id=usuario.id,
-                        concepto_id=concepto_id,
-                        ns=NS_POR_DEFECTO,
-                        ns_maximo_historico=NS_POR_DEFECTO,
-                    )
+                    NivelSoporte(usuario_id=usuario.id, concepto_id=concepto_id, ns=ns, ns_maximo_historico=ns)
                 )
+            else:
+                fila.ns, fila.ns_maximo_historico, fila.desafios_desde_cambio = ns, ns, 0
         usuario.linea_base_completada = True
         db.add(usuario)
         db.commit()
@@ -319,14 +343,14 @@ def guardar_respuestas(db: Session, usuario: Usuario, datos: RespuestasIn) -> di
         db.rollback()
         log.exception("Conflicto al guardar la línea base (¿envío doble?)")
         raise ErrorApp(MSG_YA_COMPLETADO, 409)
-    except (SQLAlchemyError, KeyError):
+    except (SQLAlchemyError, KeyError, TypeError, ValueError, OSError):
         db.rollback()
         log.exception("Error al guardar la línea base")
         raise ErrorApp(MSG_ERROR_GUARDADO, 503)
 
     return {
         "ok": True,
-        "mensaje": "¡Listo! Completaste el diagnóstico inicial.",
-        "aviso": AVISO_NIVEL,
+        "mensaje": "¡Listo! Completaste el diagnóstico inicial y tu nivel inicial ya quedó definido.",
+        "aviso": None,
         "linea_base_completada": True,
     }

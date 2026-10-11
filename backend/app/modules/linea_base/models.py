@@ -57,7 +57,7 @@ class LineaBaseRespuesta(Base):
 
 
 class LineaBaseResultado(Base):
-    """Lo llena la entrega 3B a partir de lo ya almacenado."""
+    """Resultado del diagnóstico (3B). Los datos crudos siguen en linea_base_respuestas y omisiones."""
 
     __tablename__ = "linea_base_resultados"
 
@@ -68,9 +68,12 @@ class LineaBaseResultado(Base):
     m_por_concepto: Mapped[Any] = mapped_column(JSON, nullable=True)
     m_por_nivel: Mapped[Any] = mapped_column(JSON, nullable=True)
     m_global: Mapped[float | None] = mapped_column(Float, nullable=True)
+    dificultad_inicial: Mapped[str | None] = mapped_column(String(3), nullable=True)  # se guarda, no se aplica
     ns_inicial_por_concepto: Mapped[Any] = mapped_column(JSON, nullable=True)
     preferencias: Mapped[Any] = mapped_column(JSON, nullable=True)
     banderas_iniciales: Mapped[Any] = mapped_column(JSON, nullable=True)
+    contexto: Mapped[Any] = mapped_column(JSON, nullable=True)  # Parte 1 cruda (1.1 a 1.6)
+    reglas_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     creado_en: Mapped[Any] = mapped_column(UTCDateTime, default=ahora_utc)
 
 

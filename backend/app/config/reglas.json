@@ -1,0 +1,100 @@
+{
+ "version": 1,
+ "nota": "Valores iniciales de la Matriz de reglas (Tabla 7 y Tabla 15). Son de diseño propio y se calibran con el piloto: NUNCA van fijos en el código.",
+ "ventana": {
+  "tamano": 5,
+  "minimo_desafios_desde_cambio": 3
+ },
+ "tiempo_referencia_seg": {
+  "D1": 120,
+  "D2": 240,
+  "D3": 360
+ },
+ "cortes_linea_base": {
+  "ns0_m_minimo": 0.7,
+  "ns1_m_minimo": 0.4,
+  "dominio_por_nivel_minimo": 0.7
+ },
+ "retiro_refuerzo": {
+  "ta_retiro_min": 0.8,
+  "ta_refuerzo_max": 0.5,
+  "ni_retiro_max": 2,
+  "ni_refuerzo_min": 4,
+  "tr_retiro_estandar_max": 1.25,
+  "tr_retiro_acelerado_max": 1.0,
+  "desafios_limpios_acelerado": 3
+ },
+ "recaida_y_pausas": {
+  "desafios_ce_nr_para_recaida": 2,
+  "desafios_sin_retiro_tras_recaida_o_cambio_dificultad": 3
+ },
+ "r6_estancamiento": {
+  "ns_maximo_prerrequisito_dominado": 1,
+  "omisiones_muy_dificil_seguidas": 2
+ },
+ "r7_muy_facil": {
+  "omisiones_para_verificacion": 2
+ },
+ "ayuda_en_desafio": {
+  "oferta_fallos_minimos": 2,
+  "oferta_tr_minimo": 1.5,
+  "minimo_fallos_ay3": 2,
+  "minimo_fallos_ay4": 3,
+  "incremento_minimos_por_dependencia": 1
+ },
+ "r9_dependencia": {
+  "pct_desafios_con_ayuda_min": 0.8,
+  "pct_pedidos_ay3_ay4_con_pocos_intentos_min": 0.5,
+  "intentos_previos_max_para_pedido_directo": 1,
+  "senales_linea_base_minimas": 2
+ },
+ "r10_ensayo_error": {
+  "envios_fallidos_seguidos": 3,
+  "segundos_entre_envios_max": 30
+ },
+ "r11_sobreconfianza": {
+  "errores_con_confianza_alta_minimos": 2,
+  "confianza_alta": [
+   4,
+   5
+  ],
+  "desafios_sa_exigidos_para_retiro": 2
+ },
+ "r14_inactividad": {
+  "dias": 14
+ },
+ "valor_dominio_m": {
+  "acierta": {
+   "5": 0.975,
+   "4": 0.875,
+   "3": 0.725,
+   "2": 0.6,
+   "1": 0.5
+  },
+  "se_equivoca": {
+   "5": 0.025,
+   "4": 0.125,
+   "3": 0.275,
+   "2": 0.4,
+   "1": 0.5
+  },
+  "no_se": 0.25,
+  "omision_muy_facil": 0.975,
+  "omision_muy_dificil": 0.025
+ },
+ "orden_evaluacion_cierre": [
+  "R6",
+  "R8",
+  "R7",
+  "R5",
+  "R2",
+  "R1",
+  "R4"
+ ],
+ "primera_ayuda_por_ns": {
+  "0": "AY1",
+  "1": "AY1",
+  "2": "AY2",
+  "3": "AY3"
+ }
+}

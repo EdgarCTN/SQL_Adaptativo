@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 
 import ErrorBoundary from "../components/ErrorBoundary";
 import { useAuth } from "./AuthContext";
@@ -64,6 +64,14 @@ export default function Layout() {
           </div>
         </header>
         <main className="flex-1 p-4 sm:p-6">
+          {usuario?.rol === "estudiante" && !usuario.linea_base_completada && (
+            <div role="status" className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+              <strong>Diagnóstico pendiente.</strong> Complétalo para ajustar la dificultad y la ayuda a tu nivel.{" "}
+              <Link to="/consentimiento" className="font-semibold underline">
+                Completar ahora
+              </Link>
+            </div>
+          )}
           <ErrorBoundary key={ubicacion.pathname}>
             <Outlet />
           </ErrorBoundary>

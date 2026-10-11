@@ -36,7 +36,8 @@ export default function LoginPage() {
     try {
       const usuario = await login(correo.trim(), contrasena);
       const desde = estado.desde && estado.desde.startsWith("/") && !["/login", "/registro"].includes(estado.desde) ? estado.desde : null;
-      navigate(desde ?? destinoTrasLogin(usuario), { replace: true });
+      const destino = destinoTrasLogin(usuario);
+      navigate(destino === "/consentimiento" ? destino : (desde ?? destino), { replace: true });
     } catch (err) {
       if (err instanceof ErrorApi) {
         setErrores(err.detalles);

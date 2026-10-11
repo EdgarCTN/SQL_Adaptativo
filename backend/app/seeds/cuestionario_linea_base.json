@@ -1,0 +1,889 @@
+{
+ "version": 1,
+ "activo": true,
+ "introduccion": "Este cuestionario tiene el objetivo de ajustar la dificultad y la ayuda desde tu primer ejercicio. Ten en cuenta que tomará unos 10 a 15 minutos resolverlo.",
+ "partes": [
+  {
+   "id": "parte1",
+   "titulo": "Parte 1. Experiencia previa con SQL",
+   "preguntas": [
+    {
+     "id": "1.1",
+     "tipo": "unica",
+     "obligatoria": true,
+     "enunciado": "¿Cuánto tiempo has tenido contacto con SQL?",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "Nunca"
+      },
+      {
+       "id": "b",
+       "texto": "Menos de 1 mes"
+      },
+      {
+       "id": "c",
+       "texto": "1–6 meses"
+      },
+      {
+       "id": "d",
+       "texto": "6–12 meses"
+      },
+      {
+       "id": "e",
+       "texto": "Más de 1 año"
+      }
+     ]
+    },
+    {
+     "id": "1.2",
+     "tipo": "multiple",
+     "obligatoria": true,
+     "enunciado": "¿Cuáles de estas consultas has escrito alguna vez?",
+     "nota": "Selecciona todas las opciones que apliquen.",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "Seleccionar y filtrar filas (SELECT … WHERE)"
+      },
+      {
+       "id": "b",
+       "texto": "Ordenar y limitar resultados"
+      },
+      {
+       "id": "c",
+       "texto": "Funciones de agregación (COUNT, SUM) y GROUP BY"
+      },
+      {
+       "id": "d",
+       "texto": "Combinar tablas (JOIN)"
+      },
+      {
+       "id": "e",
+       "texto": "Subconsultas"
+      },
+      {
+       "id": "f",
+       "texto": "Funciones de ventana o CTE"
+      },
+      {
+       "id": "g",
+       "texto": "Insertar, actualizar o borrar datos"
+      },
+      {
+       "id": "h",
+       "texto": "Ninguna",
+       "excluyente": true
+      }
+     ]
+    },
+    {
+     "id": "1.3",
+     "tipo": "multiple",
+     "obligatoria": true,
+     "enunciado": "¿Qué motores o herramientas de bases de datos has usado?",
+     "nota": "Selecciona todas las opciones que apliquen.",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "MySQL"
+      },
+      {
+       "id": "b",
+       "texto": "PostgreSQL"
+      },
+      {
+       "id": "c",
+       "texto": "SQLite"
+      },
+      {
+       "id": "d",
+       "texto": "SQL Server"
+      },
+      {
+       "id": "e",
+       "texto": "Oracle"
+      },
+      {
+       "id": "f",
+       "texto": "Otro"
+      },
+      {
+       "id": "g",
+       "texto": "Ninguno",
+       "excluyente": true
+      }
+     ]
+    },
+    {
+     "id": "1.4",
+     "tipo": "unica",
+     "obligatoria": true,
+     "enunciado": "En los últimos 3 meses, ¿con qué frecuencia has escrito consultas SQL?",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "Nunca"
+      },
+      {
+       "id": "b",
+       "texto": "Menos de una vez al mes"
+      },
+      {
+       "id": "c",
+       "texto": "Algunas veces al mes"
+      },
+      {
+       "id": "d",
+       "texto": "Cada semana"
+      },
+      {
+       "id": "e",
+       "texto": "Varias veces por semana"
+      }
+     ]
+    },
+    {
+     "id": "1.5",
+     "tipo": "unica",
+     "obligatoria": true,
+     "enunciado": "¿Cuál descripción se parece más a tu nivel actual de SQL?",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "Nunca he escrito una consulta."
+      },
+      {
+       "id": "b",
+       "texto": "Escribo consultas simples de una sola tabla."
+      },
+      {
+       "id": "c",
+       "texto": "Combino tablas y agrupo datos con ayuda de ejemplos."
+      },
+      {
+       "id": "d",
+       "texto": "Resuelvo la mayoría de consultas con JOIN, agrupaciones y subconsultas sin ayuda."
+      },
+      {
+       "id": "e",
+       "texto": "Escribo consultas complejas (ventanas, CTE) con comodidad."
+      }
+     ]
+    },
+    {
+     "id": "1.6",
+     "tipo": "unica",
+     "obligatoria": true,
+     "enunciado": "¿Has usado antes un asistente de IA (chatbot) para resolver ejercicios de SQL?",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "Nunca"
+      },
+      {
+       "id": "b",
+       "texto": "Sí, para entender una explicación"
+      },
+      {
+       "id": "c",
+       "texto": "Sí, para obtener la consulta ya resuelta"
+      },
+      {
+       "id": "d",
+       "texto": "Sí, de ambas formas"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "parte2",
+   "titulo": "Parte 2. Prueba de SQL",
+   "instrucciones": [
+    "Elige una respuesta. Si no la sabes, simplemente marca \"No sé\".",
+    "Después de responder, indica qué tan seguro/a estás.",
+    "Si prefieres no responder, puedes omitir la pregunta indicando el motivo: \"Muy fácil\" o \"Muy difícil\"."
+   ],
+   "escala_confianza": {
+    "1": "nada seguro/a",
+    "2": "poco seguro/a",
+    "3": "moderadamente seguro/a",
+    "4": "bastante seguro/a",
+    "5": "totalmente seguro/a"
+   },
+   "omitir_motivos": [
+    {
+     "codigo": "muy_facil",
+     "texto": "Muy fácil"
+    },
+    {
+     "codigo": "muy_dificil",
+     "texto": "Muy difícil"
+    }
+   ],
+   "esquema": {
+    "tablas": [
+     {
+      "columnas": [
+       "id_cliente",
+       "nombre",
+       "ciudad"
+      ],
+      "filas": [
+       [
+        "1",
+        "Ana",
+        "Lima"
+       ],
+       [
+        "2",
+        "Luis",
+        "Cusco"
+       ],
+       [
+        "3",
+        "Marta",
+        "Lima"
+       ],
+       [
+        "4",
+        "Pedro",
+        "Arequipa"
+       ],
+       [
+        "5",
+        "Rosa",
+        "Cusco"
+       ]
+      ],
+      "nombre": "clientes"
+     },
+     {
+      "columnas": [
+       "id_producto",
+       "nombre",
+       "precio",
+       "categoria"
+      ],
+      "filas": [
+       [
+        "1",
+        "Teclado",
+        "50",
+        "Accesorios"
+       ],
+       [
+        "2",
+        "Mouse",
+        "20",
+        "Accesorios"
+       ],
+       [
+        "3",
+        "Monitor",
+        "300",
+        "Pantallas"
+       ],
+       [
+        "4",
+        "Cable",
+        "10",
+        "Accesorios"
+       ]
+      ],
+      "nombre": "productos"
+     },
+     {
+      "columnas": [
+       "id_pedido",
+       "id_cliente",
+       "id_producto",
+       "cantidad",
+       "fecha"
+      ],
+      "filas": [
+       [
+        "101",
+        "1",
+        "1",
+        "2",
+        "2026-01-10"
+       ],
+       [
+        "102",
+        "1",
+        "3",
+        "1",
+        "2026-02-05"
+       ],
+       [
+        "103",
+        "2",
+        "2",
+        "3",
+        "2026-02-07"
+       ],
+       [
+        "104",
+        "3",
+        "3",
+        "2",
+        "2026-03-01"
+       ],
+       [
+        "105",
+        "3",
+        "4",
+        "5",
+        "2026-03-15"
+       ],
+       [
+        "106",
+        "1",
+        "2",
+        "1",
+        "2026-03-20"
+       ]
+      ],
+      "nombre": "pedidos"
+     }
+    ]
+   },
+   "preguntas": [
+    {
+     "id": "P1",
+     "numero": 1,
+     "nivel": 1,
+     "dificultad": "D1",
+     "concepto": "filtrado",
+     "concepto_nombre": "filtrado",
+     "enunciado": "¿Qué consulta devuelve los nombres de los clientes de Lima?",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "SELECT nombre FROM clientes WHERE ciudad = Lima;"
+      },
+      {
+       "id": "b",
+       "texto": "SELECT ciudad FROM clientes WHERE nombre = 'Lima';"
+      },
+      {
+       "id": "c",
+       "texto": "SELECT nombre FROM clientes WHERE ciudad = 'Lima';"
+      },
+      {
+       "id": "d",
+       "texto": "SELECT nombre FROM clientes HAVING ciudad = 'Lima';"
+      },
+      {
+       "id": "e",
+       "texto": "No sé",
+       "es_no_se": true
+      }
+     ],
+     "correcta": "c"
+    },
+    {
+     "id": "P2",
+     "numero": 2,
+     "nivel": 1,
+     "dificultad": "D1",
+     "concepto": "ordenamiento",
+     "concepto_nombre": "ordenamiento",
+     "enunciado": "¿Qué consulta lista los productos de la categoría «Accesorios» del más caro al más barato?",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "SELECT nombre FROM productos WHERE categoria = 'Accesorios' ORDER BY precio ASC;"
+      },
+      {
+       "id": "b",
+       "texto": "SELECT nombre FROM productos ORDER BY precio DESC WHERE categoria = 'Accesorios';"
+      },
+      {
+       "id": "c",
+       "texto": "SELECT nombre FROM productos WHERE categoria = 'Accesorios' ORDER BY precio DESC;"
+      },
+      {
+       "id": "d",
+       "texto": "SELECT nombre FROM productos WHERE categoria = 'Accesorios' GROUP BY precio DESC;"
+      },
+      {
+       "id": "e",
+       "texto": "No sé",
+       "es_no_se": true
+      }
+     ],
+     "correcta": "c"
+    },
+    {
+     "id": "P3",
+     "numero": 3,
+     "nivel": 1,
+     "dificultad": "D1",
+     "concepto": "conteo_agregacion",
+     "concepto_nombre": "conteo y agregación",
+     "enunciado": "¿Qué consulta devuelve el número total de pedidos?",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "SELECT SUM(id_pedido) FROM pedidos;"
+      },
+      {
+       "id": "b",
+       "texto": "SELECT COUNT(DISTINCT id_cliente) FROM pedidos;"
+      },
+      {
+       "id": "c",
+       "texto": "SELECT COUNT(*) FROM pedidos;"
+      },
+      {
+       "id": "d",
+       "texto": "SELECT MAX(id_pedido) FROM pedidos;"
+      },
+      {
+       "id": "e",
+       "texto": "No sé",
+       "es_no_se": true
+      }
+     ],
+     "correcta": "c"
+    },
+    {
+     "id": "P4",
+     "numero": 4,
+     "nivel": 1,
+     "dificultad": "D1",
+     "concepto": "filtrado",
+     "concepto_nombre": "filtrado",
+     "enunciado": "¿Qué consulta devuelve los clientes de Lima o de Cusco?",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "SELECT nombre FROM clientes WHERE ciudad = 'Lima' AND ciudad = 'Cusco';"
+      },
+      {
+       "id": "b",
+       "texto": "SELECT nombre FROM clientes WHERE ciudad = 'Lima' OR 'Cusco';"
+      },
+      {
+       "id": "c",
+       "texto": "SELECT nombre FROM clientes WHERE ciudad BETWEEN 'Lima' AND 'Cusco';"
+      },
+      {
+       "id": "d",
+       "texto": "SELECT nombre FROM clientes WHERE ciudad IN ('Lima', 'Cusco');"
+      },
+      {
+       "id": "e",
+       "texto": "No sé",
+       "es_no_se": true
+      }
+     ],
+     "correcta": "d"
+    },
+    {
+     "id": "P5",
+     "numero": 5,
+     "nivel": 2,
+     "dificultad": "D2",
+     "concepto": "join",
+     "concepto_nombre": "JOIN",
+     "enunciado": "¿Qué consulta muestra, para cada pedido, el nombre del cliente y el id_pedido?",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "SELECT c.nombre, p.id_pedido FROM clientes c, pedidos p;"
+      },
+      {
+       "id": "b",
+       "texto": "SELECT c.nombre, p.id_pedido FROM clientes c JOIN pedidos p ON c.id_cliente = p.id_pedido;"
+      },
+      {
+       "id": "c",
+       "texto": "SELECT c.nombre, p.id_pedido FROM clientes c LEFT JOIN pedidos p ON c.id_cliente = p.id_cliente;"
+      },
+      {
+       "id": "d",
+       "texto": "SELECT c.nombre, p.id_pedido FROM clientes c JOIN pedidos p ON c.id_cliente = p.id_cliente;"
+      },
+      {
+       "id": "e",
+       "texto": "No sé",
+       "es_no_se": true
+      }
+     ],
+     "correcta": "d"
+    },
+    {
+     "id": "P6",
+     "numero": 6,
+     "nivel": 2,
+     "dificultad": "D2",
+     "concepto": "group_by",
+     "concepto_nombre": "GROUP BY",
+     "enunciado": "¿Qué consulta devuelve el total de unidades pedidas por cada cliente?",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "SELECT id_cliente, SUM(cantidad) FROM pedidos;"
+      },
+      {
+       "id": "b",
+       "texto": "SELECT id_cliente, COUNT(cantidad) FROM pedidos GROUP BY id_cliente;"
+      },
+      {
+       "id": "c",
+       "texto": "SELECT id_cliente, SUM(cantidad) FROM pedidos GROUP BY cantidad;"
+      },
+      {
+       "id": "d",
+       "texto": "SELECT id_cliente, SUM(cantidad) FROM pedidos GROUP BY id_cliente;"
+      },
+      {
+       "id": "e",
+       "texto": "No sé",
+       "es_no_se": true
+      }
+     ],
+     "correcta": "d"
+    },
+    {
+     "id": "P7",
+     "numero": 7,
+     "nivel": 2,
+     "dificultad": "D2",
+     "concepto": "having",
+     "concepto_nombre": "HAVING",
+     "enunciado": "¿Qué consulta devuelve los clientes con más de 5 unidades pedidas en total?",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "SELECT id_cliente FROM pedidos WHERE SUM(cantidad) > 5 GROUP BY id_cliente;"
+      },
+      {
+       "id": "b",
+       "texto": "SELECT id_cliente FROM pedidos WHERE cantidad > 5 GROUP BY id_cliente;"
+      },
+      {
+       "id": "c",
+       "texto": "SELECT id_cliente FROM pedidos GROUP BY id_cliente HAVING COUNT(*) > 5;"
+      },
+      {
+       "id": "d",
+       "texto": "SELECT id_cliente FROM pedidos GROUP BY id_cliente HAVING SUM(cantidad) > 5;"
+      },
+      {
+       "id": "e",
+       "texto": "No sé",
+       "es_no_se": true
+      }
+     ],
+     "correcta": "d"
+    },
+    {
+     "id": "P8",
+     "numero": 8,
+     "nivel": 2,
+     "dificultad": "D2",
+     "concepto": "left_join",
+     "concepto_nombre": "LEFT JOIN (anti-join)",
+     "enunciado": "¿Qué consulta devuelve los clientes que nunca hicieron un pedido?",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "SELECT c.nombre FROM clientes c JOIN pedidos p ON c.id_cliente = p.id_cliente WHERE p.id_pedido IS NULL;"
+      },
+      {
+       "id": "b",
+       "texto": "SELECT c.nombre FROM clientes c LEFT JOIN pedidos p ON c.id_cliente = p.id_cliente WHERE p.id_pedido = NULL;"
+      },
+      {
+       "id": "c",
+       "texto": "SELECT c.nombre FROM clientes c LEFT JOIN pedidos p ON c.id_cliente = p.id_cliente WHERE p.id_pedido IS NOT NULL;"
+      },
+      {
+       "id": "d",
+       "texto": "SELECT c.nombre FROM clientes c LEFT JOIN pedidos p ON c.id_cliente = p.id_cliente WHERE p.id_pedido IS NULL;"
+      },
+      {
+       "id": "e",
+       "texto": "No sé",
+       "es_no_se": true
+      }
+     ],
+     "correcta": "d"
+    },
+    {
+     "id": "P9",
+     "numero": 9,
+     "nivel": 3,
+     "dificultad": "D3",
+     "concepto": "subconsulta",
+     "concepto_nombre": "subconsulta",
+     "enunciado": "¿Qué consulta devuelve los productos con precio mayor al precio promedio?",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "SELECT nombre FROM productos WHERE precio > AVG(precio);"
+      },
+      {
+       "id": "b",
+       "texto": "SELECT nombre FROM productos WHERE precio > (SELECT precio FROM productos);"
+      },
+      {
+       "id": "c",
+       "texto": "SELECT nombre FROM productos WHERE precio > (SELECT MAX(precio) FROM productos);"
+      },
+      {
+       "id": "d",
+       "texto": "SELECT nombre FROM productos WHERE precio > (SELECT AVG(precio) FROM productos);"
+      },
+      {
+       "id": "e",
+       "texto": "No sé",
+       "es_no_se": true
+      }
+     ],
+     "correcta": "d"
+    },
+    {
+     "id": "P10",
+     "numero": 10,
+     "nivel": 3,
+     "dificultad": "D3",
+     "concepto": "join_agregacion",
+     "concepto_nombre": "JOIN con agregación",
+     "enunciado": "¿Qué consulta devuelve el ingreso total (cantidad × precio) por categoría de producto?",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "SELECT pr.categoria, SUM(pr.precio) FROM pedidos pe JOIN productos pr ON pe.id_producto = pr.id_producto GROUP BY pr.categoria;"
+      },
+      {
+       "id": "b",
+       "texto": "SELECT pr.categoria, SUM(pe.cantidad * pr.precio) FROM pedidos pe JOIN productos pr ON pe.id_pedido = pr.id_producto GROUP BY pr.categoria;"
+      },
+      {
+       "id": "c",
+       "texto": "SELECT pr.categoria, SUM(pe.cantidad) * pr.precio FROM pedidos pe JOIN productos pr ON pe.id_producto = pr.id_producto GROUP BY pr.categoria;"
+      },
+      {
+       "id": "d",
+       "texto": "SELECT pr.categoria, SUM(pe.cantidad * pr.precio) FROM pedidos pe JOIN productos pr ON pe.id_producto = pr.id_producto GROUP BY pr.categoria;"
+      },
+      {
+       "id": "e",
+       "texto": "No sé",
+       "es_no_se": true
+      }
+     ],
+     "correcta": "d"
+    },
+    {
+     "id": "P11",
+     "numero": 11,
+     "nivel": 3,
+     "dificultad": "D3",
+     "concepto": "funciones_ventana",
+     "concepto_nombre": "funciones de ventana",
+     "enunciado": "¿Qué consulta devuelve, por cada cliente, su pedido más reciente?",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "SELECT id_cliente, id_pedido, MAX(fecha) FROM pedidos GROUP BY id_cliente;"
+      },
+      {
+       "id": "b",
+       "texto": "SELECT id_cliente, id_pedido FROM pedidos ORDER BY fecha DESC LIMIT 1;"
+      },
+      {
+       "id": "c",
+       "texto": "SELECT id_cliente, id_pedido FROM pedidos WHERE ROW_NUMBER() OVER (PARTITION BY id_cliente ORDER BY fecha DESC) = 1;"
+      },
+      {
+       "id": "d",
+       "texto": "SELECT id_cliente, id_pedido FROM (SELECT id_cliente, id_pedido, ROW_NUMBER() OVER (PARTITION BY id_cliente ORDER BY fecha DESC) AS rn FROM pedidos) t WHERE rn = 1;"
+      },
+      {
+       "id": "e",
+       "texto": "No sé",
+       "es_no_se": true
+      }
+     ],
+     "correcta": "d"
+    }
+   ]
+  },
+  {
+   "id": "parte3",
+   "titulo": "Parte 3. Preferencias de ayuda",
+   "preguntas": [
+    {
+     "id": "3.1",
+     "tipo": "unica",
+     "obligatoria": true,
+     "enunciado": "Cuando te atascas, ¿qué ayuda prefieres recibir primero?",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "Una pista general (una orientación sin dar la respuesta)",
+       "codigo": "AY1"
+      },
+      {
+       "id": "b",
+       "texto": "Un ejemplo guiado (un caso parecido, resuelto paso a paso)",
+       "codigo": "AY2"
+      },
+      {
+       "id": "c",
+       "texto": "Una solución parcial (parte de la consulta)",
+       "codigo": "AY3"
+      },
+      {
+       "id": "d",
+       "texto": "La solución completa",
+       "codigo": "AY4"
+      }
+     ]
+    },
+    {
+     "id": "3.2",
+     "tipo": "unica",
+     "obligatoria": true,
+     "enunciado": "Antes de pedir ayuda, ¿cuánto intentas resolver por tu cuenta?",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "Pido ayuda de inmediato",
+       "codigo": "inmediato"
+      },
+      {
+       "id": "b",
+       "texto": "Después de 1 intento",
+       "codigo": "1"
+      },
+      {
+       "id": "c",
+       "texto": "Después de 2 o 3 intentos",
+       "codigo": "2_3"
+      },
+      {
+       "id": "d",
+       "texto": "Intento 4 o más veces, o hasta resolverlo",
+       "codigo": "4_mas"
+      }
+     ]
+    },
+    {
+     "id": "3.3",
+     "tipo": "unica",
+     "obligatoria": true,
+     "enunciado": "¿Cómo prefieres recibir la ayuda?",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "Solo cuando yo la pida",
+       "codigo": "a_solicitud"
+      },
+      {
+       "id": "b",
+       "texto": "Que la plataforma me la ofrezca si nota que estoy atascado/a, y yo decido si la uso",
+       "codigo": "ofrecer"
+      },
+      {
+       "id": "c",
+       "texto": "Que la plataforma me la muestre sola si nota que estoy atascado/a",
+       "codigo": "mostrar_sola"
+      }
+     ]
+    },
+    {
+     "id": "3.4",
+     "tipo": "unica",
+     "obligatoria": true,
+     "enunciado": "Si resuelves bien varios ejercicios, la plataforma puede darte menos ayuda poco a poco. ¿Qué prefieres?",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "Que lo haga automáticamente",
+       "codigo": "automatico"
+      },
+      {
+       "id": "b",
+       "texto": "Que lo haga, pero avisándome antes y pudiendo decir que no",
+       "codigo": "aviso_previo"
+      },
+      {
+       "id": "c",
+       "texto": "Que me lo pregunte y decido yo cuándo",
+       "codigo": "preguntar"
+      },
+      {
+       "id": "d",
+       "texto": "Que mantenga siempre el mismo nivel de ayuda",
+       "codigo": "mantener"
+      }
+     ]
+    },
+    {
+     "id": "3.5",
+     "tipo": "unica",
+     "obligatoria": true,
+     "enunciado": "¿Qué tono prefieres en las pistas?",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "Directo y neutro",
+       "codigo": "directo"
+      },
+      {
+       "id": "b",
+       "texto": "Alentador y motivador",
+       "codigo": "alentador"
+      },
+      {
+       "id": "c",
+       "texto": "Con preguntas que me hagan pensar mi propia solución",
+       "codigo": "reflexivo"
+      },
+      {
+       "id": "d",
+       "texto": "Técnico y conciso",
+       "codigo": "tecnico"
+      }
+     ]
+    },
+    {
+     "id": "3.6",
+     "tipo": "unica",
+     "obligatoria": true,
+     "enunciado": "Imagina que llevas 10 minutos atascado/a en un ejercicio y que pudieras ver la solución completa cuando quisieras. ¿Qué harías normalmente?",
+     "opciones": [
+      {
+       "id": "a",
+       "texto": "La veo de inmediato",
+       "codigo": "inmediato"
+      },
+      {
+       "id": "b",
+       "texto": "Pido primero una pista y, si no basta, veo la solución",
+       "codigo": "pista_luego_solucion"
+      },
+      {
+       "id": "c",
+       "texto": "Intento un poco más por mi cuenta y luego la veo",
+       "codigo": "intento_luego_solucion"
+      },
+      {
+       "id": "d",
+       "texto": "Prefiero no verla y seguir intentando",
+       "codigo": "no_ver"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

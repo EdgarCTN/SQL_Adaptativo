@@ -9,6 +9,7 @@ import Pagina404 from "../features/errores/Pagina404";
 import LoginPage from "../features/auth/LoginPage";
 import RegistroPage from "../features/auth/RegistroPage";
 import PerfilPage from "../features/perfil/PerfilPage";
+import ProgresoPage from "../features/progreso/ProgresoPage";
 import Inicio from "./Inicio";
 import Layout from "./Layout";
 import Raiz from "./Raiz";
@@ -39,6 +40,7 @@ export const router = createBrowserRouter([
                 children: [
                   { path: "/desafios", element: <DesafiosPage /> },
                   { path: "/desafios/:id", element: <DesafioPage /> },
+                  { path: "/progreso", element: <ProgresoPage /> },
                 ],
               },
             ],

@@ -5,9 +5,10 @@ import type { Rol } from "../api/tipos";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { useAuth } from "./AuthContext";
 
-// Las entregas siguientes agregan aquí sus enlaces (solo rutas que existan).
+// Solo rutas que existan y funcionen.
 const ENLACES: { a: string; etiqueta: string; roles?: Rol[] }[] = [
   { a: "/desafios", etiqueta: "Desafíos", roles: ["estudiante"] },
+  { a: "/progreso", etiqueta: "Progreso", roles: ["estudiante"] },
   { a: "/perfil", etiqueta: "Perfil" },
 ];
 

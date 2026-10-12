@@ -1,0 +1,94 @@
+{
+ "version": 1,
+ "nota": "Mensajes fijos (sin LLM) de la sección 5 del Prompt base. Redacción propuesta: se ajusta con el piloto. Marcadores: {{concepto}}, {{concepto_previo}}.",
+ "mensajes": {
+  "retiro_automatico": {
+   "regla": [
+    "R1",
+    "R2",
+    "R13"
+   ],
+   "texto": "Vas muy bien con {{concepto}}. Desde ahora te ofreceré menos ayuda en este tema. Siempre puedes pedirla."
+  },
+  "retiro_aviso_previo": {
+   "regla": [
+    "R1",
+    "R2",
+    "R13"
+   ],
+   "texto": "Vas muy bien con {{concepto}}. En el próximo desafío te ofreceré menos ayuda en este tema, salvo que prefieras mantenerla. Siempre puedes pedirla.",
+   "boton": "Mantener la ayuda"
+  },
+  "retiro_preguntar": {
+   "regla": [
+    "R1",
+    "R2",
+    "R13"
+   ],
+   "texto": "Vas muy bien con {{concepto}}. ¿Quieres que te ofrezca menos ayuda en este tema o prefieres seguir como hasta ahora?",
+   "nota": "el retiro se aplica solo si acepta"
+  },
+  "retiro_mantener_nivel": {
+   "regla": [
+    "R13"
+   ],
+   "texto": null,
+   "nota": "Preferencia 3.4 = mantener: no se muestra mensaje ni se retira; el motor solo registra que se cumplió el criterio."
+  },
+  "refuerzo": {
+   "regla": [
+    "R5",
+    "R8"
+   ],
+   "texto": "En {{concepto}} te voy a acompañar un poco más. Es parte normal de aprender."
+  },
+  "recaida": {
+   "regla": [
+    "R3"
+   ],
+   "texto": "Recuperamos un poco de apoyo en {{concepto}} para afianzar lo aprendido."
+  },
+  "ensayo_error": {
+   "regla": [
+    "R10"
+   ],
+   "texto": "Antes de seguir: ¿qué devolvió tu consulta y qué esperabas?"
+  },
+  "sobreconfianza_acierto": {
+   "regla": [
+    "R11"
+   ],
+   "texto": "Tu solución es correcta. ¿Puedes explicar por qué funciona o encontrar una forma más simple?"
+  },
+  "verificacion": {
+   "regla": [
+    "R7"
+   ],
+   "texto": "Dijiste que este tema era muy fácil. Resolvamos un desafío sin ayuda para confirmarlo."
+  },
+  "estancamiento_previo_sin_dominar": {
+   "regla": [
+    "R6"
+   ],
+   "texto": "Este tema te está costando. Te sugiero practicar {{concepto_previo}} antes de seguir."
+  },
+  "estancamiento_derivar": {
+   "regla": [
+    "R6"
+   ],
+   "texto": "Este tema te está costando. Te sugiero consultar a tu docente o revisar material adicional."
+  },
+  "solucion_ya_mostrada": {
+   "regla": [
+    "Tabla 11"
+   ],
+   "texto": "Ya viste la solución completa. Este desafío se marcará como no resuelto; inténtalo de nuevo más adelante."
+  },
+  "reenganche": {
+   "regla": [
+    "R14"
+   ],
+   "texto": "Bienvenido/a de vuelta. Retomamos {{concepto}} con un poco más de apoyo."
+  }
+ }
+}

@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.core.seguridad import hashear_password
 from app.modules.auth.models import Rol, Usuario
 from app.modules.desafios.models import Concepto
+from app.modules.desafios.seeds import sembrar_desafios
 from app.modules.linea_base.models import LineaBaseCuestionario
 
 log = logging.getLogger("app.seeds")
@@ -70,5 +71,6 @@ def sembrar_usuario_demo(db: Session) -> None:
 
 def sembrar_todo(db: Session) -> None:
     sembrar_conceptos(db)
+    sembrar_desafios(db)
     sembrar_cuestionario(db)
     sembrar_usuario_demo(db)

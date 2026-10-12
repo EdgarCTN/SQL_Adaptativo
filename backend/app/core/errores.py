@@ -23,6 +23,9 @@ _ETIQUETAS = {
     "contrasena": "Contraseña",
     "contrasena_actual": "Contraseña actual",
     "contrasena_nueva": "Contraseña nueva",
+    "codigo": "Consulta",
+    "valor": "Valoración",
+    "mensaje_estudiante": "Mensaje",
 }
 
 

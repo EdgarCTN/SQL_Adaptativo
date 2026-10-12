@@ -2,6 +2,8 @@ import { createBrowserRouter } from "react-router-dom";
 
 import ConsentimientoPage from "../features/diagnostico/ConsentimientoPage";
 import DiagnosticoPage from "../features/diagnostico/DiagnosticoPage";
+import DesafioPage from "../features/desafios/DesafioPage";
+import DesafiosPage from "../features/desafios/DesafiosPage";
 import Pagina403 from "../features/errores/Pagina403";
 import Pagina404 from "../features/errores/Pagina404";
 import LoginPage from "../features/auth/LoginPage";
@@ -28,7 +30,19 @@ export const router = createBrowserRouter([
         element: <RutaProtegida />,
         children: [
           { path: "/", element: <Inicio /> },
-          { element: <Layout />, children: [{ path: "/perfil", element: <PerfilPage /> }] },
+          {
+            element: <Layout />,
+            children: [
+              { path: "/perfil", element: <PerfilPage /> },
+              {
+                element: <RutaProtegida roles={["estudiante"]} />,
+                children: [
+                  { path: "/desafios", element: <DesafiosPage /> },
+                  { path: "/desafios/:id", element: <DesafioPage /> },
+                ],
+              },
+            ],
+          },
         ],
       },
       {

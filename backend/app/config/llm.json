@@ -1,0 +1,22 @@
+{
+ "version": 1,
+ "temperatura": 0.2,
+ "max_tokens": {
+  "AY1": 150,
+  "AY2": 450,
+  "AY3": 350,
+  "AY4": 500
+ },
+ "max_palabras": {
+  "AY1": 60,
+  "AY2": 150,
+  "AY3": 120,
+  "AY4": 200
+ },
+ "tiempo_limite_seg": 8,
+ "reintentos": 1,
+ "max_chars_codigo_estudiante": 4000,
+ "max_chars_mensaje_estudiante": 500,
+ "etiqueta_ia": "Generada por IA, puede contener errores",
+ "etiqueta_mock": "Ayuda de demostración (modo sin LLM)"
+}

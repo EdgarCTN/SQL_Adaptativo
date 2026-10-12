@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 
+import type { Rol } from "../api/tipos";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { useAuth } from "./AuthContext";
 
 // Las entregas siguientes agregan aquí sus enlaces (solo rutas que existan).
-const ENLACES = [{ a: "/perfil", etiqueta: "Perfil" }];
+const ENLACES: { a: string; etiqueta: string; roles?: Rol[] }[] = [
+  { a: "/desafios", etiqueta: "Desafíos", roles: ["estudiante"] },
+  { a: "/perfil", etiqueta: "Perfil" },
+];
 
 export default function Layout() {
   const { usuario, logout } = useAuth();
@@ -32,7 +36,7 @@ export default function Layout() {
       >
         <p className="mb-4 hidden text-lg font-bold text-indigo-700 md:block">Desafíos SQL</p>
         <nav aria-label="Principal" className="space-y-1">
-          {ENLACES.map((e) => (
+          {ENLACES.filter((e) => !e.roles || (usuario && e.roles.includes(usuario.rol))).map((e) => (
             <NavLink key={e.a} to={e.a} className={clasesEnlace}>
               {e.etiqueta}
             </NavLink>

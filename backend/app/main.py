@@ -7,8 +7,10 @@ from app.core import health
 from app.core.config import settings
 from app.core.db import SessionLocal, init_db
 from app.core.errores import registrar_manejadores
+from app.modules.asistencia.router import router as asistencia_router
 from app.modules.auth.router import perfil_router
 from app.modules.auth.router import router as auth_router
+from app.modules.desafios.router import router as desafios_router
 from app.modules.linea_base.router import router as linea_base_router
 from app.seeds.seed import sembrar_todo
 
@@ -36,4 +38,6 @@ api.include_router(health.router)
 api.include_router(auth_router)
 api.include_router(perfil_router)
 api.include_router(linea_base_router)
+api.include_router(desafios_router)
+api.include_router(asistencia_router)
 app.include_router(api)

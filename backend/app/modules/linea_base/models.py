@@ -103,7 +103,7 @@ class Omision(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), index=True)
     concepto_id: Mapped[int] = mapped_column(ForeignKey("conceptos.id"))
-    desafio_id: Mapped[int | None] = mapped_column(Integer, nullable=True)  # FK se agrega con la tabla desafios
+    desafio_id: Mapped[int | None] = mapped_column(ForeignKey("desafios.id"), nullable=True)
     motivo: Mapped[str] = mapped_column(String(20))
     origen: Mapped[str] = mapped_column(String(20))
     creado_en: Mapped[Any] = mapped_column(UTCDateTime, default=ahora_utc)

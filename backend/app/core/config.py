@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     seed_usuario_demo: bool = True
     demo_email: str = "estudiante@demo.edu"
     demo_password: str = "Demo12345!"
+    sandbox_tiempo_max_seg: float = Field(default=2.0, gt=0)
+    sandbox_max_filas: int = Field(default=200, gt=0)
+    llm_provider: str = "mock"
+    llm_model: str = "claude-haiku-5-5"
+    anthropic_api_key: str = ""
 
     @field_validator("database_url")
     @classmethod

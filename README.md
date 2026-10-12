@@ -14,6 +14,7 @@ No incluye (aún): rol docente, reportes, Redis ni Docker.
 
 ```bash
 git clone https://github.com/EdgarCTN/SQL_Adaptativo.git
+cd SQL_Adaptativo
 cp .env.example .env
 
 # Backend

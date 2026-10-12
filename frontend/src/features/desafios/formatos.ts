@@ -1,4 +1,4 @@
-import type { Dificultad, EstadoDesafio } from "../../api/tiposDesafios";
+import type { AjusteNivel, Dificultad, EstadoDesafio } from "../../api/tiposDesafios";
 
 export function formatearDuracion(segundos: number): string {
   const s = Math.max(0, Math.round(segundos));
@@ -25,3 +25,7 @@ export const ESTILO_ESTADO: Record<EstadoDesafio, string> = {
   en_curso: "bg-amber-100 text-amber-900",
   resuelto: "bg-green-100 text-green-900",
 };
+
+export function textoAjusteNivel(a: AjusteNivel): string {
+  return `Tu nivel de ayuda en ${a.concepto} pasó de ${a.ns_anterior} a ${a.ns_nuevo}.`;
+}

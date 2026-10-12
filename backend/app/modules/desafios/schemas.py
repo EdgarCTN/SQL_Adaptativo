@@ -74,6 +74,13 @@ class IntentoIn(BaseModel):
         return v
 
 
+class AjusteNivelOut(BaseModel):
+    concepto: str
+    ns_anterior: int
+    ns_nuevo: int
+    motivo: str  # texto para el estudiante
+
+
 class IntentoOut(BaseModel):
     numero: int
     correcto: bool
@@ -90,6 +97,7 @@ class IntentoOut(BaseModel):
     resultado_cierre: str | None = None
     tiempo_activo_seg: int | None = None
     creado_en: datetime
+    ajuste_nivel: AjusteNivelOut | None = None  # solo si al resolver cambió el nivel de ayuda del concepto
 
 
 class AbandonarOut(BaseModel):
@@ -97,3 +105,4 @@ class AbandonarOut(BaseModel):
     resultado_cierre: str
     tiempo_activo_seg: int
     mensaje: str
+    ajuste_nivel: AjusteNivelOut | None = None

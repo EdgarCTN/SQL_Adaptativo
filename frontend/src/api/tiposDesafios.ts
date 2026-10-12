@@ -65,6 +65,13 @@ export type TipoResultado =
 
 export type CeldaResultado = string | number | boolean | null;
 
+export interface AjusteNivel {
+  concepto: string;
+  ns_anterior: number;
+  ns_nuevo: number;
+  motivo: string; // texto para el estudiante
+}
+
 export interface ResultadoIntento {
   numero: number;
   correcto: boolean;
@@ -80,6 +87,7 @@ export interface ResultadoIntento {
   resultado_cierre: string | null;
   tiempo_activo_seg: number | null;
   creado_en: string;
+  ajuste_nivel: AjusteNivel | null;
 }
 
 export interface ResultadoAbandono {
@@ -87,6 +95,7 @@ export interface ResultadoAbandono {
   resultado_cierre: string;
   tiempo_activo_seg: number;
   mensaje: string;
+  ajuste_nivel: AjusteNivel | null;
 }
 
 export type TipoAyuda = "AY1" | "AY2" | "AY3" | "AY4";

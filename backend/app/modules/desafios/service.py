@@ -1,4 +1,5 @@
 import logging
+from dataclasses import asdict
 from datetime import datetime
 
 from sqlalchemy import func, select
@@ -12,6 +13,7 @@ from app.modules.asistencia.cierre import clasificar_cierre
 from app.modules.asistencia.models import SolicitudAyuda
 from app.modules.desafios import hooks
 from app.modules.desafios.models import Concepto, Desafio, Intento, SesionDesafio
+from app.modules.motor_retiro.motor import AjusteNivel
 from app.modules.motor_retiro.niveles import NivelSoporteService
 from app.modules.desafios.sandbox import ErrorConfiguracionDesafio, evaluar_consulta
 
@@ -177,13 +179,15 @@ def _cerrar(sesion: SesionDesafio, estado: str, resultado: str) -> None:
     sesion.tiempo_activo_seg = _segundos(sesion.inicio, sesion.fin)  # provisional: fin - inicio
 
 
-def _notificar_cierre(db: Session, sesion: SesionDesafio) -> None:
-    """El cierre ya está guardado: un fallo del hook nunca debe romper la respuesta."""
+def _notificar_cierre(db: Session, sesion: SesionDesafio) -> dict | None:
+    """El cierre ya está guardado: un fallo del hook nunca debe romper la respuesta. Devuelve el ajuste de nivel."""
     try:
-        hooks.al_cerrar_desafio(db, sesion)
+        ajuste = hooks.al_cerrar_desafio(db, sesion)
     except Exception:  # noqa: BLE001
         log.exception("Falló al_cerrar_desafio (sesión %s); el cierre se conserva", sesion.id)
         db.rollback()
+        return None
+    return asdict(ajuste) if isinstance(ajuste, AjusteNivel) else None
 
 
 def registrar_intento(db: Session, usuario: Usuario, desafio_id: int, codigo: str) -> dict:
@@ -233,8 +237,7 @@ def registrar_intento(db: Session, usuario: Usuario, desafio_id: int, codigo: st
             raise ErrorApp(MSG_ERROR_GUARDADO, 503)
     if intento is None:
         raise ErrorApp(MSG_ERROR_GUARDADO, 503)
-    if res.correcto:
-        _notificar_cierre(db, sesion)
+    ajuste = _notificar_cierre(db, sesion) if res.correcto else None
     return {
         "numero": intento.numero,
         "correcto": res.correcto,
@@ -250,6 +253,7 @@ def registrar_intento(db: Session, usuario: Usuario, desafio_id: int, codigo: st
         "resultado_cierre": sesion.resultado_cierre,
         "tiempo_activo_seg": sesion.tiempo_activo_seg,
         "creado_en": intento.creado_en,
+        "ajuste_nivel": ajuste,
     }
 
 
@@ -265,10 +269,11 @@ def abandonar(db: Session, usuario: Usuario, desafio_id: int) -> dict:
         db.rollback()
         log.exception("No se pudo abandonar el desafío")
         raise ErrorApp(MSG_ERROR_GUARDADO, 503)
-    _notificar_cierre(db, sesion)
+    ajuste = _notificar_cierre(db, sesion)
     return {
         "estado": sesion.estado,
         "resultado_cierre": sesion.resultado_cierre,
         "tiempo_activo_seg": sesion.tiempo_activo_seg,
         "mensaje": MSG_ABANDONADO,
+        "ajuste_nivel": ajuste,
     }

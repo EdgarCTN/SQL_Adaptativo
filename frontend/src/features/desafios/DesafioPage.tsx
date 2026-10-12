@@ -9,7 +9,7 @@ import { useAuth } from "../../app/AuthContext";
 import DialogoConfirmacion from "../../components/DialogoConfirmacion";
 import EstadoContenedor from "../../components/EstadoContenedor";
 import { mostrarToast } from "../../components/Toasts";
-import { ETIQUETA_DIFICULTAD, formatearDuracion } from "./formatos";
+import { ETIQUETA_DIFICULTAD, formatearDuracion, textoAjusteNivel } from "./formatos";
 import PanelAyuda from "./PanelAyuda";
 import ResultadoIntento from "./ResultadoIntento";
 import { useAyuda } from "./useAyuda";
@@ -190,7 +190,7 @@ function DetalleDesafio({ inicial, alRecargar }: PropsDetalle) {
       const r = await abandonarDesafio(desafioId);
       guardarBorrador(clave, "");
       ayuda.descartar();
-      mostrarToast({ tipo: "info", mensaje: r.mensaje });
+      mostrarToast({ tipo: "info", mensaje: r.ajuste_nivel ? `${r.mensaje} ${textoAjusteNivel(r.ajuste_nivel)} ${r.ajuste_nivel.motivo}` : r.mensaje });
       navigate("/desafios", { replace: true });
     } catch (e) {
       setAbandonando(false);

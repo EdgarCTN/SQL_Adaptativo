@@ -1,4 +1,5 @@
 import type { ResultadoIntento as Resultado, TipoResultado } from "../../api/tiposDesafios";
+import AvisoNivel from "./AvisoNivel";
 import { formatearDuracion } from "./formatos";
 import TablaResultado from "./TablaResultado";
 
@@ -46,6 +47,8 @@ export default function ResultadoIntento({ intento }: { intento: Resultado }) {
           {intento.tiempo_activo_seg !== null && <> y {formatearDuracion(intento.tiempo_activo_seg)}</>}.
         </p>
       )}
+
+      {intento.ajuste_nivel && <AvisoNivel ajuste={intento.ajuste_nivel} />}
 
       {hayTabla && (
         <details open={tipo === "resultado_distinto"} className="mt-3">

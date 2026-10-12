@@ -27,3 +27,6 @@ class NivelSoporteService:
             )
         )
         return NS_POR_DEFECTO if ns is None else int(ns)
+
+NS_MINIMO = 0  # estructural (la Matriz define NS de 0 a 3)
+NS_MAXIMO = 3

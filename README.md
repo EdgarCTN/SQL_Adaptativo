@@ -13,8 +13,7 @@ No incluye (aún): rol docente, reportes, Redis ni Docker.
 ## Instalación (Git Bash)
 
 ```bash
-git clone https://github.com/EdgarCTN/SQL_Adaptativo.git
-cd SQL_Adaptativo
+git clone <url-del-repositorio> proyecto && cd proyecto
 cp .env.example .env
 
 # Backend
@@ -63,19 +62,19 @@ Ejecuta `pytest` del backend y `npm run build` del frontend (requiere `npm insta
 
 ## Activar el LLM real
 
-Por defecto `LLM_PROVIDER=mock`: la ayuda sale de las ayudas de respaldo de cada desafío y se rotula como demostración. Para usar Anthropic, edita `.env`:
+Por defecto `LLM_PROVIDER=mock`: la ayuda sale de las ayudas de respaldo de cada desafío y se rotula como demostración. Para usar IA real con **Groq** (modelo `openai/gpt-oss-120b`), edita `.env`:
 
 ```
-LLM_PROVIDER=anthropic
-LLM_MODEL=claude-haiku-5-5
-ANTHROPIC_API_KEY=tu-clave
+LLM_PROVIDER=groq
+GROQ_MODEL=openai/gpt-oss-120b
+GROQ_API_KEY=tu-clave
 ```
 
-Reinicia el servidor. Si falta la clave, la llamada falla o la respuesta no es válida, el estudiante recibe la ayuda de respaldo sin ver errores técnicos. `AnthropicProvider` aún no se ha probado contra la API real. `openai` no está implementado (cae al modo demostración). Temperatura, tokens y tiempos están en `backend/app/config/llm.json`.
+(`GROQ_API_KEY` también se puede definir como variable de entorno.) Instala la dependencia con `pip install -r backend/requirements.txt` y reinicia el servidor. Si falta la clave, el paquete `groq`, la llamada falla o la respuesta no es válida, el estudiante recibe la ayuda de respaldo sin ver errores técnicos (el motivo queda en el log del servidor, sin la clave). También sigue disponible `LLM_PROVIDER=anthropic` (con `ANTHROPIC_API_KEY` y `LLM_MODEL`); `openai` no está implementado. Temperatura, tokens, margen de razonamiento y tiempos están en `backend/app/config/llm.json`.
 
 ## Variables de `.env`
 
-`DATABASE_URL`, `SECRET_KEY` (vacía = clave temporal; las sesiones se pierden al reiniciar), `ACCESS_TOKEN_EXPIRE_MINUTES`, `CORS_ORIGINS`, `DOMINIO_INSTITUCIONAL`, `SEED_USUARIO_DEMO`, `DEMO_EMAIL`, `DEMO_PASSWORD`, `SANDBOX_TIEMPO_MAX_SEG`, `SANDBOX_MAX_FILAS`, `LLM_PROVIDER`, `LLM_MODEL`, `ANTHROPIC_API_KEY`. Cada una está comentada en `.env.example`. El frontend usa `VITE_API_URL` (por defecto `http://localhost:8000/api/v1`; ver `frontend/.env.example`).
+`DATABASE_URL`, `SECRET_KEY` (vacía = clave temporal; las sesiones se pierden al reiniciar), `ACCESS_TOKEN_EXPIRE_MINUTES`, `CORS_ORIGINS`, `DOMINIO_INSTITUCIONAL`, `SEED_USUARIO_DEMO`, `DEMO_EMAIL`, `DEMO_PASSWORD`, `SANDBOX_TIEMPO_MAX_SEG`, `SANDBOX_MAX_FILAS`, `LLM_PROVIDER`, `LLM_MODEL`, `ANTHROPIC_API_KEY`, `GROQ_API_KEY`, `GROQ_MODEL`. Cada una está comentada en `.env.example`. El frontend usa `VITE_API_URL` (por defecto `http://localhost:8000/api/v1`; ver `frontend/.env.example`).
 
 ## Estructura
 

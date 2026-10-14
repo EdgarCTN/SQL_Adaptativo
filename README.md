@@ -13,7 +13,7 @@ No incluye (aún): rol docente, reportes, Redis ni Docker.
 ## Instalación (Git Bash)
 
 ```bash
-git clone <url-del-repositorio> proyecto && cd proyecto
+git clone https://github.com/EdgarCTN/SQL_Adaptativo.git && cd SQL_Adaptativo
 cp .env.example .env
 
 # Backend

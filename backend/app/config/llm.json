@@ -18,5 +18,9 @@
  "max_chars_codigo_estudiante": 4000,
  "max_chars_mensaje_estudiante": 500,
  "etiqueta_ia": "Generada por IA, puede contener errores",
- "etiqueta_mock": "Ayuda de demostración (modo sin LLM)"
+ "etiqueta_mock": "Ayuda de demostración (modo sin LLM)",
+ "razonamiento": {
+  "esfuerzo": "low",
+  "margen_tokens": 1500
+ }
 }

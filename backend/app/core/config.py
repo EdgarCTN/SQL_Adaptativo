@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     llm_provider: str = "mock"
     llm_model: str = "claude-haiku-5-5"
     anthropic_api_key: str = ""
+    groq_api_key: str = ""  # también se lee de la variable de entorno GROQ_API_KEY
+    groq_model: str = "openai/gpt-oss-120b"
 
     @field_validator("database_url")
     @classmethod

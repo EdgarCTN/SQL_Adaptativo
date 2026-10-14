@@ -3,7 +3,7 @@ import logging
 from app.core.config import Settings, settings
 from app.modules.asistencia.llm.base import LLMProvider
 from app.modules.asistencia.llm.mock import MockLLMProvider
-from app.modules.asistencia.llm.proveedores_externos import AnthropicProvider, OpenAIProvider
+from app.modules.asistencia.llm.proveedores_externos import AnthropicProvider, GroqProvider, OpenAIProvider
 
 log = logging.getLogger("app.llm")
 
@@ -14,6 +14,8 @@ def obtener_proveedor(cfg: Settings | None = None) -> LLMProvider:
     nombre = cfg.llm_provider.strip().lower()
     if nombre == "anthropic":
         return AnthropicProvider(cfg.anthropic_api_key, cfg.llm_model)
+    if nombre == "groq":
+        return GroqProvider(cfg.groq_api_key, cfg.groq_model)
     if nombre == "openai":
         return OpenAIProvider()
     if nombre != "mock":

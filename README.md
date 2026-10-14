@@ -67,7 +67,7 @@ Por defecto `LLM_PROVIDER=mock`: la ayuda sale de las ayudas de respaldo de cada
 ```
 LLM_PROVIDER=groq
 GROQ_MODEL=openai/gpt-oss-120b
-GROQ_API_KEY=tu-clave
+GROQ_API_KEY=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
 ```
 
 (`GROQ_API_KEY` también se puede definir como variable de entorno.) Instala la dependencia con `pip install -r backend/requirements.txt` y reinicia el servidor. Si falta la clave, el paquete `groq`, la llamada falla o la respuesta no es válida, el estudiante recibe la ayuda de respaldo sin ver errores técnicos (el motivo queda en el log del servidor, sin la clave). También sigue disponible `LLM_PROVIDER=anthropic` (con `ANTHROPIC_API_KEY` y `LLM_MODEL`); `openai` no está implementado. Temperatura, tokens, margen de razonamiento y tiempos están en `backend/app/config/llm.json`.

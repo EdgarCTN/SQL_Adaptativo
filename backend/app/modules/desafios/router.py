@@ -11,6 +11,7 @@ from app.modules.desafios.schemas import (
     IniciarOut,
     IntentoIn,
     IntentoOut,
+    LatidoOut,
     ListaDesafiosOut,
 )
 
@@ -42,6 +43,11 @@ def intento(
     desafio_id: int, datos: IntentoIn, usuario: Usuario = Depends(_estudiante), db: Session = Depends(get_db)
 ):
     return service.registrar_intento(db, usuario, desafio_id, datos.codigo)
+
+
+@router.post("/{desafio_id}/latido", response_model=LatidoOut)
+def latido(desafio_id: int, usuario: Usuario = Depends(_estudiante), db: Session = Depends(get_db)):
+    return service.registrar_latido(db, usuario, desafio_id)
 
 
 @router.post("/{desafio_id}/abandonar", response_model=AbandonarOut)

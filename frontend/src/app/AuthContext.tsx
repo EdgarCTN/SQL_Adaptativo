@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await cerrarSesionApi();
     } catch {
-      /* el servidor no guarda la sesión: igual se cierra aquí */
+      /* sin red o token ya inválido: igual se cierra la sesión local */
     }
     borrarToken();
     setUsuario(null);

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.db import ahora_utc
 from app.core.errores import ErrorApp
+from app.core.reglas import cargar_reglas
 from app.modules.auth.models import Usuario
 from app.modules.asistencia.cierre import clasificar_cierre
 from app.modules.asistencia.models import SolicitudAyuda
@@ -176,7 +177,46 @@ def _cerrar(sesion: SesionDesafio, estado: str, resultado: str) -> None:
     sesion.fin = ahora_utc()
     sesion.estado = estado
     sesion.resultado_cierre = resultado
-    sesion.tiempo_activo_seg = _segundos(sesion.inicio, sesion.fin)  # provisional: fin - inicio
+    if sesion.tiempo_activo_origen == "latidos":  # hubo latidos: se usa lo acumulado
+        sesion.tiempo_activo_seg = max(0, sesion.tiempo_activo_seg or 0)
+    else:  # sin latidos: fin - inicio, como antes
+        sesion.tiempo_activo_seg = _segundos(sesion.inicio, sesion.fin)
+        sesion.tiempo_activo_origen = "reloj"
+
+
+def _hueco_max_seg() -> int | None:
+    """Valor de reglas.json (PROVISIONAL). Si no se puede leer, los latidos no suman y rige fin - inicio."""
+    try:
+        return int(cargar_reglas()["tiempo_activo"]["hueco_max_seg"])
+    except (OSError, ValueError, KeyError, TypeError):
+        log.warning("No se pudo leer tiempo_activo.hueco_max_seg; el latido no suma tiempo")
+        return None
+
+
+def registrar_latido(db: Session, usuario: Usuario, desafio_id: int) -> dict:
+    """Suma los segundos desde el latido anterior (o desde el inicio) si el hueco no supera el máximo."""
+    sesion = _sesion_en_curso(db, usuario.id, desafio_id)
+    if sesion is None:
+        raise ErrorApp(MSG_NO_EN_CURSO, 409)
+    hueco_max = _hueco_max_seg()
+    if hueco_max is None:  # sin umbral no se activa el modo latidos: la sesión seguirá midiéndose con el reloj
+        return {"ok": True, "tiempo_activo_seg": sesion.tiempo_activo_seg or 0}
+    ahora = ahora_utc()
+    referencia = sesion.ultimo_latido_en or sesion.inicio
+    hueco = _segundos(referencia, ahora)
+    if hueco <= hueco_max:
+        sesion.tiempo_activo_seg = (sesion.tiempo_activo_seg or 0) + hueco
+    elif sesion.tiempo_activo_seg is None:
+        sesion.tiempo_activo_seg = 0
+    sesion.ultimo_latido_en = ahora
+    sesion.tiempo_activo_origen = "latidos"
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        log.exception("No se pudo guardar el latido")
+        raise ErrorApp(MSG_ERROR_GUARDADO, 503)
+    return {"ok": True, "tiempo_activo_seg": sesion.tiempo_activo_seg}
 
 
 def _notificar_cierre(db: Session, sesion: SesionDesafio) -> dict | None:

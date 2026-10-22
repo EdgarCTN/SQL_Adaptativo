@@ -13,6 +13,7 @@ import { ETIQUETA_DIFICULTAD, formatearDuracion, textoAjusteNivel } from "./form
 import PanelAyuda from "./PanelAyuda";
 import ResultadoIntento from "./ResultadoIntento";
 import { useAyuda } from "./useAyuda";
+import { useLatido } from "./useLatido";
 
 const MAX_CODIGO = 4000;
 const MSG_NO_DISPONIBLE = "Este desafío no está disponible por ahora. Puedes elegir otro de la lista.";
@@ -128,6 +129,8 @@ function DetalleDesafio({ inicial, alRecargar }: PropsDetalle) {
   // Al entregarse la solución completa (AY4) el desafío queda como no resuelto.
   const ay4 = ayuda.ayudas.find((a) => a.tipo_ayuda === "AY4");
   const marcadoNR = !!ay4;
+  // Mientras la sesión siga abierta, avisa al servidor de que hay actividad real (tiempo activo).
+  useLatido(desafioId, !!sesion && !resuelto && !abandonando);
 
   const comenzar = async () => {
     if (iniciando) return;

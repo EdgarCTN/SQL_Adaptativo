@@ -20,3 +20,7 @@ export const enviarIntento = (id: number, codigo: string) =>
 
 export const abandonarDesafio = (id: number) =>
   cliente.post<ResultadoAbandono>(`/desafios/${id}/abandonar`).then((r) => r.data);
+
+/** Latido de actividad: el llamador ignora cualquier fallo. */
+export const enviarLatido = (id: number) =>
+  cliente.post<{ ok: boolean; tiempo_activo_seg: number }>(`/desafios/${id}/latido`).then((r) => r.data);

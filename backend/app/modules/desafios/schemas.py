@@ -106,3 +106,8 @@ class AbandonarOut(BaseModel):
     tiempo_activo_seg: int
     mensaje: str
     ajuste_nivel: AjusteNivelOut | None = None
+
+
+class LatidoOut(BaseModel):
+    ok: bool = True
+    tiempo_activo_seg: int

@@ -26,3 +26,13 @@ class Usuario(Base):
     activo: Mapped[bool] = mapped_column(Boolean, default=True)
     creado_en: Mapped[object] = mapped_column(UTCDateTime, default=ahora_utc)
     linea_base_completada: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class TokenRevocado(Base):
+    """JWT invalidados al cerrar sesión. Las filas vencidas se borran en cada logout."""
+
+    __tablename__ = "tokens_revocados"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    jti: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    expira_en: Mapped[object] = mapped_column(UTCDateTime, index=True)

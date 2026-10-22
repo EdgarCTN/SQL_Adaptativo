@@ -1,11 +1,14 @@
-from sqlalchemy import select
+from datetime import datetime, timezone
+
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.errores import ErrorApp
 from app.core.seguridad import HASH_FALSO, crear_token, hashear_password, verificar_password
-from app.modules.auth.models import Rol, Usuario
+from app.core.db import ahora_utc
+from app.modules.auth.models import Rol, TokenRevocado, Usuario
 from app.modules.auth.schemas import PerfilIn, RegistroIn
 
 MSG_CREDENCIALES = "El correo o la contraseña no son válidos."
@@ -68,3 +71,22 @@ def actualizar_perfil(db: Session, usuario: Usuario, datos: PerfilIn) -> Usuario
     db.add(usuario)
     db.commit()
     return usuario
+
+
+def token_esta_revocado(db: Session, jti: str | None) -> bool:
+    if not jti:
+        return False
+    return db.scalar(select(TokenRevocado.id).where(TokenRevocado.jti == jti)) is not None
+
+
+def revocar_token(db: Session, payload: dict) -> None:
+    """Registra el jti hasta que el token venza y limpia los registros ya vencidos."""
+    jti = payload.get("jti")
+    if jti and not token_esta_revocado(db, jti):
+        expira = datetime.fromtimestamp(int(payload["exp"]), tz=timezone.utc)
+        db.add(TokenRevocado(jti=jti, expira_en=expira))
+    db.execute(delete(TokenRevocado).where(TokenRevocado.expira_en < ahora_utc()))
+    try:
+        db.commit()
+    except IntegrityError:  # dos logout simultáneos: el otro ya lo registró
+        db.rollback()

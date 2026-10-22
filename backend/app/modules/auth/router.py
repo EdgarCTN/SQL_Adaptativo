@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.modules.auth import service
-from app.modules.auth.deps import usuario_actual
+from app.modules.auth.deps import payload_del_token, usuario_actual
 from app.modules.auth.models import Usuario
 from app.modules.auth.schemas import (
     LoginIn,
@@ -30,8 +30,12 @@ def login(datos: LoginIn, db: Session = Depends(get_db)):
 
 
 @router.post("/logout", response_model=MensajeOut)
-def logout(_: Usuario = Depends(usuario_actual)):
-    # Sin revocación en el servidor: el cliente descarta el token (ver DECISIONES).
+def logout(
+    _: Usuario = Depends(usuario_actual),
+    payload: dict = Depends(payload_del_token),
+    db: Session = Depends(get_db),
+):
+    service.revocar_token(db, payload)
     return MensajeOut(mensaje="Sesión cerrada.")
 
 

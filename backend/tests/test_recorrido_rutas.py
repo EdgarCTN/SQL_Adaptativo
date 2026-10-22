@@ -83,7 +83,7 @@ def test_como_estudiante(client, sin_excepciones, valor_id):
     h = cabecera(token_de(client))
     for metodo, ruta in _rutas():
         if ruta == f"{API}/auth/logout":
-            continue  # no revoca nada, pero se prueba aparte para no depender del orden
+            continue  # revoca el token: se prueba aparte para no depender del orden
         r = _llamar(sin_excepciones, metodo, _con_id(ruta, valor_id), h)
         _verificar_json_controlado(r, f"{metodo.upper()} {ruta} (id={valor_id}) como estudiante")
         assert r.status_code != 401, f"{metodo.upper()} {ruta} rechazó un token válido"
@@ -97,6 +97,8 @@ def test_como_docente(client, db, sin_excepciones):
     db.commit()
     h = cabecera(token_de(client, "profe@uni.edu", "Clave12345"))
     for metodo, ruta in _rutas():
+        if ruta == f"{API}/auth/logout":
+            continue  # revoca el token: se prueba aparte
         r = _llamar(sin_excepciones, metodo, _con_id(ruta, "1"), h)
         _verificar_json_controlado(r, f"{metodo.upper()} {ruta} como docente")
         if ruta.removeprefix(API).startswith(SOLO_ESTUDIANTE):

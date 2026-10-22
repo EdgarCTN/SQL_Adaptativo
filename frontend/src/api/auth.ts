@@ -13,7 +13,8 @@ export const registrarCuenta = (nombre: string, correo: string, contrasena: stri
 export const iniciarSesion = (correo: string, contrasena: string) =>
   cliente.post<TokenOut>("/auth/login", { correo, contrasena }).then((r) => r.data);
 
-export const cerrarSesionApi = () => cliente.post<Mensaje>("/auth/logout").then((r) => r.data);
+export const cerrarSesionApi = () =>
+  cliente.post<Mensaje>("/auth/logout", undefined, { timeout: 5000 }).then((r) => r.data);
 
 export const obtenerYo = () => cliente.get<Usuario>("/auth/yo").then((r) => r.data);
 

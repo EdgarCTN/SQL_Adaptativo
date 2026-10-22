@@ -63,6 +63,10 @@
  "r14_inactividad": {
   "dias": 14
  },
+ "tiempo_activo": {
+  "hueco_max_seg": 45,
+  "provisional": true
+ },
  "valor_dominio_m": {
   "acierta": {
    "5": 0.975,

@@ -58,6 +58,10 @@ class SesionDesafio(Base):
             "resultado_cierre IS NULL OR resultado_cierre IN ('SA','CP','CE','NR')",
             name="ck_sesion_cierre",
         ),
+        CheckConstraint(
+            "tiempo_activo_origen IS NULL OR tiempo_activo_origen IN ('latidos','reloj')",
+            name="ck_sesion_origen_tiempo",
+        ),
         # A lo sumo una sesión en curso por estudiante y desafío (también ante doble clic)
         Index(
             "uq_sesion_en_curso",
@@ -76,7 +80,10 @@ class SesionDesafio(Base):
     fin: Mapped[Any] = mapped_column(UTCDateTime, nullable=True)
     estado: Mapped[str] = mapped_column(String(12), default="en_curso")
     resultado_cierre: Mapped[str | None] = mapped_column(String(2), nullable=True)
-    tiempo_activo_seg: Mapped[int | None] = mapped_column(Integer, nullable=True)  # = fin - inicio (provisional)
+    # Con latidos se va acumulando; sin latidos, al cerrar vale fin - inicio.
+    tiempo_activo_seg: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    ultimo_latido_en: Mapped[Any] = mapped_column(UTCDateTime, nullable=True)
+    tiempo_activo_origen: Mapped[str | None] = mapped_column(String(8), nullable=True)  # 'latidos' | 'reloj'
     ayuda_mostrada_sola: Mapped[bool | None] = mapped_column(Boolean, nullable=True)  # lo usa la ayuda (7B+)
 
 

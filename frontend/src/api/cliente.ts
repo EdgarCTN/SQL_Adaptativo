@@ -10,7 +10,9 @@ export const MSG_INESPERADO = "Ocurrió un problema inesperado. Inténtalo de nu
 export const MSG_SESION_EXPIRADA = "Tu sesión expiró. Inicia sesión de nuevo.";
 
 // Rutas donde un 401 significa «credenciales inválidas», no «sesión expirada».
-const RUTAS_SIN_EXPIRACION = ["/auth/login", "/auth/registro"];
+const RUTAS_SIN_EXPIRACION = ["/auth/login", "/auth/registro", "/auth/logout"];
+// Rutas cuyo fallo de red se ignora en silencio (sin aviso «No hay conexión»).
+const RUTAS_SILENCIOSAS = ["/auth/logout", "/latido"];
 
 export class ErrorApi extends Error {
   status: number | null;
@@ -80,18 +82,20 @@ async function reintentarConexion(): Promise<void> {
 cliente.interceptors.response.use(
   (r) => r,
   (error: AxiosError<{ mensaje?: string; detalles?: { campo: string; mensaje: string }[] }>) => {
+    const url = error.config?.url ?? "";
     if (!error.response) {
-      mostrarToast({
-        id: "red",
-        tipo: "error",
-        mensaje: "No hay conexión con el servidor.",
-        accion: { etiqueta: "Reintentar", alClick: () => void reintentarConexion() },
-      });
+      if (!RUTAS_SILENCIOSAS.some((r) => url.includes(r))) {
+        mostrarToast({
+          id: "red",
+          tipo: "error",
+          mensaje: "No hay conexión con el servidor.",
+          accion: { etiqueta: "Reintentar", alClick: () => void reintentarConexion() },
+        });
+      }
       return Promise.reject(new ErrorApi(MSG_RED, null, {}, true));
     }
 
     const status = error.response.status;
-    const url = error.config?.url ?? "";
 
     if (status === 401 && !RUTAS_SIN_EXPIRACION.some((r) => url.includes(r))) {
       borrarToken();

@@ -8,30 +8,35 @@ from app.core.reglas import cargar_reglas
 from app.modules.desafios.models import Desafio
 from app.modules.desafios.sandbox import evaluar_consulta
 from app.modules.desafios.seeds import DESAFIOS, sembrar_desafios
-from app.seeds.seed import RUTA_CUESTIONARIO, sembrar_todo
+from app.seeds.seed import CONCEPTOS, PRERREQUISITOS, RUTA_CUESTIONARIO, sembrar_todo
 from conftest import API, cabecera, registrar, token_de
 
-PARES = {
-    "D1": {"filtrado", "ordenamiento"},
-    "D2": {"join", "having"},
-    "D3": {"subconsulta", "funciones_ventana"},
+POR_DIFICULTAD = {
+    "D1": {"filtrado", "ordenamiento", "conteo_agregacion"},
+    "D2": {"join", "having", "group_by", "left_join"},
+    "D3": {"subconsulta", "funciones_ventana", "join_agregacion"},
 }
+
+
+CODIGOS_CONCEPTOS = [c for c, _ in CONCEPTOS]
 
 
 def _todos(db):
     return list(db.scalars(select(Desafio).order_by(Desafio.id)))
 
 
-def test_seeds_idempotentes_dos_por_dificultad(client, db):
+def test_seeds_idempotentes_diez_desafios_uno_por_concepto(client, db):
     sembrar_todo(db)
     sembrar_desafios(db)
-    assert db.scalar(select(func.count()).select_from(Desafio)) == 6
+    assert db.scalar(select(func.count()).select_from(Desafio)) == 10
     por_dif: dict[str, set] = {}
     from app.modules.desafios.models import Concepto
 
     for d in _todos(db):
         por_dif.setdefault(d.dificultad, set()).add(db.get(Concepto, d.concepto_id).codigo)
-    assert por_dif == PARES
+    assert por_dif == POR_DIFICULTAD
+    conceptos = [db.get(Concepto, d.concepto_id).codigo for d in _todos(db)]
+    assert sorted(conceptos) == sorted(CODIGOS_CONCEPTOS) and len(set(conceptos)) == 10
     assert all(d.activo for d in _todos(db))
 
 
@@ -98,8 +103,10 @@ def test_api_lista_y_detalle_de_los_desafios_sembrados(client):
     registrar(client)
     h = cabecera(token_de(client))
     j = client.get(f"{API}/desafios", headers=h).json()
-    assert j["total"] == 6 and [len(g["desafios"]) for g in j["grupos"]] == [2, 2, 2]
-    assert len(j["conceptos"]) == 6
+    assert j["total"] == 10 and [len(g["desafios"]) for g in j["grupos"]] == [3, 4, 3]
+    assert len(j["conceptos"]) == 10
+    filtrado = client.get(f"{API}/desafios", params={"concepto": "left_join"}, headers=h).json()
+    assert filtrado["total"] == 1
     for g in j["grupos"]:
         for item in g["desafios"]:
             r = client.get(f"{API}/desafios/{item['id']}", headers=h)
@@ -108,7 +115,7 @@ def test_api_lista_y_detalle_de_los_desafios_sembrados(client):
                 assert clave not in r.json()
 
 
-@pytest.mark.parametrize("indice", range(6))
+@pytest.mark.parametrize("indice", range(10))
 def test_recorrido_completo_por_api(client, db, indice):
     registrar(client)
     h = cabecera(token_de(client))
@@ -120,3 +127,46 @@ def test_recorrido_completo_por_api(client, db, indice):
     assert mal["correcto"] is False and mal["numero"] == 1
     bien = client.post(f"{API}/desafios/{d.id}/intentos", json={"codigo": d.solucion_referencia}, headers=h).json()
     assert bien["correcto"] and bien["resultado_cierre"] == "SA" and bien["numero"] == 2
+
+
+def test_titulos_unicos_y_tiempo_por_dificultad(client, db):
+    titulos = [d.titulo for d in _todos(db)]
+    assert len(titulos) == len(set(titulos))
+    assert len({d["titulo"] for d in DESAFIOS}) == len(DESAFIOS) == 10
+
+
+def test_prerrequisitos_cadena_completa_y_sin_ciclos(client, db):
+    from app.modules.desafios.models import Concepto
+
+    sembrar_todo(db)
+    por_id = {c.id: c for c in db.scalars(select(Concepto))}
+    por_codigo = {c.codigo: c for c in por_id.values()}
+    assert set(PRERREQUISITOS) == set(por_codigo) and len(por_codigo) == 10
+    # Solo el concepto de entrada no tiene prerrequisito
+    sin_previo = [c.codigo for c in por_id.values() if c.prerrequisito_id is None]
+    assert sin_previo == ["filtrado"]
+    for c in por_id.values():
+        esperado = PRERREQUISITOS[c.codigo]
+        assert (por_id[c.prerrequisito_id].codigo if c.prerrequisito_id else None) == esperado
+        # sin ciclos: toda cadena llega a «filtrado»
+        visto, actual = set(), c
+        while actual.prerrequisito_id is not None:
+            assert actual.id not in visto
+            visto.add(actual.id)
+            actual = por_id[actual.prerrequisito_id]
+        assert actual.codigo == "filtrado"
+
+
+def test_prerrequisitos_se_completan_en_base_existente_sin_pisar_valores(client, db):
+    from app.modules.desafios.models import Concepto
+
+    sembrar_todo(db)
+    por_codigo = {c.codigo: c for c in db.scalars(select(Concepto))}
+    por_codigo["having"].prerrequisito_id = None  # base vieja: sin mapa
+    por_codigo["join"].prerrequisito_id = por_codigo["ordenamiento"].id  # valor ya definido a mano
+    db.commit()
+    sembrar_todo(db)
+    db.expire_all()
+    por_codigo = {c.codigo: c for c in db.scalars(select(Concepto))}
+    assert por_codigo["having"].prerrequisito_id == por_codigo["group_by"].id
+    assert por_codigo["join"].prerrequisito_id == por_codigo["ordenamiento"].id

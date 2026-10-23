@@ -30,11 +30,34 @@ CONCEPTOS = [
 ]
 
 
+# PROVISIONAL (entrega 3A): mapa concepto -> prerrequisito (el documento lo deja «por definir»; lo usa R6).
+# Un solo prerrequisito por concepto; None = concepto de entrada. Debe validarlo la profesora.
+PRERREQUISITOS: dict[str, str | None] = {
+    "filtrado": None,
+    "ordenamiento": "filtrado",
+    "conteo_agregacion": "filtrado",
+    "join": "filtrado",
+    "group_by": "conteo_agregacion",
+    "having": "group_by",
+    "left_join": "join",
+    "subconsulta": "conteo_agregacion",
+    "join_agregacion": "group_by",
+    "funciones_ventana": "group_by",
+}
+
+
 def sembrar_conceptos(db: Session) -> None:
     existentes = set(db.scalars(select(Concepto.codigo)))
     for codigo, nombre in CONCEPTOS:
         if codigo not in existentes:
             db.add(Concepto(codigo=codigo, nombre=nombre, prerrequisito_id=None))
+    db.commit()
+    # Prerrequisitos: solo se completan los vacíos (no pisa un valor ya definido) y sirve en bases existentes.
+    ids = {c.codigo: c for c in db.scalars(select(Concepto))}
+    for codigo, previo in PRERREQUISITOS.items():
+        c = ids.get(codigo)
+        if c is not None and c.prerrequisito_id is None and previo in ids:
+            c.prerrequisito_id = ids[previo].id
     db.commit()
 
 

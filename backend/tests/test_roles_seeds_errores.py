@@ -59,7 +59,8 @@ def test_seeds_idempotentes(client, db):
     assert codigos == CODIGOS
     assert db.scalar(select(func.count()).select_from(Concepto)) == 10
     assert db.scalar(select(func.count()).select_from(Usuario).where(Usuario.correo == "estudiante@demo.edu")) == 1
-    assert all(c.prerrequisito_id is None for c in db.scalars(select(Concepto)))
+    # Prerrequisitos (entrega 3A): solo «filtrado» queda sin prerrequisito
+    assert [c.codigo for c in db.scalars(select(Concepto)) if c.prerrequisito_id is None] == ["filtrado"]
 
 
 def test_usuario_demo_puede_entrar(client):

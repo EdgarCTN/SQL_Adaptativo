@@ -1,6 +1,7 @@
-"""Seeds idempotentes de los 6 desafíos del MVP (2 por dificultad).
+"""Seeds idempotentes de los desafíos (6 del MVP + 4 de la entrega 3A: uno por cada concepto sin desafío).
 
-Dominios: biblioteca, gimnasio y tienda de música (el cuestionario usa clientes/pedidos/productos).
+Dominios: biblioteca, gimnasio, tienda de música, academia de cocina, festival de cine, club de
+senderismo y cooperativa de café (el cuestionario usa clientes/pedidos/productos).
 Formato guardado:
 - errores_tipicos: [{"descripcion", "ejemplo"}]  (el ejemplo es una consulta que debe FALLAR)
 - ayudas_respaldo: {"AY1".."AY4": {"mensaje", "codigo_sql"|None}}
@@ -535,6 +536,410 @@ INSERT INTO ventas_mensuales VALUES
                 "cada género y ORDER BY mes hace que cada fila sume desde el primer mes hasta el suyo. El ORDER "
                 "BY final ordena el resultado por género y mes.",
                 "SELECT genero, mes, unidades,\n       SUM(unidades) OVER (PARTITION BY genero ORDER BY mes) AS acumulado\nFROM ventas_mensuales\nORDER BY genero, mes;",
+            ),
+        },
+    },
+    # ------------------------------------------------------------------ D1 conteo_agregacion
+    {
+        "titulo": "Resumen de inscripciones pagadas del taller",
+        "concepto": "conteo_agregacion",
+        "dificultad": "D1",
+        "enunciado": (
+            "Una academia de cocina quiere un resumen rápido de sus inscripciones ya pagadas (las que "
+            "tienen fecha_pago registrada). Escribe una consulta que devuelva una sola fila con tres "
+            "columnas, en este orden: la cantidad de inscripciones pagadas, el ingreso total (suma de "
+            "precio) y el precio promedio de esas inscripciones."
+        ),
+        "recursos": [
+            "COUNT cuenta filas, SUM suma una columna numérica, AVG calcula el promedio, MAX y MIN dan el mayor y el menor.",
+            "Una consulta con funciones de agregación y sin GROUP BY devuelve una sola fila que resume todas las filas elegidas.",
+            "WHERE se aplica antes de calcular la agregación; IS NOT NULL detecta valores presentes.",
+        ],
+        "esquema": (
+            "CREATE TABLE inscripciones (\n"
+            "  id_inscripcion INTEGER PRIMARY KEY,\n"
+            "  participante TEXT NOT NULL,\n"
+            "  taller TEXT NOT NULL,\n"
+            "  precio INTEGER NOT NULL,\n"
+            "  fecha_pago TEXT\n"
+            ");"
+        ),
+        "datos": """
+INSERT INTO inscripciones VALUES
+ (1,'Marisol Vega','Panadería',80,'2025-09-02'),
+ (2,'Hugo Prado','Cocina criolla',120,'2025-09-03'),
+ (3,'Teresa Luna','Pastelería',100,NULL),
+ (4,'Iván Cano','Panadería',80,'2025-09-10'),
+ (5,'Noelia Rey','Pastelería',100,'2025-09-11'),
+ (6,'Óscar Mena','Cocina criolla',120,NULL),
+ (7,'Lidia Soto','Pastelería',100,'2025-09-14'),
+ (8,'Ramiro Paz','Panadería',80,NULL),
+ (9,'Gladys Ortiz','Cocina criolla',120,'2025-09-18'),
+ (10,'Félix Arce','Pastelería',100,'2025-09-20');
+""",
+        "solucion": (
+            "SELECT COUNT(*) AS inscripciones_pagadas,\n"
+            "       SUM(precio) AS ingreso_total,\n"
+            "       AVG(precio) AS precio_promedio\n"
+            "FROM inscripciones\n"
+            "WHERE fecha_pago IS NOT NULL;"
+        ),
+        "errores": [
+            (
+                "Olvidar el WHERE: se cuentan, suman y promedian también las inscripciones sin pago.",
+                "SELECT COUNT(*), SUM(precio), AVG(precio) FROM inscripciones;",
+            ),
+            (
+                "Contar solo las fechas de pago (COUNT ignora los vacíos) pero sumar y promediar sin filtrar: "
+                "las tres columnas no hablan del mismo conjunto de filas.",
+                "SELECT COUNT(fecha_pago), SUM(precio), AVG(precio) FROM inscripciones;",
+            ),
+            (
+                "Usar MAX en lugar de AVG: devuelve el precio más alto, no el promedio.",
+                "SELECT COUNT(*), SUM(precio), MAX(precio) FROM inscripciones WHERE fecha_pago IS NOT NULL;",
+            ),
+        ],
+        "ayudas": {
+            "AY1": _ay(
+                "Se piden tres resúmenes de un mismo grupo de filas: cuántas hay, cuánto suman y cuánto vale "
+                "una en promedio. Piensa primero qué filas deben entrar en los tres cálculos (¿cómo se "
+                "reconoce una inscripción pagada?) y, después, qué función resume cada columna. Como todo "
+                "se resume en un solo grupo, el resultado es una única fila."
+            ),
+            "AY2": _ay(
+                "Un ejemplo en otro contexto: en un taller mecánico, para resumir las reparaciones ya "
+                "entregadas (cuántas son y cuánto costaron en total y en promedio), el filtro de las "
+                "entregadas se aplica en un único WHERE y las tres funciones de agregación van juntas en "
+                "el SELECT, sin agrupar.",
+                "SELECT COUNT(*) AS entregadas,\n       SUM(costo) AS costo_total,\n       AVG(costo) AS costo_promedio\n"
+                "FROM reparaciones\nWHERE fecha_entrega IS NOT NULL;",
+            ),
+            "AY3": _ay(
+                "Completa los espacios en blanco (___) con las funciones de agregación y la condición del filtro.",
+                "SELECT ___(*) AS inscripciones_pagadas,\n       ___(precio) AS ingreso_total,\n"
+                "       ___(precio) AS precio_promedio\nFROM inscripciones\nWHERE fecha_pago ___;",
+            ),
+            "AY4": _ay(
+                "El WHERE deja solo las inscripciones con fecha de pago (IS NOT NULL). Sobre esas filas, "
+                "COUNT(*) las cuenta, SUM(precio) suma lo recaudado y AVG(precio) calcula el precio "
+                "promedio. Sin GROUP BY, el resultado es una sola fila con las tres columnas en el orden pedido.",
+                "SELECT COUNT(*) AS inscripciones_pagadas,\n       SUM(precio) AS ingreso_total,\n"
+                "       AVG(precio) AS precio_promedio\nFROM inscripciones\nWHERE fecha_pago IS NOT NULL;",
+            ),
+        },
+    },
+    # ------------------------------------------------------------------ D2 group_by
+    {
+        "titulo": "Funciones realizadas por sala del festival",
+        "concepto": "group_by",
+        "dificultad": "D2",
+        "enunciado": (
+            "Un festival de cine quiere comparar sus salas. Escribe una consulta que devuelva, para cada "
+            "sala, el número de funciones realizadas y el total de entradas vendidas en esas funciones "
+            "(las funciones canceladas no cuentan), en este orden de columnas: sala, funciones, entradas. "
+            "Ordena de mayor a menor total de entradas; si dos salas empatan, ordénalas por nombre de sala "
+            "(de la A a la Z)."
+        ),
+        "recursos": [
+            "GROUP BY agrupa las filas que comparten el mismo valor y produce una fila por grupo.",
+            "En un SELECT con GROUP BY, cada columna debe ser una de las agrupadas o estar resumida con COUNT, SUM, AVG...",
+            "WHERE filtra las filas antes de agrupar; ORDER BY puede usar el nombre (alias) de una columna calculada.",
+        ],
+        "esquema": (
+            "CREATE TABLE funciones (\n"
+            "  id_funcion INTEGER PRIMARY KEY,\n"
+            "  pelicula TEXT NOT NULL,\n"
+            "  sala TEXT NOT NULL,\n"
+            "  estado TEXT NOT NULL,\n"
+            "  entradas_vendidas INTEGER NOT NULL\n"
+            ");"
+        ),
+        "datos": """
+INSERT INTO funciones VALUES
+ (1,'Luz de otoño','Sala Azul','Realizada',90),
+ (2,'Sombras en el puerto','Sala Azul','Realizada',70),
+ (3,'Luz de otoño','Sala Azul','Cancelada',40),
+ (4,'Las dos orillas','Sala Roja','Realizada',80),
+ (5,'Sombras en el puerto','Sala Roja','Realizada',70),
+ (6,'Las dos orillas','Sala Roja','Cancelada',55),
+ (7,'Luz de otoño','Sala Verde','Realizada',150),
+ (8,'Cartas sin sello','Sala Verde','Cancelada',30),
+ (9,'Cartas sin sello','Sala Dorada','Realizada',60),
+ (10,'Las dos orillas','Sala Dorada','Realizada',50),
+ (11,'Luz de otoño','Sala Dorada','Realizada',40),
+ (12,'Cartas sin sello','Sala Azul','Realizada',20);
+""",
+        "solucion": (
+            "SELECT sala, COUNT(*) AS funciones, SUM(entradas_vendidas) AS entradas\n"
+            "FROM funciones\nWHERE estado = 'Realizada'\nGROUP BY sala\n"
+            "ORDER BY entradas DESC, sala ASC;"
+        ),
+        "errores": [
+            (
+                "Olvidar GROUP BY: las funciones de agregación resumen toda la tabla en una sola fila en vez de una por sala.",
+                "SELECT sala, COUNT(*) AS funciones, SUM(entradas_vendidas) AS entradas FROM funciones "
+                "WHERE estado = 'Realizada' ORDER BY entradas DESC, sala ASC;",
+            ),
+            (
+                "Agrupar por una columna distinta (pelicula): el resumen sale por película y no por sala.",
+                "SELECT pelicula, COUNT(*) AS funciones, SUM(entradas_vendidas) AS entradas FROM funciones "
+                "WHERE estado = 'Realizada' GROUP BY pelicula ORDER BY entradas DESC, pelicula ASC;",
+            ),
+            (
+                "Olvidar excluir las funciones canceladas: sus entradas se suman al total de cada sala.",
+                "SELECT sala, COUNT(*) AS funciones, SUM(entradas_vendidas) AS entradas FROM funciones "
+                "GROUP BY sala ORDER BY entradas DESC, sala ASC;",
+            ),
+        ],
+        "ayudas": {
+            "AY1": _ay(
+                "El resultado debe tener una fila por sala, no una por función. Piensa qué columna define "
+                "los grupos y qué dos resúmenes necesita cada grupo. Después decide qué filas deben entrar "
+                "antes de agrupar (¿cuentan las canceladas?) y cómo ordenar los grupos ya resumidos, "
+                "recordando el criterio de desempate."
+            ),
+            "AY2": _ay(
+                "Un ejemplo en otro contexto: en una empresa de transporte, para ver por ciudad de destino "
+                "cuántos viajes completados hubo y cuántos pasajeros viajaron, primero se filtran los viajes "
+                "completados, luego se agrupa por destino y cada grupo se resume con COUNT y SUM.",
+                "SELECT destino, COUNT(*) AS viajes, SUM(pasajeros) AS total_pasajeros\nFROM viajes\n"
+                "WHERE estado = 'Completado'\nGROUP BY destino\nORDER BY destino;",
+            ),
+            "AY3": _ay(
+                "Completa los espacios en blanco (___) con la condición del filtro, la columna que forma "
+                "los grupos y el criterio de orden.",
+                "SELECT sala, COUNT(*) AS funciones, SUM(entradas_vendidas) AS entradas\nFROM funciones\n"
+                "WHERE estado = ___\nGROUP BY ___\nORDER BY ___ DESC, sala ASC;",
+            ),
+            "AY4": _ay(
+                "WHERE estado = 'Realizada' descarta las funciones canceladas antes de agrupar. GROUP BY sala "
+                "crea un grupo por sala, y COUNT(*) y SUM(entradas_vendidas) resumen cada grupo. Por último, "
+                "ORDER BY entradas DESC ordena de mayor a menor y sala ASC desempata alfabéticamente.",
+                "SELECT sala, COUNT(*) AS funciones, SUM(entradas_vendidas) AS entradas\nFROM funciones\n"
+                "WHERE estado = 'Realizada'\nGROUP BY sala\nORDER BY entradas DESC, sala ASC;",
+            ),
+        },
+    },
+    # ------------------------------------------------------------------ D2 left_join
+    {
+        "titulo": "Guías y sus excursiones desde noviembre",
+        "concepto": "left_join",
+        "dificultad": "D2",
+        "enunciado": (
+            "Un club de senderismo quiere revisar la carga de sus guías. Escribe una consulta que devuelva "
+            "el nombre de cada guía y la ruta de sus excursiones programadas desde el 2025-11-01 (inclusive; "
+            "las fechas son texto 'AAAA-MM-DD'). Todos los guías deben aparecer: si un guía no tiene "
+            "excursiones en ese periodo, debe salir una sola vez con la ruta vacía (NULL). Columnas: nombre "
+            "y ruta, en ese orden. Ordena por nombre del guía y luego por ruta."
+        ),
+        "recursos": [
+            "JOIN solo conserva las filas que tienen pareja en ambas tablas; LEFT JOIN conserva todas las de la tabla izquierda.",
+            "Cuando no hay pareja, las columnas de la tabla derecha salen como NULL.",
+            "Una condición en el ON limita las filas que se unen; una condición en el WHERE filtra el resultado final.",
+        ],
+        "esquema": (
+            "CREATE TABLE guias (\n"
+            "  id_guia INTEGER PRIMARY KEY,\n"
+            "  nombre TEXT NOT NULL\n"
+            ");\n"
+            "CREATE TABLE excursiones (\n"
+            "  id_excursion INTEGER PRIMARY KEY,\n"
+            "  id_guia INTEGER NOT NULL REFERENCES guias(id_guia),\n"
+            "  ruta TEXT NOT NULL,\n"
+            "  fecha TEXT NOT NULL,\n"
+            "  cupo INTEGER NOT NULL\n"
+            ");"
+        ),
+        "datos": """
+INSERT INTO guias VALUES
+ (1,'Alicia Huamán'),
+ (2,'Bruno Cárdenas'),
+ (3,'Carmen Ledesma'),
+ (4,'Darío Pinto'),
+ (5,'Elsa Tapia');
+INSERT INTO excursiones VALUES
+ (1,1,'Cordillera Blanca','2025-11-08',12),
+ (2,1,'Lomas de Lachay','2025-12-06',8),
+ (3,2,'Laguna Humantay','2025-10-18',15),
+ (4,2,'Valle de Lares','2025-11-22',10),
+ (5,3,'Cañón de Cotahuasi','2025-09-27',6),
+ (6,5,'Laguna Humantay','2025-11-01',14),
+ (7,1,'Valle de Lares','2025-10-31',9);
+""",
+        "solucion": (
+            "SELECT g.nombre, e.ruta\nFROM guias g\n"
+            "LEFT JOIN excursiones e ON e.id_guia = g.id_guia AND e.fecha >= '2025-11-01'\n"
+            "ORDER BY g.nombre, e.ruta;"
+        ),
+        "errores": [
+            (
+                "Usar JOIN en lugar de LEFT JOIN: los guías sin excursiones en el periodo desaparecen del resultado.",
+                "SELECT g.nombre, e.ruta FROM guias g JOIN excursiones e ON e.id_guia = g.id_guia "
+                "AND e.fecha >= '2025-11-01' ORDER BY g.nombre, e.ruta;",
+            ),
+            (
+                "Poner el filtro de fecha en el WHERE: elimina las filas con ruta NULL y el LEFT JOIN pierde su efecto.",
+                "SELECT g.nombre, e.ruta FROM guias g LEFT JOIN excursiones e ON e.id_guia = g.id_guia "
+                "WHERE e.fecha >= '2025-11-01' ORDER BY g.nombre, e.ruta;",
+            ),
+            (
+                "Poner la tabla de guías a la derecha del LEFT JOIN: se conservan las excursiones, no los guías.",
+                "SELECT g.nombre, e.ruta FROM excursiones e LEFT JOIN guias g ON g.id_guia = e.id_guia "
+                "WHERE e.fecha >= '2025-11-01' ORDER BY g.nombre, e.ruta;",
+            ),
+        ],
+        "ayudas": {
+            "AY1": _ay(
+                "La clave está en qué tabla debe conservar todas sus filas aunque no encuentre pareja. "
+                "Pregúntate cuál es esa tabla y en qué posición de la unión debe ir. Luego piensa dónde "
+                "colocar la condición de la fecha: ¿antes de unir, para limitar qué excursiones se emparejan, "
+                "o después, sobre el resultado ya unido? Fíjate qué pasaría con un guía sin excursiones "
+                "en cada caso."
+            ),
+            "AY2": _ay(
+                "Un ejemplo en otro contexto: en una escuela, para listar todos los profesores con los "
+                "cursos que dictan este año, incluidos los que no dictan ninguno, la tabla de profesores va "
+                "a la izquierda y la condición del año se escribe en el ON de la unión.",
+                "SELECT pr.nombre, c.titulo\nFROM profesores pr\n"
+                "LEFT JOIN cursos c ON c.id_profesor = pr.id_profesor AND c.anio = 2025\nORDER BY pr.nombre;",
+            ),
+            "AY3": _ay(
+                "Completa los espacios en blanco (___) con el tipo de unión y con la condición de fecha, que va dentro del ON.",
+                "SELECT g.nombre, e.ruta\nFROM guias g\n___ excursiones e ON e.id_guia = g.id_guia AND e.fecha ___ '2025-11-01'\n"
+                "ORDER BY g.nombre, e.ruta;",
+            ),
+            "AY4": _ay(
+                "La tabla guias va a la izquierda y se une con LEFT JOIN, así que ningún guía se pierde. "
+                "La condición e.fecha >= '2025-11-01' está en el ON: limita qué excursiones se emparejan "
+                "sin descartar guías, que quedan con ruta NULL si no tienen ninguna. El ORDER BY ordena por "
+                "guía y luego por ruta.",
+                "SELECT g.nombre, e.ruta\nFROM guias g\nLEFT JOIN excursiones e ON e.id_guia = g.id_guia AND e.fecha >= '2025-11-01'\n"
+                "ORDER BY g.nombre, e.ruta;",
+            ),
+        },
+    },
+    # ------------------------------------------------------------------ D3 join_agregacion
+    {
+        "titulo": "Pagos de la cooperativa de café por región en octubre",
+        "concepto": "join_agregacion",
+        "dificultad": "D3",
+        "enunciado": (
+            "Una cooperativa de café quiere conocer lo que pagó en octubre de 2025 (las fechas son texto "
+            "'AAAA-MM-DD'). Escribe una consulta que devuelva, para cada región con entregas ese mes, "
+            "cuántos productores distintos entregaron café y el total pagado (kilos multiplicados por "
+            "precio_kilo de cada entrega, sumados). Columnas: region, productores, total_pagado. "
+            "Ordena de mayor a menor total pagado; si dos regiones empatan, por nombre de región (A a Z)."
+        ),
+        "recursos": [
+            "JOIN une cada productor con sus entregas; después GROUP BY resume las filas unidas por grupo.",
+            "COUNT(*) cuenta filas unidas; COUNT(DISTINCT columna) cuenta valores distintos de esa columna.",
+            "Dentro de una agregación se pueden usar expresiones, por ejemplo SUM(a * b).",
+        ],
+        "esquema": (
+            "CREATE TABLE productores (\n"
+            "  id_productor INTEGER PRIMARY KEY,\n"
+            "  nombre TEXT NOT NULL,\n"
+            "  region TEXT NOT NULL\n"
+            ");\n"
+            "CREATE TABLE entregas (\n"
+            "  id_entrega INTEGER PRIMARY KEY,\n"
+            "  id_productor INTEGER NOT NULL REFERENCES productores(id_productor),\n"
+            "  fecha TEXT NOT NULL,\n"
+            "  kilos INTEGER NOT NULL,\n"
+            "  precio_kilo INTEGER NOT NULL\n"
+            ");"
+        ),
+        "datos": """
+INSERT INTO productores VALUES
+ (1,'Rosa Quispe','Cusco'),
+ (2,'Luis Mamani','Cusco'),
+ (3,'Ana Flores','Junín'),
+ (4,'Mario Pérez','Junín'),
+ (5,'Julia Díaz','Junín'),
+ (6,'Pedro Rojas','Cajamarca'),
+ (7,'Sara Vela','Cajamarca'),
+ (8,'Tomás Ruiz','San Martín');
+INSERT INTO entregas VALUES
+ (1,1,'2025-10-03',100,20),
+ (2,1,'2025-10-17',80,22),
+ (3,2,'2025-10-10',60,20),
+ (4,3,'2025-10-05',120,18),
+ (5,3,'2025-10-19',90,18),
+ (6,4,'2025-10-12',70,25),
+ (7,5,'2025-09-28',200,18),
+ (8,6,'2025-10-08',150,20),
+ (9,6,'2025-11-02',100,20),
+ (10,7,'2025-10-25',70,28),
+ (11,8,'2025-09-15',80,21),
+ (12,2,'2025-09-30',50,20),
+ (13,5,'2025-10-28',30,18);
+""",
+        "solucion": (
+            "SELECT p.region,\n"
+            "       COUNT(DISTINCT p.id_productor) AS productores,\n"
+            "       SUM(e.kilos * e.precio_kilo) AS total_pagado\n"
+            "FROM productores p\n"
+            "JOIN entregas e ON e.id_productor = p.id_productor\n"
+            "WHERE e.fecha >= '2025-10-01' AND e.fecha < '2025-11-01'\n"
+            "GROUP BY p.region\n"
+            "ORDER BY total_pagado DESC, p.region ASC;"
+        ),
+        "errores": [
+            (
+                "Contar con COUNT(*): cuenta entregas, no productores; un productor con dos entregas se cuenta dos veces.",
+                "SELECT p.region, COUNT(*) AS productores, SUM(e.kilos * e.precio_kilo) AS total_pagado "
+                "FROM productores p JOIN entregas e ON e.id_productor = p.id_productor "
+                "WHERE e.fecha >= '2025-10-01' AND e.fecha < '2025-11-01' "
+                "GROUP BY p.region ORDER BY total_pagado DESC, p.region ASC;",
+            ),
+            (
+                "Agrupar por el nombre del productor en lugar de por la región: sale una fila por productor.",
+                "SELECT p.nombre, COUNT(DISTINCT p.id_productor) AS productores, SUM(e.kilos * e.precio_kilo) AS total_pagado "
+                "FROM productores p JOIN entregas e ON e.id_productor = p.id_productor "
+                "WHERE e.fecha >= '2025-10-01' AND e.fecha < '2025-11-01' "
+                "GROUP BY p.nombre ORDER BY total_pagado DESC, p.nombre ASC;",
+            ),
+            (
+                "Olvidar el filtro de octubre: se cuentan y pagan también las entregas de otros meses.",
+                "SELECT p.region, COUNT(DISTINCT p.id_productor) AS productores, SUM(e.kilos * e.precio_kilo) AS total_pagado "
+                "FROM productores p JOIN entregas e ON e.id_productor = p.id_productor "
+                "GROUP BY p.region ORDER BY total_pagado DESC, p.region ASC;",
+            ),
+        ],
+        "ayudas": {
+            "AY1": _ay(
+                "Los datos de región y de kilos y precios están en tablas distintas, así que primero hay que "
+                "unirlas; después se resume por región. Piensa en tres cosas: qué columna une las dos tablas, "
+                "qué columna define los grupos y qué debe contar exactamente «productores»: ¿filas unidas o "
+                "personas distintas? Para el total pagado, recuerda que cada entrega tiene su propio precio."
+            ),
+            "AY2": _ay(
+                "Un ejemplo en otro contexto: en una escuela, para saber por curso cuántos estudiantes "
+                "distintos rindieron examen en junio y cuántos puntos sumaron en total, se unen estudiantes "
+                "con exámenes, se filtra el mes, se agrupa por curso y se cuentan estudiantes sin repetir.",
+                "SELECT e.curso, COUNT(DISTINCT e.id_estudiante) AS estudiantes, SUM(x.puntos) AS total_puntos\n"
+                "FROM estudiantes e\nJOIN examenes x ON x.id_estudiante = e.id_estudiante\n"
+                "WHERE x.fecha >= '2025-06-01' AND x.fecha < '2025-07-01'\nGROUP BY e.curso\nORDER BY e.curso;",
+            ),
+            "AY3": _ay(
+                "Completa los espacios en blanco (___) con la forma de contar productores sin repetirlos y "
+                "con la columna que forma los grupos.",
+                "SELECT p.region,\n       COUNT(___ p.id_productor) AS productores,\n"
+                "       SUM(e.kilos * e.precio_kilo) AS total_pagado\nFROM productores p\n"
+                "JOIN entregas e ON e.id_productor = p.id_productor\n"
+                "WHERE e.fecha >= '2025-10-01' AND e.fecha < '2025-11-01'\nGROUP BY ___\n"
+                "ORDER BY total_pagado DESC, p.region ASC;",
+            ),
+            "AY4": _ay(
+                "El JOIN une cada productor con sus entregas y el WHERE conserva solo las de octubre. "
+                "GROUP BY p.region crea un grupo por región; COUNT(DISTINCT p.id_productor) cuenta cada "
+                "productor una sola vez aunque haya entregado varias veces, y SUM(e.kilos * e.precio_kilo) "
+                "suma lo pagado en cada entrega. El ORDER BY ordena por total y desempata por región.",
+                "SELECT p.region,\n       COUNT(DISTINCT p.id_productor) AS productores,\n"
+                "       SUM(e.kilos * e.precio_kilo) AS total_pagado\nFROM productores p\n"
+                "JOIN entregas e ON e.id_productor = p.id_productor\n"
+                "WHERE e.fecha >= '2025-10-01' AND e.fecha < '2025-11-01'\nGROUP BY p.region\n"
+                "ORDER BY total_pagado DESC, p.region ASC;",
             ),
         },
     },

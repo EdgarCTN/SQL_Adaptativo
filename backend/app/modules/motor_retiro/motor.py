@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.core.db import ahora_utc
 from app.core.reglas import cargar_reglas
+from app.modules.analitica.servicio import registrar_historico
 from app.modules.asistencia.config_llm import cargar_mensajes_fijos
 from app.modules.desafios.models import Concepto, Desafio, SesionDesafio
 from app.modules.linea_base.models import NivelSoporte
@@ -66,6 +67,15 @@ def _registrar_error(db: Session, sesion_id: int | None, usuario_id: int | None,
         log.exception("No se pudo registrar el error del motor")
 
 
+def _guardar_historico(db: Session, usuario_id: int, concepto_id: int, sesion_id: int, indicadores: dict, ns: int) -> None:
+    """Una fila en indicadores_historicos por cierre. Si falla, el cierre y el ajuste de NS no se tocan."""
+    try:
+        registrar_historico(db, usuario_id, concepto_id, sesion_id, indicadores, ns)
+    except Exception:  # noqa: BLE001
+        db.rollback()
+        log.exception("No se pudo guardar el indicador histórico (sesión %s)", sesion_id)
+
+
 def cerrar_desafio(db: Session, sesion: SesionDesafio, reglas: dict | None = None) -> AjusteNivel | None:
     sesion_id, usuario_id = sesion.id, sesion.usuario_id
     try:
@@ -107,6 +117,7 @@ def cerrar_desafio(db: Session, sesion: SesionDesafio, reglas: dict | None = Non
             )
         )
         db.commit()
+        _guardar_historico(db, usuario_id, concepto.id, sesion_id, ctx.indicadores.como_dict(), ns_nuevo)
         if not cambio:
             return None
         return AjusteNivel(concepto.nombre, ns_antes, ns_nuevo, _texto_estudiante(ev.clave_mensaje, concepto.nombre, ns_antes, ns_nuevo))

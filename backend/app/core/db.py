@@ -65,6 +65,7 @@ def get_db():
 
 def cargar_modelos() -> None:
     """Importa todos los modelos para registrarlos en Base (las entregas siguientes añaden los suyos)."""
+    from app.modules.analitica import models as _analitica  # noqa: F401
     from app.modules.asistencia import models as _asistencia  # noqa: F401
     from app.modules.auth import models as _auth  # noqa: F401
     from app.modules.desafios import models as _desafios  # noqa: F401

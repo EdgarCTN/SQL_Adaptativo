@@ -1,14 +1,12 @@
-"""Indicadores de la ventana (Tabla 4). Hueco listo para pandas: basta con reemplazar calcular_indicadores.
+"""Indicadores de la ventana (Matriz, sección 1). El cálculo vive en modules/analitica (pandas); aquí se conserva la firma.
 
-Hoy se calculan en Python puro con los cierres del concepto:
-- TA = éxitos (SA o CP) ÷ desafíos de la ventana.
-- NI = mediana de envíos por desafío (en un NR, los envíos realizados).
-- TR = mediana de (tiempo activo ÷ tiempo de referencia). PROVISIONAL: «tiempo activo real» no está definido
-  en los documentos; se usa sesiones_desafio.tiempo_activo_seg (= fin − inicio, incluye pausas).
-- UA (uso de ayuda) no se calcula: R1 y R5 no la usan.
+PROVISIONAL: TR usa tiempo_activo_seg (latidos; sin latidos, fin - inicio). UA cuenta pedir o aceptar ayuda, no la mostrada sola.
 """
 from dataclasses import dataclass
-from statistics import median
+
+import pandas as pd
+
+from app.modules.analitica.indicadores import calcular_indicadores_df
 
 EXITOS = ("SA", "CP")
 
@@ -19,6 +17,7 @@ class CierreReciente:
     intentos: int
     tiempo_activo_seg: int | None = None
     tiempo_referencia_seg: int | None = None
+    uso_ayuda: bool = False  # pidió o aceptó ayuda en el desafío
 
 
 @dataclass(frozen=True)
@@ -27,20 +26,20 @@ class Indicadores:
     ta: float | None
     ni: float | None
     tr: float | None  # None si ningún desafío de la ventana tiene tiempo medido
+    ua: float | None = None
 
     def como_dict(self) -> dict:
-        return {"n": self.n, "ta": self.ta, "ni": self.ni, "tr": self.tr}
+        return {"n": self.n, "ta": self.ta, "ni": self.ni, "tr": self.tr, "ua": self.ua}
 
 
 def calcular_indicadores(cierres: list[CierreReciente]) -> Indicadores:
-    if not cierres:
-        return Indicadores(0, None, None, None)
-    ta = sum(1 for c in cierres if c.resultado in EXITOS) / len(cierres)
-    ni = float(median(c.intentos for c in cierres))
-    razones = [
-        c.tiempo_activo_seg / c.tiempo_referencia_seg
-        for c in cierres
-        if c.tiempo_activo_seg is not None and c.tiempo_referencia_seg
-    ]
-    tr = float(median(razones)) if razones else None
-    return Indicadores(len(cierres), round(ta, 6), round(ni, 6), None if tr is None else round(tr, 6))
+    df = pd.DataFrame(
+        {
+            "resultado": [c.resultado for c in cierres],
+            "intentos": pd.Series([c.intentos for c in cierres], dtype="float64"),
+            "tiempo_activo_seg": pd.Series([c.tiempo_activo_seg for c in cierres], dtype="float64"),
+            "tiempo_referencia_seg": pd.Series([c.tiempo_referencia_seg for c in cierres], dtype="float64"),
+            "uso_ayuda": pd.Series([bool(c.uso_ayuda) for c in cierres], dtype="bool"),
+        }
+    )
+    return Indicadores(**calcular_indicadores_df(df))

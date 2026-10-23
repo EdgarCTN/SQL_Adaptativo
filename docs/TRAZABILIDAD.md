@@ -6,7 +6,7 @@ Estado de cada requisito de `docs/referencia/requisitos.md`. Se actualiza al ter
 |---|---|---|---|---|
 | RF-01 | Registro de usuarios | Cumplido | — | tests/test_auth.py |
 | RF-02 | Inicio de sesión | Cumplido | — | tests/test_auth.py |
-| RF-03 | Cierre de sesión | Parcial: el servidor no invalida el token | 1 | — |
+| RF-03 | Cierre de sesión | Cumplido (el servidor revoca el jti) | 1 | tests/test_logout.py |
 | RF-04 | Gestión de roles | Parcial: el rol existe y da 403; falta gestionarlo | 13A | — |
 | RF-05 | Perfil | Cumplido | — | tests/test_auth.py |
 | RF-06 | Consentimiento informado | Cumplido (texto provisional) | 14 | tests/test_linea_base.py |
@@ -21,16 +21,16 @@ Estado de cada requisito de `docs/referencia/requisitos.md`. Se actualiza al ter
 | RF-15 | Ayuda generada por IA | Parcial: validadores V1 y V2; LLM real sin probar | 9 | tests/test_asistencia_validador.py |
 | RF-16 | Ayuda con contexto del estudiante | Parcial: sin historial del desafío en el prompt | 9 | tests/test_prompt_builder.py |
 | RF-17 | Registro de ayudas | Cumplido (el frontend las pierde al cerrar la pestaña) | 9 | tests/test_asistencia_api.py |
-| RF-18 | Cálculo de indicadores | Parcial: TA y NI reales; TR provisional; sin UA | 1, 2 | tests/test_motor_reglas.py |
+| RF-18 | Cálculo de indicadores | Cumplido: TA, NI, TR y UA con pandas; TR con tiempo activo por latidos (PROVISIONAL, hueco 45 s); UA PROVISIONAL (ver DECISIONES) | 2 | tests/test_analitica_indicadores.py, tests/test_motor_reglas.py, tests/test_latidos.py |
 | RF-19 | Ajuste del nivel de ayuda (R0 a R14) | Parcial: 3 de 15 reglas (R1, R4, R5) y R0 parcial | 4 a 8 | tests/test_motor_reglas.py |
 | RF-20 | Estado de sesión en Redis | Fuera de alcance actual: el nivel vive en la base de datos | — | niveles_soporte |
 | RF-21 | Notificaciones | Parcial: solo aviso en pantalla al cerrar un desafío | 10 | tests/test_motor_integracion.py |
 | RF-22 | Progreso del estudiante | Cumplido | — | tests/test_progreso.py |
-| RF-23 | Gráficos de evolución | Pendiente | 2, 11 | — |
+| RF-23 | Gráficos de evolución | Parcial: datos listos (`serie_historica`, tabla `indicadores_historicos`); faltan los gráficos (entrega 11) | 2, 11 | tests/test_analitica_historico.py |
 | RF-24 | Filtro de historial de intentos | Pendiente | 11 | — |
 | RF-25 | Almacenamiento en PostgreSQL | Fuera de alcance actual: SQLite con tipos portables | — | DECISIONES.md |
-| RF-26 | Análisis con pandas | Pendiente | 2 | — |
-| RF-27 | Exposición de indicadores | Parcial: función interna del motor | 2 | — |
+| RF-26 | Análisis con pandas | Cumplido | 2 | tests/test_analitica_indicadores.py |
+| RF-27 | Exposición de indicadores | Cumplido: interfaz interna `analitica.servicio` (sin endpoint HTTP; si se requiere, llega con la entrega 11) | 2 | tests/test_analitica_historico.py |
 | RF-28 | CRUD del banco de desafíos | Pendiente | 12 | — |
 | RF-29 | Clasificación por dificultad y tema | Parcial: el modelo lo tiene; falta gestionarlo | 12 | — |
 | RF-30 | Reportes del docente | Pendiente | 13B | — |
@@ -56,5 +56,5 @@ Estado de cada requisito de `docs/referencia/requisitos.md`. Se actualiza al ter
 | RNF-20 | Compatibilidad de navegadores | Pendiente: checklist manual | 14 | — |
 | RNF-21 | Proveedor de LLM intercambiable | Cumplido (mock, Groq, Anthropic) | — | tests/test_asistencia_base.py |
 | RNF-22 | Consentimiento y ética | Parcial: texto provisional | 14 | tests/test_linea_base.py |
-| RNF-23 | Anonimización de datos | Pendiente | 2, 13B | — |
+| RNF-23 | Anonimización de datos | Parcial: seudonimización HMAC lista y verificada; falta el reporte (13B) | 2, 13B | tests/test_analitica_seudonimo.py, tests/test_analitica_historico.py |
 | RNF-24 | Minimización de datos al LLM | Cumplido | 9 | tests/test_prompt_builder.py |

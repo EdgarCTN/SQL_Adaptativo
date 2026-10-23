@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     groq_api_key: str = ""  # también se lee de la variable de entorno GROQ_API_KEY
     groq_model: str = "openai/gpt-oss-120b"
+    anon_salt: str = ""  # sal del HMAC de los seudónimos; vacía = sal temporal (no estable entre reinicios)
 
     @field_validator("database_url")
     @classmethod

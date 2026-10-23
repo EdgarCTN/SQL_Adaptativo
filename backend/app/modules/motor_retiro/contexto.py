@@ -1,9 +1,12 @@
 from dataclasses import dataclass, field
 
-from sqlalchemy import func, select
+import pandas as pd
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.modules.desafios.models import Concepto, Desafio, Intento, SesionDesafio
+from app.modules.analitica.extractores import cierres_del_concepto
+from app.modules.analitica.indicadores import ventana
+from app.modules.desafios.models import Concepto, Desafio, SesionDesafio
 from app.modules.linea_base.models import NivelSoporte
 from app.modules.motor_retiro.indicadores import CierreReciente, Indicadores, calcular_indicadores
 from app.modules.motor_retiro.niveles import NS_POR_DEFECTO
@@ -28,33 +31,24 @@ class ContextoRegla:
         self.indicadores = calcular_indicadores(self.cierres_recientes)
 
 
+def _entero(x) -> int | None:
+    return None if pd.isna(x) else int(x)
+
+
 def construir_contexto(db: Session, sesion: SesionDesafio, desafio: Desafio, concepto: Concepto, reglas: dict) -> ContextoRegla:
     """Ventana = últimos N cierres del concepto posteriores al último cambio de NS (las omisiones no son sesiones)."""
     fila = db.scalar(
         select(NivelSoporte).where(NivelSoporte.usuario_id == sesion.usuario_id, NivelSoporte.concepto_id == concepto.id)
     )
-    consulta = (
-        select(SesionDesafio, Desafio.tiempo_referencia_seg)
-        .join(Desafio, Desafio.id == SesionDesafio.desafio_id)
-        .where(
-            SesionDesafio.usuario_id == sesion.usuario_id,
-            Desafio.concepto_id == concepto.id,
-            SesionDesafio.estado.in_(("resuelto", "abandonado")),
-            SesionDesafio.fin.is_not(None),
-            SesionDesafio.resultado_cierre.is_not(None),
-        )
-        .order_by(SesionDesafio.fin.desc(), SesionDesafio.id.desc())
+    df = cierres_del_concepto(
+        db, sesion.usuario_id, concepto.id, desde=fila.ultimo_cambio_en if fila is not None else None
     )
-    if fila is not None and fila.ultimo_cambio_en is not None:
-        consulta = consulta.where(SesionDesafio.fin > fila.ultimo_cambio_en)
-    filas = db.execute(consulta).all()
-    recientes = filas[: int(reglas["ventana"]["tamano"])][::-1]
-    ids = [s.id for s, _ in recientes]
-    intentos = dict(
-        db.execute(select(Intento.sesion_id, func.count()).where(Intento.sesion_id.in_(ids)).group_by(Intento.sesion_id)).all()
-    ) if ids else {}
+    recientes = ventana(df, int(reglas["ventana"]["tamano"]))
     cierres = [
-        CierreReciente(s.resultado_cierre, int(intentos.get(s.id, 0)), s.tiempo_activo_seg, ref) for s, ref in recientes
+        CierreReciente(
+            r.resultado, int(r.intentos), _entero(r.tiempo_activo_seg), _entero(r.tiempo_referencia_seg), bool(r.uso_ayuda)
+        )
+        for r in recientes.itertuples()
     ]
     return ContextoRegla(
         usuario_id=sesion.usuario_id,
@@ -64,6 +58,6 @@ def construir_contexto(db: Session, sesion: SesionDesafio, desafio: Desafio, con
         sesion_id=sesion.id,
         resultado_sesion=sesion.resultado_cierre,
         cierres_recientes=cierres,
-        desafios_desde_cambio=len(filas),
+        desafios_desde_cambio=len(df),
         config=reglas,
     )

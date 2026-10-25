@@ -12,7 +12,7 @@ Estado de cada requisito de `docs/referencia/requisitos.md`. Se actualiza al ter
 | RF-06 | Consentimiento informado | Cumplido (texto provisional) | 14 | tests/test_linea_base.py |
 | RF-07 | Diagnóstico (línea base) | Cumplido | — | tests/test_linea_base.py |
 | RF-08 | Nivel de ayuda inicial | Parcial: falta aplicar el ajuste 3.1 y la dificultad inicial | 7 | tests/test_linea_base_calculo.py |
-| RF-09 | Lista de desafíos por dificultad | Parcial: 13 desafíos, los 10 conceptos con contenido y 2 desafíos en `filtrado`, `ordenamiento` y `join` (faltan los segundos desafíos de 3C); prerrequisitos entre conceptos PROVISIONALES | 3C | tests/test_desafios.py, tests/test_desafios_seeds.py |
+| RF-09 | Lista de desafíos por dificultad | Cumplido: 16 desafíos, los 10 conceptos con contenido y 2 desafíos en `filtrado`, `ordenamiento`, `join`, `having`, `subconsulta` y `funciones_ventana`; contenido y prerrequisitos entre conceptos PROVISIONALES (validar con la profesora) | — | tests/test_desafios.py, tests/test_desafios_seeds.py |
 | RF-10 | Enunciado y recursos | Cumplido | — | tests/test_desafios.py |
 | RF-11 | Envío de consulta | Cumplido | — | tests/test_desafios.py |
 | RF-12 | Ejecución en sandbox | Cumplido | — | tests/test_sandbox.py |

@@ -22,7 +22,7 @@ python -m venv .venv
 source .venv/Scripts/activate        # en Linux/macOS: source .venv/bin/activate
 pip install -r requirements.txt
 cd ..
-python scripts/reset_db.py           # crea la BD y siembra conceptos (con prerrequisitos), 13 desafíos, cuestionario y usuario demo
+python scripts/reset_db.py           # crea la BD y siembra conceptos (con prerrequisitos), 16 desafíos, cuestionario y usuario demo
 
 # Frontend
 cd frontend

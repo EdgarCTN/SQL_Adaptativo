@@ -39,7 +39,7 @@ def test_sin_actividad_valores_iniciales_y_sugerencia(client):
     assert r.status_code == 200
     j = r.json()
     assert j["sin_actividad"] is True and "desafío" in j["sugerencia"]
-    assert j["desafios_resueltos"] == 0 and j["desafios_disponibles"] == 13
+    assert j["desafios_resueltos"] == 0 and j["desafios_disponibles"] == 16
     assert j["ayudas"] == {"AY1": 0, "AY2": 0, "AY3": 0, "AY4": 0, "total": 0}
     assert j["cambios_recientes"] == [] and j["diagnostico_completado"] is False
     assert len(j["niveles"]) == 10 and all(n["ns"] == 1 and n["desafios_resueltos"] == 0 for n in j["niveles"])

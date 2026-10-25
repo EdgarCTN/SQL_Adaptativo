@@ -1,11 +1,13 @@
-"""Seeds idempotentes de los desafíos (6 del MVP + 4 de la entrega 3A + 3 de la entrega 3B = 13).
+"""Seeds idempotentes de los desafíos (6 del MVP + 4 de la entrega 3A + 3 de la 3B + 3 de la 3C = 16).
 
-Los 3 de la 3B son segundos desafíos de filtrado (D2), ordenamiento (D2) y join (D1), con una dificultad
-distinta a la del primero de su concepto, para que R8 pueda ofrecer uno más básico cuando sea posible.
+Los 3 de la 3B son segundos desafíos de filtrado (D2), ordenamiento (D2) y join (D1); los 3 de la 3C son
+segundos desafíos de having (D1), subconsulta (D2) y funciones_ventana (D2). Todos tienen una dificultad
+distinta (menor, cuando fue posible) a la del primero de su concepto, para que R8 pueda ofrecer uno más
+básico.
 
 Dominios: biblioteca, gimnasio, tienda de música, academia de cocina, festival de cine, club de
-senderismo, cooperativa de café, clínica veterinaria, torneo de ajedrez y aeropuerto (el cuestionario
-usa clientes/pedidos/productos).
+senderismo, cooperativa de café, clínica veterinaria, torneo de ajedrez, aeropuerto, transporte urbano,
+hotel y liga de natación (el cuestionario usa clientes/pedidos/productos).
 Formato guardado:
 - errores_tipicos: [{"descripcion", "ejemplo"}]  (el ejemplo es una consulta que debe FALLAR)
 - ayudas_respaldo: {"AY1".."AY4": {"mensaje", "codigo_sql"|None}}
@@ -1214,6 +1216,263 @@ INSERT INTO vuelos VALUES
                 "columna id_aerolinea de cada vuelo. Así, cada fila trae el código y el destino del vuelo "
                 "junto al nombre de su aerolínea.",
                 "SELECT v.codigo, v.destino, a.nombre\nFROM vuelos v\nJOIN aerolineas a ON a.id_aerolinea = v.id_aerolinea;",
+            ),
+        },
+    },
+    # ------------------------------------------------------------------ D1 having (2.º, entrega 3C)
+    {
+        "titulo": "Rutas de bus con al menos 4 viajes registrados",
+        "concepto": "having",
+        "dificultad": "D1",
+        "enunciado": (
+            "La empresa de transporte urbano quiere saber qué rutas operan con más frecuencia. Escribe una "
+            "consulta que devuelva cada ruta y su número de viajes registrados, en ese orden, mostrando solo "
+            "las rutas con al menos 4 viajes."
+        ),
+        "recursos": [
+            "GROUP BY agrupa las filas que comparten un valor; COUNT(*) cuenta cuántas filas tiene cada grupo.",
+            "HAVING filtra los grupos ya resumidos, por ejemplo HAVING COUNT(*) >= 4.",
+            "WHERE actúa antes de agrupar, por eso no admite funciones de agregación como COUNT o SUM.",
+        ],
+        "esquema": (
+            "CREATE TABLE viajes (\n"
+            "  id_viaje INTEGER PRIMARY KEY,\n"
+            "  ruta TEXT NOT NULL,\n"
+            "  conductor TEXT NOT NULL,\n"
+            "  pasajeros INTEGER NOT NULL\n"
+            ");"
+        ),
+        "datos": """
+INSERT INTO viajes VALUES
+ (1,'Ruta 10','Rosa',32),
+ (2,'Ruta 10','Luis',28),
+ (3,'Ruta 10','Rosa',35),
+ (4,'Ruta 10','Iván',30),
+ (5,'Ruta 10','Marta',27),
+ (6,'Ruta 20','Luis',40),
+ (7,'Ruta 20','Iván',38),
+ (8,'Ruta 20','Rosa',41),
+ (9,'Ruta 20','Marta',36),
+ (10,'Ruta 30','Luis',55),
+ (11,'Ruta 30','Iván',60),
+ (12,'Ruta 30','Marta',58),
+ (13,'Ruta 40','Rosa',22),
+ (14,'Ruta 40','Luis',25),
+ (15,'Ruta 40','Iván',19),
+ (16,'Ruta 40','Marta',24),
+ (17,'Ruta 40','Rosa',21),
+ (18,'Ruta 40','Luis',23),
+ (19,'Ruta 50','Iván',90);
+""",
+        "solucion": (
+            "SELECT ruta, COUNT(*) AS total_viajes\nFROM viajes\nGROUP BY ruta\nHAVING COUNT(*) >= 4;"
+        ),
+        "errores": [
+            (
+                "Usar COUNT(*) en WHERE: el conteo por ruta solo existe después de agrupar; se filtra con HAVING.",
+                "SELECT ruta, COUNT(*) FROM viajes WHERE COUNT(*) >= 4 GROUP BY ruta;",
+            ),
+            (
+                "Escribir > en lugar de >=: «al menos 4» incluye a las rutas que tienen exactamente 4 viajes.",
+                "SELECT ruta, COUNT(*) FROM viajes GROUP BY ruta HAVING COUNT(*) > 4;",
+            ),
+            (
+                "Sumar pasajeros en lugar de contar viajes: casi toda ruta supera 4 pasajeros, aunque tenga pocos viajes.",
+                "SELECT ruta, COUNT(*) FROM viajes GROUP BY ruta HAVING SUM(pasajeros) >= 4;",
+            ),
+        ],
+        "ayudas": {
+            "AY1": _ay(
+                "Primero hay que resumir: necesitas saber cuántos viajes tiene cada ruta. Después viene el filtro, "
+                "que ya no habla de viajes individuales sino de ese resultado por ruta. Pregúntate qué cláusula "
+                "SQL sirve para filtrar grupos y cómo se expresa «al menos 4»."
+            ),
+            "AY2": _ay(
+                "Un ejemplo en otro contexto: en una floristería, para ver qué tipos de flor aparecen en al menos "
+                "10 ramos vendidos, se agrupa por tipo, se cuentan los ramos de cada grupo y se filtra ese conteo "
+                "con HAVING.",
+                "SELECT tipo, COUNT(*) AS total\nFROM ramos\nGROUP BY tipo\nHAVING COUNT(*) >= 10;",
+            ),
+            "AY3": _ay(
+                "Completa los espacios en blanco (___) con las palabras clave que agrupan y filtran los grupos.",
+                "SELECT ruta, COUNT(*) AS total_viajes\nFROM viajes\n___ BY ruta\n___ COUNT(*) >= 4;",
+            ),
+            "AY4": _ay(
+                "GROUP BY ruta forma un grupo por cada ruta y COUNT(*) cuenta sus viajes; HAVING COUNT(*) >= 4 "
+                "conserva solo los grupos con 4 viajes o más (las rutas con exactamente 4 sí entran).",
+                "SELECT ruta, COUNT(*) AS total_viajes\nFROM viajes\nGROUP BY ruta\nHAVING COUNT(*) >= 4;",
+            ),
+        },
+    },
+    # ------------------------------------------------------------------ D2 subconsulta (2.º, entrega 3C)
+    {
+        "titulo": "Habitaciones del hotel por encima del precio promedio",
+        "concepto": "subconsulta",
+        "dificultad": "D2",
+        "enunciado": (
+            "Un hotel quiere identificar sus habitaciones de mayor precio. Escribe una consulta que devuelva "
+            "el número, el tipo y el precio por noche, en ese orden, de las habitaciones cuyo precio por noche "
+            "es estrictamente mayor que el precio promedio de todas las habitaciones del hotel. Ordena por "
+            "precio de mayor a menor y, si hay empate, por número."
+        ),
+        "recursos": [
+            "Una subconsulta es un SELECT dentro de otro, entre paréntesis.",
+            "Si la subconsulta devuelve un único valor (por ejemplo, un AVG), puede compararse con >, < o =.",
+            "Las funciones de agregación no pueden usarse directamente en WHERE, pero sí dentro de una subconsulta.",
+        ],
+        "esquema": (
+            "CREATE TABLE habitaciones (\n"
+            "  id_habitacion INTEGER PRIMARY KEY,\n"
+            "  numero TEXT NOT NULL,\n"
+            "  tipo TEXT NOT NULL,\n"
+            "  precio_noche REAL NOT NULL\n"
+            ");"
+        ),
+        "datos": """
+INSERT INTO habitaciones VALUES
+ (1,'101','Sencilla',120),
+ (2,'102','Sencilla',130),
+ (3,'103','Doble',180),
+ (4,'201','Doble',230),
+ (5,'202','Suite',350),
+ (6,'203','Doble',240),
+ (7,'301','Suite',420),
+ (8,'302','Sencilla',140);
+""",
+        "solucion": (
+            "SELECT numero, tipo, precio_noche\nFROM habitaciones\n"
+            "WHERE precio_noche > (SELECT AVG(precio_noche) FROM habitaciones)\n"
+            "ORDER BY precio_noche DESC, numero;"
+        ),
+        "errores": [
+            (
+                "Usar AVG directamente en WHERE: el promedio es un resumen de toda la tabla y debe calcularse "
+                "en una subconsulta.",
+                "SELECT numero, tipo, precio_noche FROM habitaciones WHERE precio_noche > AVG(precio_noche) "
+                "ORDER BY precio_noche DESC, numero;",
+            ),
+            (
+                "Comparar con MAX en lugar de AVG: ninguna habitación supera a la más cara, así que no se obtiene nada.",
+                "SELECT numero, tipo, precio_noche FROM habitaciones "
+                "WHERE precio_noche > (SELECT MAX(precio_noche) FROM habitaciones) "
+                "ORDER BY precio_noche DESC, numero;",
+            ),
+            (
+                "Invertir el sentido de la comparación: con < se obtienen las habitaciones más baratas que el promedio.",
+                "SELECT numero, tipo, precio_noche FROM habitaciones "
+                "WHERE precio_noche < (SELECT AVG(precio_noche) FROM habitaciones) "
+                "ORDER BY precio_noche DESC, numero;",
+            ),
+        ],
+        "ayudas": {
+            "AY1": _ay(
+                "Para decidir si una habitación es «más cara que el promedio» necesitas ese promedio como un solo "
+                "número. Pregúntate si puedes obtenerlo con otra consulta escrita dentro de la principal, y qué "
+                "debe ir entre paréntesis para que devuelva un único valor que se pueda comparar con el precio."
+            ),
+            "AY2": _ay(
+                "Un ejemplo en otro contexto: en una papelería, para listar los útiles que cuestan más que el "
+                "precio promedio de todo el catálogo, el promedio se calcula en una subconsulta y la consulta "
+                "exterior lo usa en su WHERE.",
+                "SELECT nombre, precio\nFROM utiles\nWHERE precio > (SELECT AVG(precio) FROM utiles);",
+            ),
+            "AY3": _ay(
+                "Completa los espacios en blanco (___) con la función y la tabla que calculan el promedio.",
+                "SELECT numero, tipo, precio_noche\nFROM habitaciones\nWHERE precio_noche > (\n"
+                "  SELECT ___(precio_noche)\n  FROM ___\n)\nORDER BY precio_noche DESC, numero;",
+            ),
+            "AY4": _ay(
+                "La subconsulta (SELECT AVG(precio_noche) FROM habitaciones) devuelve un único valor: el precio "
+                "promedio del hotel. La consulta exterior conserva las habitaciones cuyo precio es mayor que ese "
+                "valor y las ordena de la más cara a la más barata, desempatando por número.",
+                "SELECT numero, tipo, precio_noche\nFROM habitaciones\n"
+                "WHERE precio_noche > (SELECT AVG(precio_noche) FROM habitaciones)\n"
+                "ORDER BY precio_noche DESC, numero;",
+            ),
+        },
+    },
+    # ------------------------------------------------------------------ D2 funciones_ventana (2.º, entrega 3C)
+    {
+        "titulo": "Ranking de los 100 m libres con empates",
+        "concepto": "funciones_ventana",
+        "dificultad": "D2",
+        "enunciado": (
+            "La liga de natación publica el ranking de los 100 m libres. Escribe una consulta que devuelva, "
+            "para cada nadador, tres columnas: su nombre, su tiempo en segundos y su puesto, donde el puesto 1 "
+            "es el tiempo más bajo. Los nadadores con el mismo tiempo comparten puesto y el siguiente puesto "
+            "se salta (por ejemplo, 1, 2, 2, 4). Se conservan todas las filas. Ordena por puesto y, si hay "
+            "empate, por nombre."
+        ),
+        "recursos": [
+            "Una función de ventana calcula un valor para cada fila sin colapsar las filas: función() OVER (...).",
+            "RANK() asigna puestos según el ORDER BY de OVER; las filas empatadas comparten puesto y el "
+            "siguiente puesto se salta.",
+            "ROW_NUMBER() numera las filas sin empates y DENSE_RANK() no deja huecos después de un empate.",
+        ],
+        "esquema": (
+            "CREATE TABLE marcas (\n"
+            "  id_marca INTEGER PRIMARY KEY,\n"
+            "  nadador TEXT NOT NULL,\n"
+            "  club TEXT NOT NULL,\n"
+            "  tiempo_seg REAL NOT NULL\n"
+            ");"
+        ),
+        "datos": """
+INSERT INTO marcas VALUES
+ (1,'Ana Rojas','Delfines',58.4),
+ (2,'Bruno Salas','Tiburones',57.9),
+ (3,'Camila Vega','Delfines',59.1),
+ (4,'Diego Paz','Marlines',57.9),
+ (5,'Elena Cruz','Tiburones',60.3),
+ (6,'Fabián Ortiz','Marlines',58.4),
+ (7,'Gala Núñez','Delfines',57.2),
+ (8,'Hugo Lara','Tiburones',59.6);
+""",
+        "solucion": (
+            "SELECT nadador, tiempo_seg, RANK() OVER (ORDER BY tiempo_seg) AS puesto\n"
+            "FROM marcas\nORDER BY puesto, nadador;"
+        ),
+        "errores": [
+            (
+                "Usar ROW_NUMBER en lugar de RANK: numera sin respetar los empates, así que dos nadadores con el "
+                "mismo tiempo reciben puestos distintos.",
+                "SELECT nadador, tiempo_seg, ROW_NUMBER() OVER (ORDER BY tiempo_seg) AS puesto "
+                "FROM marcas ORDER BY puesto, nadador;",
+            ),
+            (
+                "Usar DENSE_RANK en lugar de RANK: no deja huecos después de un empate (1, 2, 2, 3 en lugar de 1, 2, 2, 4).",
+                "SELECT nadador, tiempo_seg, DENSE_RANK() OVER (ORDER BY tiempo_seg) AS puesto "
+                "FROM marcas ORDER BY puesto, nadador;",
+            ),
+            (
+                "Ordenar la ventana de mayor a menor: el nadador más lento queda en el puesto 1.",
+                "SELECT nadador, tiempo_seg, RANK() OVER (ORDER BY tiempo_seg DESC) AS puesto "
+                "FROM marcas ORDER BY puesto, nadador;",
+            ),
+        ],
+        "ayudas": {
+            "AY1": _ay(
+                "No se trata de agrupar: todas las filas deben seguir apareciendo, cada una con su puesto. Piensa "
+                "qué tipo de función calcula un valor para cada fila mirando a las demás, qué criterio de orden "
+                "define quién va primero y cómo se comporta cuando dos nadadores empatan."
+            ),
+            "AY2": _ay(
+                "Un ejemplo en otro contexto: en un concurso de fotografía, para dar un puesto a cada foto según "
+                "sus votos, de más a menos, y que las fotos con los mismos votos compartan puesto, se usa una "
+                "función de ranking con OVER y el criterio de orden entre paréntesis.",
+                "SELECT foto, votos, RANK() OVER (ORDER BY votos DESC) AS puesto\nFROM concurso\nORDER BY puesto, foto;",
+            ),
+            "AY3": _ay(
+                "Completa los espacios en blanco (___) con la función de ranking y la palabra clave del criterio de orden.",
+                "SELECT nadador, tiempo_seg, ___() OVER (___ BY tiempo_seg) AS puesto\nFROM marcas\n"
+                "ORDER BY puesto, nadador;",
+            ),
+            "AY4": _ay(
+                "RANK() OVER (ORDER BY tiempo_seg) da el puesto 1 al tiempo más bajo, mantiene todas las filas y "
+                "asigna el mismo puesto a los empates, saltando el siguiente (1, 2, 2, 4...). El ORDER BY final "
+                "solo ordena la lista por puesto y nombre.",
+                "SELECT nadador, tiempo_seg, RANK() OVER (ORDER BY tiempo_seg) AS puesto\n"
+                "FROM marcas\nORDER BY puesto, nadador;",
             ),
         },
     },

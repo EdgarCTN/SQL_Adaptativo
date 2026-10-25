@@ -1,7 +1,11 @@
-"""Seeds idempotentes de los desafíos (6 del MVP + 4 de la entrega 3A: uno por cada concepto sin desafío).
+"""Seeds idempotentes de los desafíos (6 del MVP + 4 de la entrega 3A + 3 de la entrega 3B = 13).
+
+Los 3 de la 3B son segundos desafíos de filtrado (D2), ordenamiento (D2) y join (D1), con una dificultad
+distinta a la del primero de su concepto, para que R8 pueda ofrecer uno más básico cuando sea posible.
 
 Dominios: biblioteca, gimnasio, tienda de música, academia de cocina, festival de cine, club de
-senderismo y cooperativa de café (el cuestionario usa clientes/pedidos/productos).
+senderismo, cooperativa de café, clínica veterinaria, torneo de ajedrez y aeropuerto (el cuestionario
+usa clientes/pedidos/productos).
 Formato guardado:
 - errores_tipicos: [{"descripcion", "ejemplo"}]  (el ejemplo es una consulta que debe FALLAR)
 - ayudas_respaldo: {"AY1".."AY4": {"mensaje", "codigo_sql"|None}}
@@ -940,6 +944,276 @@ INSERT INTO entregas VALUES
                 "JOIN entregas e ON e.id_productor = p.id_productor\n"
                 "WHERE e.fecha >= '2025-10-01' AND e.fecha < '2025-11-01'\nGROUP BY p.region\n"
                 "ORDER BY total_pagado DESC, p.region ASC;",
+            ),
+        },
+    },
+    # ------------------------------------------------------------------ D2 filtrado (2.º, entrega 3B)
+    {
+        "titulo": "Citas veterinarias de perros y gatos del tercer trimestre",
+        "concepto": "filtrado",
+        "dificultad": "D2",
+        "enunciado": (
+            "La clínica veterinaria revisa su facturación del tercer trimestre. Escribe una consulta que "
+            "devuelva la mascota, la fecha y el costo de las citas que cumplan todo esto: la mascota es un "
+            "perro o un gato, la cita ya fue atendida, su fecha está entre el 2025-07-01 y el 2025-09-30 "
+            "(ambas fechas incluidas) y el costo es de 80 o más. Las columnas van en ese orden."
+        ),
+        "recursos": [
+            "IN ('a', 'b') comprueba si un valor está en una lista; equivale a varias comparaciones con OR.",
+            "BETWEEN x AND y incluye los dos extremos del rango.",
+            "AND se evalúa antes que OR: si mezclas ambos, usa paréntesis para dejar clara la intención.",
+        ],
+        "esquema": (
+            "CREATE TABLE citas (\n"
+            "  id_cita INTEGER PRIMARY KEY,\n"
+            "  mascota TEXT NOT NULL,\n"
+            "  especie TEXT NOT NULL,\n"
+            "  motivo TEXT NOT NULL,\n"
+            "  fecha TEXT NOT NULL,\n"
+            "  estado TEXT NOT NULL,\n"
+            "  costo INTEGER NOT NULL\n"
+            ");"
+        ),
+        "datos": """
+INSERT INTO citas VALUES
+ (1,'Luna','Perro','Vacunación','2025-07-01','Atendida',80),
+ (2,'Michi','Gato','Control','2025-07-15','Atendida',60),
+ (3,'Rocky','Perro','Cirugía','2025-08-10','Atendida',350),
+ (4,'Nala','Gato','Esterilización','2025-09-30','Atendida',120),
+ (5,'Toby','Perro','Control','2025-09-12','Cancelada',90),
+ (6,'Pelusa','Conejo','Control','2025-08-05','Atendida',100),
+ (7,'Simba','Gato','Vacunación','2025-10-02','Atendida',85),
+ (8,'Coco','Loro','Revisión','2025-07-20','Atendida',150),
+ (9,'Max','Perro','Limpieza dental','2025-06-28','Atendida',200),
+ (10,'Kira','Perro','Control','2025-08-22','Pendiente',95),
+ (11,'Mía','Gato','Vacunación','2025-09-05','Atendida',80),
+ (12,'Bruno','Perro','Radiografía','2025-09-18','Atendida',140),
+ (13,'Cleo','Gato','Control','2025-08-30','Cancelada',70),
+ (14,'Thor','Perro','Control','2025-07-08','Atendida',45);
+""",
+        "solucion": (
+            "SELECT mascota, fecha, costo\nFROM citas\n"
+            "WHERE especie IN ('Perro', 'Gato')\n"
+            "  AND estado = 'Atendida'\n"
+            "  AND fecha BETWEEN '2025-07-01' AND '2025-09-30'\n"
+            "  AND costo >= 80;"
+        ),
+        "errores": [
+            (
+                "Mezclar OR con AND sin paréntesis: AND se evalúa primero, así que todos los perros pasan "
+                "sin cumplir las demás condiciones.",
+                "SELECT mascota, fecha, costo FROM citas WHERE especie = 'Perro' OR especie = 'Gato' "
+                "AND estado = 'Atendida' AND fecha BETWEEN '2025-07-01' AND '2025-09-30' AND costo >= 80;",
+            ),
+            (
+                "Usar > y < en las fechas: las citas del 2025-07-01 y del 2025-09-30 quedan fuera, pero el "
+                "enunciado las incluye.",
+                "SELECT mascota, fecha, costo FROM citas WHERE especie IN ('Perro', 'Gato') "
+                "AND estado = 'Atendida' AND fecha > '2025-07-01' AND fecha < '2025-09-30' AND costo >= 80;",
+            ),
+            (
+                "Excluir solo las citas canceladas (<> 'Cancelada'): las citas pendientes todavía no se "
+                "atendieron y no deben contarse.",
+                "SELECT mascota, fecha, costo FROM citas WHERE especie IN ('Perro', 'Gato') "
+                "AND estado <> 'Cancelada' AND fecha BETWEEN '2025-07-01' AND '2025-09-30' AND costo >= 80;",
+            ),
+        ],
+        "ayudas": {
+            "AY1": _ay(
+                "Hay cuatro condiciones y todas deben cumplirse a la vez. Anota cada una por separado: sobre "
+                "qué columna actúa y si el límite se incluye o no. Fíjate en que «perro o gato» es una sola "
+                "condición sobre la especie; piensa cómo expresarla sin que afecte a las demás."
+            ),
+            "AY2": _ay(
+                "Un ejemplo en otro contexto: en un colegio, para listar las notas de Álgebra o Física "
+                "aprobadas (14 o más) rendidas durante el primer semestre, se agrupa la lista de cursos con "
+                "IN, el rango de fechas con BETWEEN y el resto con AND.",
+                "SELECT alumno, curso, nota\nFROM notas\nWHERE curso IN ('Álgebra', 'Física')\n"
+                "  AND fecha BETWEEN '2025-03-01' AND '2025-07-15'\n  AND nota >= 14;",
+            ),
+            "AY3": _ay(
+                "Completa los espacios en blanco (___) con los valores que faltan en las condiciones.",
+                "SELECT mascota, fecha, costo\nFROM citas\nWHERE especie IN ('Perro', ___)\n"
+                "  AND estado = ___\n  AND fecha BETWEEN '2025-07-01' AND ___\n  AND costo >= 80;",
+            ),
+            "AY4": _ay(
+                "Se filtra la tabla citas con cuatro condiciones unidas por AND: la especie dentro de la lista "
+                "('Perro', 'Gato'), el estado igual a 'Atendida', la fecha dentro del rango con BETWEEN (que "
+                "incluye ambos extremos) y el costo mayor o igual a 80.",
+                "SELECT mascota, fecha, costo\nFROM citas\nWHERE especie IN ('Perro', 'Gato')\n"
+                "  AND estado = 'Atendida'\n  AND fecha BETWEEN '2025-07-01' AND '2025-09-30'\n  AND costo >= 80;",
+            ),
+        },
+    },
+    # ------------------------------------------------------------------ D2 ordenamiento (2.º, entrega 3B)
+    {
+        "titulo": "Podio del torneo de ajedrez del colegio",
+        "concepto": "ordenamiento",
+        "dificultad": "D2",
+        "enunciado": (
+            "El colegio publica el podio de su torneo de ajedrez. Escribe una consulta que devuelva el "
+            "nombre, el club y los puntos de los 5 mejores jugadores. Se ordena de mayor a menor puntaje; "
+            "si dos jugadores empatan en puntos, va primero quien jugó menos partidas; si aún empatan, se "
+            "ordenan alfabéticamente por nombre (de la A a la Z). Las columnas van en ese orden."
+        ),
+        "recursos": [
+            "ORDER BY admite varias columnas: la primera tiene prioridad y cada una tiene su propio ASC o DESC.",
+            "LIMIT n devuelve solo las primeras n filas del resultado ya ordenado.",
+            "Puedes ordenar por una columna aunque no la muestres en el SELECT.",
+        ],
+        "esquema": (
+            "CREATE TABLE jugadores (\n"
+            "  id_jugador INTEGER PRIMARY KEY,\n"
+            "  nombre TEXT NOT NULL,\n"
+            "  club TEXT NOT NULL,\n"
+            "  puntos REAL NOT NULL,\n"
+            "  partidas INTEGER NOT NULL\n"
+            ");"
+        ),
+        "datos": """
+INSERT INTO jugadores VALUES
+ (1,'Sofía Quispe','Torre Blanca',7.5,9),
+ (2,'Diego Paredes','Alfil Negro',7.5,8),
+ (3,'Lucía Ramos','Torre Blanca',6.5,9),
+ (4,'Mateo Flores','Caballo Real',8.0,9),
+ (5,'Valentina Rojas','Alfil Negro',6.5,7),
+ (6,'Gabriel Núñez','Caballo Real',6.5,7),
+ (7,'Renata Cruz','Torre Blanca',5.5,8),
+ (8,'Joaquín Vega','Alfil Negro',6.5,9),
+ (9,'Daniela Huamán','Caballo Real',4.0,6);
+""",
+        "solucion": (
+            "SELECT nombre, club, puntos\nFROM jugadores\n"
+            "ORDER BY puntos DESC, partidas ASC, nombre ASC\nLIMIT 5;"
+        ),
+        "errores": [
+            (
+                "Poner el nombre antes que las partidas: el primer desempate pasa a ser el alfabeto y cambia "
+                "quién entra al podio entre los de 6.5 puntos.",
+                "SELECT nombre, club, puntos FROM jugadores ORDER BY puntos DESC, nombre, partidas LIMIT 5;",
+            ),
+            (
+                "Ordenar las partidas de mayor a menor: el desempate favorece a quien jugó más, y el "
+                "enunciado pide lo contrario.",
+                "SELECT nombre, club, puntos FROM jugadores "
+                "ORDER BY puntos DESC, partidas DESC, nombre LIMIT 5;",
+            ),
+            (
+                "Olvidar LIMIT: la consulta devuelve a los 9 jugadores en vez de solo los 5 mejores.",
+                "SELECT nombre, club, puntos FROM jugadores ORDER BY puntos DESC, partidas, nombre;",
+            ),
+        ],
+        "ayudas": {
+            "AY1": _ay(
+                "Primero decide cuántos criterios de orden hay y cuál tiene prioridad sobre cuál. Para cada uno "
+                "piensa si debe ir de mayor a menor o de menor a mayor: «jugó menos partidas» no se ordena igual "
+                "que «tiene más puntos». Después piensa cómo quedarte solo con los primeros 5 resultados."
+            ),
+            "AY2": _ay(
+                "Un ejemplo en otro contexto: en una liga de fútbol, para mostrar los 3 primeros de la tabla se "
+                "ordena por puntos de mayor a menor, luego por diferencia de goles de mayor a menor y, si aún "
+                "empatan, por nombre del equipo; al final se limita a 3 filas.",
+                "SELECT equipo, puntos\nFROM clasificacion\nORDER BY puntos DESC, diferencia_gol DESC, equipo ASC\nLIMIT 3;",
+            ),
+            "AY3": _ay(
+                "Completa los espacios en blanco (___) con el sentido de cada criterio y la cantidad de filas.",
+                "SELECT nombre, club, puntos\nFROM jugadores\nORDER BY puntos ___, partidas ___, nombre\nLIMIT ___;",
+            ),
+            "AY4": _ay(
+                "Se ordena por puntos de mayor a menor (DESC); a igualdad de puntos, por partidas de menor a "
+                "mayor (ASC, porque gana quien jugó menos) y, si aún hay empate, por nombre. LIMIT 5 conserva "
+                "solo las 5 primeras filas del resultado ya ordenado.",
+                "SELECT nombre, club, puntos\nFROM jugadores\nORDER BY puntos DESC, partidas ASC, nombre ASC\nLIMIT 5;",
+            ),
+        },
+    },
+    # ------------------------------------------------------------------ D1 join (2.º, entrega 3B)
+    {
+        "titulo": "Pantalla de salidas del aeropuerto con su aerolínea",
+        "concepto": "join",
+        "dificultad": "D1",
+        "enunciado": (
+            "El aeropuerto prepara la pantalla de salidas. Escribe una consulta que devuelva, para cada vuelo, "
+            "su código, su destino y el nombre de su aerolínea, en ese orden."
+        ),
+        "recursos": [
+            "JOIN ... ON une dos tablas usando una condición entre columnas relacionadas.",
+            "Un alias (por ejemplo vuelos v) acorta el nombre de la tabla; úsalo para indicar de qué tabla "
+            "viene cada columna.",
+            "La columna que apunta a otra tabla (clave foránea) se compara con la clave primaria de esa tabla.",
+        ],
+        "esquema": (
+            "CREATE TABLE aerolineas (\n"
+            "  id_aerolinea INTEGER PRIMARY KEY,\n"
+            "  nombre TEXT NOT NULL,\n"
+            "  pais TEXT NOT NULL\n"
+            ");\n"
+            "CREATE TABLE vuelos (\n"
+            "  id_vuelo INTEGER PRIMARY KEY,\n"
+            "  codigo TEXT NOT NULL,\n"
+            "  id_aerolinea INTEGER NOT NULL REFERENCES aerolineas(id_aerolinea),\n"
+            "  destino TEXT NOT NULL,\n"
+            "  hora_salida TEXT NOT NULL\n"
+            ");"
+        ),
+        "datos": """
+INSERT INTO aerolineas VALUES
+ (1,'Andes Air','Perú'),
+ (2,'Pacífico Jet','Chile'),
+ (3,'Cóndor Express','Perú'),
+ (4,'Altiplano Aéreo','Bolivia');
+INSERT INTO vuelos VALUES
+ (1,'PJ101',2,'Cusco','06:30'),
+ (2,'AN205',1,'Arequipa','07:15'),
+ (3,'CE310',3,'Piura','08:00'),
+ (4,'AN311',1,'Iquitos','09:20'),
+ (5,'PJ118',2,'Tacna','10:45'),
+ (6,'AN402',1,'Trujillo','12:10'),
+ (7,'CE415',3,'Cusco','13:35');
+""",
+        "solucion": (
+            "SELECT v.codigo, v.destino, a.nombre\nFROM vuelos v\n"
+            "JOIN aerolineas a ON a.id_aerolinea = v.id_aerolinea;"
+        ),
+        "errores": [
+            (
+                "Olvidar la condición ON: cada vuelo se combina con todas las aerolíneas (producto cartesiano).",
+                "SELECT v.codigo, v.destino, a.nombre FROM vuelos v JOIN aerolineas a;",
+            ),
+            (
+                "Unir columnas que no se corresponden (id_aerolinea con id_vuelo): a varios vuelos les toca "
+                "una aerolínea que no es la suya.",
+                "SELECT v.codigo, v.destino, a.nombre FROM vuelos v "
+                "JOIN aerolineas a ON a.id_aerolinea = v.id_vuelo;",
+            ),
+            (
+                "Mostrar el número de la aerolínea en lugar de su nombre: el dato ya está en vuelos y el JOIN "
+                "no se aprovecha.",
+                "SELECT v.codigo, v.destino, v.id_aerolinea FROM vuelos v "
+                "JOIN aerolineas a ON a.id_aerolinea = v.id_aerolinea;",
+            ),
+        ],
+        "ayudas": {
+            "AY1": _ay(
+                "El código y el destino están en una tabla y el nombre de la aerolínea en otra. Piensa qué "
+                "columna de vuelos señala a qué aerolínea pertenece cada vuelo y con qué columna de aerolineas "
+                "coincide. Esa coincidencia es la condición que une las dos tablas."
+            ),
+            "AY2": _ay(
+                "Un ejemplo en otro contexto: en un taller mecánico, para mostrar la placa de cada reparación "
+                "junto al nombre del mecánico que la hizo, se une reparaciones con mecánicos por la columna que "
+                "los relaciona.",
+                "SELECT r.placa, m.nombre\nFROM reparaciones r\nJOIN mecanicos m ON m.id_mecanico = r.id_mecanico;",
+            ),
+            "AY3": _ay(
+                "Completa los espacios en blanco (___) con las columnas que relacionan las dos tablas.",
+                "SELECT v.codigo, v.destino, a.nombre\nFROM vuelos v\nJOIN aerolineas a ON a.___ = v.___;",
+            ),
+            "AY4": _ay(
+                "Se parte de vuelos y se une con aerolineas comparando la clave primaria de la aerolínea con la "
+                "columna id_aerolinea de cada vuelo. Así, cada fila trae el código y el destino del vuelo "
+                "junto al nombre de su aerolínea.",
+                "SELECT v.codigo, v.destino, a.nombre\nFROM vuelos v\nJOIN aerolineas a ON a.id_aerolinea = v.id_aerolinea;",
             ),
         },
     },

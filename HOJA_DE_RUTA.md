@@ -1,6 +1,6 @@
 # HOJA DE RUTA
 
-**Siguiente entrega: 3B**
+**Siguiente entrega: 3C**
 
 Este archivo es el tablero del proyecto: dice qué entrega toca, qué módulos debe revisar Claude y qué quedó hecho. Lo actualizas tú al terminar cada entrega; va dentro del zip, así que Claude también lo ve.
 
@@ -46,7 +46,7 @@ Si el mismo error persiste tras dos intentos, abre un chat nuevo con el zip, `CO
 | 1   | Cierre de sesión que invalida el token; tiempo activo real                  | RF-03                    | `auth desafios`                             | hecha     |
 | 2   | Indicadores TA, NI, TR, UA con pandas; historial de indicadores; seudónimos | RF-18, 26, 27, RNF-23    | `motor_retiro progreso` + matriz            | hecha     |
 | 3A  | Prerrequisitos y 4 conceptos nuevos con desafío                             | RF-09                    | `desafios` + 1 desafío de ejemplo           | hecha     |
-| 3B  | Segundos desafíos: filtrado, ordenamiento, join                             | RF-09                    | `desafios` + 1 desafío de ejemplo           | pendiente |
+| 3B  | Segundos desafíos: filtrado, ordenamiento, join                             | RF-09                    | `desafios` + 1 desafío de ejemplo           | hecha     |
 | 3C  | Segundos desafíos: having, subconsulta, funciones de ventana                | RF-09                    | `desafios` + 1 desafío de ejemplo           | pendiente |
 | 4   | Omitir desafío; reglas R8 y R7                                              | RF-18, 19                | `motor_retiro desafios linea_base` + matriz | pendiente |
 | 5   | Retiro acelerado R2 y estancamiento R6                                      | RF-19                    | `motor_retiro` + matriz                     | pendiente |
@@ -81,4 +81,5 @@ Quedan fuera a propósito porque necesitan servicios o herramientas que son pesa
 - Para otras entregas: la 11 usa `extractores.*_df`, `indicadores.ventana` y `serie_historica`; la 13B usa `agregados`, `seudonimizar.id_pseudonimo` y `seudonimizar_df`. Variable nueva `ANON_SALT` en `.env` (opcional; `settings.anon_salt`). Dependencia nueva: `pandas>=2.2.3,<4`.
   (añade debajo de 2 a 4 líneas por entrega)
 - **Entrega 3A:** 4 desafíos nuevos en `modules/desafios/seeds.py` (total 10, uno por concepto): `conteo_agregacion` D1, `group_by` D2, `left_join` D2 y `join_agregacion` D3. Mapa `PRERREQUISITOS` en `seeds/seed.py`; `sembrar_conceptos` rellena `conceptos.prerrequisito_id` solo donde está vacío (sirve en bases existentes). No requirió `reset_db.py`.
-- Para otras entregas: R6 (entrega 5) lee `Concepto.prerrequisito_id` (un solo prerrequisito por concepto; `filtrado` no tiene). 3B añade segundos desafíos a `filtrado`, `ordenamiento` y `join` (dificultad distinta a la del primero) y 3C a `having`, `subconsulta` y `funciones_ventana`; los desafíos nuevos de 3A son D1/D2/D3 de `conteo_agregacion`, `group_by`, `left_join` y `join_agregacion`. Las pruebas de `test_desafios_seeds.py` y `test_progreso.py` cuentan desafíos: 3B y 3C deben actualizar esos totales (13 y 16).
+- **Entrega 3B:** 3 desafíos nuevos en `modules/desafios/seeds.py` (total 13): segundos desafíos de `filtrado` (D2, antes D1), `ordenamiento` (D2, antes D1) y `join` (D1, antes D2), cada uno con dificultad distinta a la del primero de su concepto. Se añadieron al final de `DESAFIOS`, así que los ids de los 10 anteriores no cambian. `test_desafios_seeds.py` y `test_progreso.py` pasaron a 13. No requirió `reset_db.py` (la siembra es idempotente por título y añade los nuevos en bases existentes).
+- Para otras entregas: R6 (entrega 5) lee `Concepto.prerrequisito_id` (un solo prerrequisito por concepto; `filtrado` no tiene). 3B ya añadió segundos desafíos a `filtrado`, `ordenamiento` y `join` (dificultad distinta a la del primero) y 3C añade a `having`, `subconsulta` y `funciones_ventana`; los desafíos nuevos de 3A son D1/D2/D3 de `conteo_agregacion`, `group_by`, `left_join` y `join_agregacion`. Las pruebas de `test_desafios_seeds.py` y `test_progreso.py` cuentan desafíos: 3B los dejó en 13 y 3C debe dejarlos en 16 (en `test_desafios_seeds.py` basta con ampliar el diccionario `DIFICULTADES`; `TOTAL` se calcula solo, pero hay que actualizar a mano los tamaños de grupo `[4, 6, 3]` y el 13 de `test_progreso.py`).

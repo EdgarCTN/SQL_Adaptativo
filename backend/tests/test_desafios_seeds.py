@@ -11,11 +11,21 @@ from app.modules.desafios.seeds import DESAFIOS, sembrar_desafios
 from app.seeds.seed import CONCEPTOS, PRERREQUISITOS, RUTA_CUESTIONARIO, sembrar_todo
 from conftest import API, cabecera, registrar, token_de
 
-POR_DIFICULTAD = {
-    "D1": {"filtrado", "ordenamiento", "conteo_agregacion"},
-    "D2": {"join", "having", "group_by", "left_join"},
-    "D3": {"subconsulta", "funciones_ventana", "join_agregacion"},
+# Dificultades esperadas por concepto. Los segundos desafíos (entrega 3B) tienen una dificultad distinta a la
+# del primero, para que R8 pueda ofrecer «un desafío más básico del mismo concepto».
+DIFICULTADES = {
+    "filtrado": ["D1", "D2"],
+    "ordenamiento": ["D1", "D2"],
+    "join": ["D1", "D2"],
+    "conteo_agregacion": ["D1"],
+    "group_by": ["D2"],
+    "having": ["D2"],
+    "left_join": ["D2"],
+    "subconsulta": ["D3"],
+    "funciones_ventana": ["D3"],
+    "join_agregacion": ["D3"],
 }
+TOTAL = sum(len(v) for v in DIFICULTADES.values())  # 13 tras la entrega 3B (16 tras la 3C)
 
 
 CODIGOS_CONCEPTOS = [c for c, _ in CONCEPTOS]
@@ -25,19 +35,31 @@ def _todos(db):
     return list(db.scalars(select(Desafio).order_by(Desafio.id)))
 
 
-def test_seeds_idempotentes_diez_desafios_uno_por_concepto(client, db):
-    sembrar_todo(db)
-    sembrar_desafios(db)
-    assert db.scalar(select(func.count()).select_from(Desafio)) == 10
-    por_dif: dict[str, set] = {}
+def test_seeds_idempotentes_trece_desafios_con_los_10_conceptos(client, db):
     from app.modules.desafios.models import Concepto
 
+    sembrar_todo(db)
+    sembrar_desafios(db)
+    sembrar_desafios(db)  # idempotente por título: sembrar de nuevo no duplica
+    assert db.scalar(select(func.count()).select_from(Desafio)) == TOTAL == 13
+    por_concepto: dict[str, list] = {}
     for d in _todos(db):
-        por_dif.setdefault(d.dificultad, set()).add(db.get(Concepto, d.concepto_id).codigo)
-    assert por_dif == POR_DIFICULTAD
-    conceptos = [db.get(Concepto, d.concepto_id).codigo for d in _todos(db)]
-    assert sorted(conceptos) == sorted(CODIGOS_CONCEPTOS) and len(set(conceptos)) == 10
+        por_concepto.setdefault(db.get(Concepto, d.concepto_id).codigo, []).append(d.dificultad)
+    assert {c: sorted(v) for c, v in por_concepto.items()} == DIFICULTADES
+    # los 10 conceptos tienen al menos un desafío
+    assert sorted(por_concepto) == sorted(CODIGOS_CONCEPTOS) and len(por_concepto) == 10
     assert all(d.activo for d in _todos(db))
+
+
+def test_segundos_desafios_tienen_dificultad_distinta_a_la_del_primero(client, db):
+    from app.modules.desafios.models import Concepto
+
+    por_concepto: dict[str, list] = {}
+    for d in _todos(db):  # en orden de creación: el primero sembrado de cada concepto va primero
+        por_concepto.setdefault(db.get(Concepto, d.concepto_id).codigo, []).append(d.dificultad)
+    for codigo in ("filtrado", "ordenamiento", "join"):
+        assert len(por_concepto[codigo]) == 2, codigo
+        assert por_concepto[codigo][0] != por_concepto[codigo][1], codigo
 
 
 def test_tiempo_de_referencia_sale_de_reglas_json(client, db):
@@ -103,10 +125,11 @@ def test_api_lista_y_detalle_de_los_desafios_sembrados(client):
     registrar(client)
     h = cabecera(token_de(client))
     j = client.get(f"{API}/desafios", headers=h).json()
-    assert j["total"] == 10 and [len(g["desafios"]) for g in j["grupos"]] == [3, 4, 3]
+    assert j["total"] == 13 and [len(g["desafios"]) for g in j["grupos"]] == [4, 6, 3]
     assert len(j["conceptos"]) == 10
-    filtrado = client.get(f"{API}/desafios", params={"concepto": "left_join"}, headers=h).json()
-    assert filtrado["total"] == 1
+    for codigo, esperado in (("left_join", 1), ("filtrado", 2), ("ordenamiento", 2), ("join", 2)):
+        r = client.get(f"{API}/desafios", params={"concepto": codigo}, headers=h).json()
+        assert r["total"] == esperado, codigo
     for g in j["grupos"]:
         for item in g["desafios"]:
             r = client.get(f"{API}/desafios/{item['id']}", headers=h)
@@ -115,7 +138,7 @@ def test_api_lista_y_detalle_de_los_desafios_sembrados(client):
                 assert clave not in r.json()
 
 
-@pytest.mark.parametrize("indice", range(10))
+@pytest.mark.parametrize("indice", range(TOTAL))
 def test_recorrido_completo_por_api(client, db, indice):
     registrar(client)
     h = cabecera(token_de(client))
@@ -132,7 +155,7 @@ def test_recorrido_completo_por_api(client, db, indice):
 def test_titulos_unicos_y_tiempo_por_dificultad(client, db):
     titulos = [d.titulo for d in _todos(db)]
     assert len(titulos) == len(set(titulos))
-    assert len({d["titulo"] for d in DESAFIOS}) == len(DESAFIOS) == 10
+    assert len({d["titulo"] for d in DESAFIOS}) == len(DESAFIOS) == TOTAL
 
 
 def test_prerrequisitos_cadena_completa_y_sin_ciclos(client, db):

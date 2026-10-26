@@ -104,6 +104,7 @@ class Omision(Base):
     usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), index=True)
     concepto_id: Mapped[int] = mapped_column(ForeignKey("conceptos.id"))
     desafio_id: Mapped[int | None] = mapped_column(ForeignKey("desafios.id"), nullable=True)
+    sesion_id: Mapped[int | None] = mapped_column(ForeignKey("sesiones_desafio.id"), nullable=True, index=True)  # solo origen=desafio
     motivo: Mapped[str] = mapped_column(String(20))
     origen: Mapped[str] = mapped_column(String(20))
     creado_en: Mapped[Any] = mapped_column(UTCDateTime, default=ahora_utc)

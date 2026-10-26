@@ -53,7 +53,7 @@ class SesionDesafio(Base):
 
     __tablename__ = "sesiones_desafio"
     __table_args__ = (
-        CheckConstraint("estado IN ('en_curso','resuelto','abandonado')", name="ck_sesion_estado"),
+        CheckConstraint("estado IN ('en_curso','resuelto','abandonado','omitido')", name="ck_sesion_estado"),
         CheckConstraint(
             "resultado_cierre IS NULL OR resultado_cierre IN ('SA','CP','CE','NR')",
             name="ck_sesion_cierre",
@@ -78,7 +78,7 @@ class SesionDesafio(Base):
     desafio_id: Mapped[int] = mapped_column(ForeignKey("desafios.id"), index=True)
     inicio: Mapped[Any] = mapped_column(UTCDateTime, default=ahora_utc)
     fin: Mapped[Any] = mapped_column(UTCDateTime, nullable=True)
-    estado: Mapped[str] = mapped_column(String(12), default="en_curso")
+    estado: Mapped[str] = mapped_column(String(12), default="en_curso")  # en_curso | resuelto | abandonado | omitido
     resultado_cierre: Mapped[str | None] = mapped_column(String(2), nullable=True)
     # Con latidos se va acumulando; sin latidos, al cerrar vale fin - inicio.
     tiempo_activo_seg: Mapped[int | None] = mapped_column(Integer, nullable=True)

@@ -70,6 +70,11 @@ export default function DesafiosPage() {
                               {ETIQUETA_ESTADO[d.estado]}
                             </span>
                           </span>
+                          {d.verificacion && (
+                            <span className="mt-2 inline-block rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-900">
+                              Verificación
+                            </span>
+                          )}
                           <span className="mt-2 block text-sm text-slate-600">
                             {d.concepto.nombre} · Tiempo de referencia: {formatearDuracion(d.tiempo_referencia_seg)}
                           </span>

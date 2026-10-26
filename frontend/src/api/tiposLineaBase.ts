@@ -78,9 +78,18 @@ export interface EnvioRespuestas {
   respuestas: RespuestaEnvio[];
 }
 
+export interface VerificacionInicial {
+  concepto: string;
+  desafio_id: number;
+  titulo: string;
+  dificultad: "D1" | "D2" | "D3";
+  mensaje: string;
+}
+
 export interface ResultadoEnvio {
   ok: boolean;
   mensaje: string;
   aviso: string | null;
   linea_base_completada: boolean;
+  verificaciones?: VerificacionInicial[];
 }

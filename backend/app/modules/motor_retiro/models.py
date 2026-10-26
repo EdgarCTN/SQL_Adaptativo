@@ -41,3 +41,29 @@ class EventoMotor(Base):
     indicadores: Mapped[Any] = mapped_column(JSON, nullable=True)
     detalle: Mapped[str | None] = mapped_column(Text, nullable=True)
     creado_en: Mapped[Any] = mapped_column(UTCDateTime, default=ahora_utc)
+
+
+class Verificacion(Base):
+    """Desafío de verificación (R7): se asigna al llegar a 2 omisiones «Muy fácil» de un concepto.
+
+    `ultima_omision_id` marca hasta qué omisión se contó: el contador de R7 vuelve a cero al asignar.
+    Queda `pendiente` hasta que se cierra una sesión de ese desafío iniciada después de la asignación.
+    """
+
+    __tablename__ = "verificaciones"
+    __table_args__ = (
+        CheckConstraint("estado IN ('pendiente','completada')", name="ck_verificacion_estado"),
+        CheckConstraint("origen IN ('linea_base','desafio')", name="ck_verificacion_origen"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), index=True)
+    concepto_id: Mapped[int] = mapped_column(ForeignKey("conceptos.id"))
+    desafio_id: Mapped[int] = mapped_column(ForeignKey("desafios.id"), index=True)
+    origen: Mapped[str] = mapped_column(String(20))  # dónde se llegó al umbral: linea_base | desafio
+    ultima_omision_id: Mapped[int] = mapped_column(Integer, default=0)
+    estado: Mapped[str] = mapped_column(String(12), default="pendiente")
+    sesion_id: Mapped[int | None] = mapped_column(ForeignKey("sesiones_desafio.id"), nullable=True)
+    resultado: Mapped[str | None] = mapped_column(String(10), nullable=True)  # SA | CP | CE | NR | omitido
+    creada_en: Mapped[Any] = mapped_column(UTCDateTime, default=ahora_utc)
+    completada_en: Mapped[Any] = mapped_column(UTCDateTime, nullable=True)

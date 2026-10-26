@@ -89,6 +89,13 @@
     "R14"
    ],
    "texto": "Bienvenido/a de vuelta. Retomamos {{concepto}} con un poco más de apoyo."
+  },
+  "sugerencia_mas_basico": {
+   "regla": [
+    "R8 (sugerencia)"
+   ],
+   "texto": "Te sugiero practicar antes un desafío más básico de {{concepto}}: «{{desafio}}».",
+   "provisional": true
   }
  }
 }

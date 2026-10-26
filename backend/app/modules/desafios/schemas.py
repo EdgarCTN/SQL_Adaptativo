@@ -20,6 +20,7 @@ class DesafioResumenOut(BaseModel):
     dificultad: Dificultad
     tiempo_referencia_seg: int
     estado: EstadoUsuario
+    verificacion: bool = False  # R7: es el desafío de verificación pendiente del estudiante
 
 
 class GrupoOut(BaseModel):
@@ -51,6 +52,7 @@ class DesafioDetalleOut(BaseModel):
     tiempo_referencia_seg: int
     estado: EstadoUsuario
     sesion_en_curso: SesionResumenOut | None = None
+    verificacion: bool = False  # R7: sin ayuda automática; si pide ayuda no cuenta como SA
 
 
 class IniciarOut(BaseModel):
@@ -106,6 +108,51 @@ class AbandonarOut(BaseModel):
     tiempo_activo_seg: int
     mensaje: str
     ajuste_nivel: AjusteNivelOut | None = None
+
+
+MotivoOmision = Literal["muy_facil", "muy_dificil"]
+MSG_MOTIVO_OMISION = "Indica si el desafío te pareció muy fácil o muy difícil."
+
+
+class OmitirIn(BaseModel):
+    motivo: str
+
+    @field_validator("motivo")
+    @classmethod
+    def _motivo_valido(cls, v: str) -> str:
+        if v not in ("muy_facil", "muy_dificil"):
+            raise ValueError(MSG_MOTIVO_OMISION)
+        return v
+
+
+class DesafioSugeridoOut(BaseModel):
+    id: int
+    titulo: str
+    dificultad: Dificultad
+
+
+class VerificacionOut(BaseModel):
+    concepto: str
+    desafio_id: int
+    titulo: str
+    dificultad: Dificultad
+    mensaje: str
+
+
+class MensajeMotorOut(BaseModel):
+    clave: str
+    tipo: str  # retiro | refuerzo | verificacion | sugerencia
+    texto: str
+
+
+class OmitirOut(BaseModel):
+    estado: str
+    motivo: MotivoOmision
+    mensaje: str
+    ajuste_nivel: AjusteNivelOut | None = None  # R8: el NS subió
+    sugerido: DesafioSugeridoOut | None = None  # R8: desafío más básico del mismo concepto, o null
+    verificacion: VerificacionOut | None = None  # R7: desafío de verificación asignado
+    mensajes: list[MensajeMotorOut] = []
 
 
 class LatidoOut(BaseModel):

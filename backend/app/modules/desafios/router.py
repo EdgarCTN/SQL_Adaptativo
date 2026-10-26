@@ -13,6 +13,8 @@ from app.modules.desafios.schemas import (
     IntentoOut,
     LatidoOut,
     ListaDesafiosOut,
+    OmitirIn,
+    OmitirOut,
 )
 
 router = APIRouter(prefix="/desafios", tags=["Desafíos"])
@@ -53,3 +55,8 @@ def latido(desafio_id: int, usuario: Usuario = Depends(_estudiante), db: Session
 @router.post("/{desafio_id}/abandonar", response_model=AbandonarOut)
 def abandonar(desafio_id: int, usuario: Usuario = Depends(_estudiante), db: Session = Depends(get_db)):
     return service.abandonar(db, usuario, desafio_id)
+
+
+@router.post("/{desafio_id}/omitir", response_model=OmitirOut)
+def omitir(desafio_id: int, datos: OmitirIn, usuario: Usuario = Depends(_estudiante), db: Session = Depends(get_db)):
+    return service.omitir(db, usuario, desafio_id, datos.motivo)

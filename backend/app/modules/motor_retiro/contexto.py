@@ -10,6 +10,7 @@ from app.modules.desafios.models import Concepto, Desafio, SesionDesafio
 from app.modules.linea_base.models import NivelSoporte
 from app.modules.motor_retiro.indicadores import CierreReciente, Indicadores, calcular_indicadores
 from app.modules.motor_retiro.niveles import NS_POR_DEFECTO
+from app.modules.motor_retiro.omisiones import contar_muy_facil, hay_verificacion_pendiente, muy_dificil_seguidas
 
 
 @dataclass
@@ -25,6 +26,11 @@ class ContextoRegla:
     cierres_recientes: list[CierreReciente]  # la ventana: del más antiguo al más reciente
     desafios_desde_cambio: int  # todos los cerrados desde el último cambio de NS (puede superar la ventana)
     config: dict  # reglas.json
+    # Omisiones (R7, R8). Solo se llenan cuando el cierre que dispara el motor es una omisión.
+    omision_motivo: str | None = None  # muy_facil | muy_dificil si la sesión que se acaba de cerrar fue omitida
+    omisiones_muy_facil: int = 0  # contador de R7: línea base + desafíos, desde la última verificación asignada
+    omisiones_muy_dificil_seguidas: int = 0  # omisiones «Muy difícil» seguidas que terminan en la actual (incluida)
+    verificacion_pendiente: bool = False  # ya hay una verificación sin completar en el concepto
     indicadores: Indicadores = field(init=False)
 
     def __post_init__(self) -> None:
@@ -35,8 +41,11 @@ def _entero(x) -> int | None:
     return None if pd.isna(x) else int(x)
 
 
-def construir_contexto(db: Session, sesion: SesionDesafio, desafio: Desafio, concepto: Concepto, reglas: dict) -> ContextoRegla:
-    """Ventana = últimos N cierres del concepto posteriores al último cambio de NS (las omisiones no son sesiones)."""
+def construir_contexto(
+    db: Session, sesion: SesionDesafio, desafio: Desafio, concepto: Concepto, reglas: dict, omision_motivo: str | None = None
+) -> ContextoRegla:
+    """Ventana = últimos N cierres del concepto posteriores al último cambio de NS (las sesiones omitidas no entran:
+    `sesiones_cerradas_df` solo toma resueltas y abandonadas). `omision_motivo` indica que el cierre fue una omisión."""
     fila = db.scalar(
         select(NivelSoporte).where(NivelSoporte.usuario_id == sesion.usuario_id, NivelSoporte.concepto_id == concepto.id)
     )
@@ -60,4 +69,12 @@ def construir_contexto(db: Session, sesion: SesionDesafio, desafio: Desafio, con
         cierres_recientes=cierres,
         desafios_desde_cambio=len(df),
         config=reglas,
+        omision_motivo=omision_motivo,
+        omisiones_muy_facil=contar_muy_facil(db, sesion.usuario_id, concepto.id) if omision_motivo == "muy_facil" else 0,
+        omisiones_muy_dificil_seguidas=(
+            muy_dificil_seguidas(db, sesion.usuario_id, concepto.id) if omision_motivo == "muy_dificil" else 0
+        ),
+        verificacion_pendiente=(
+            hay_verificacion_pendiente(db, sesion.usuario_id, concepto.id) if omision_motivo == "muy_facil" else False
+        ),
     )

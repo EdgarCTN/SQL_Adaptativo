@@ -1,6 +1,6 @@
 import copy
 import logging
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import Any
 
 from sqlalchemy import select
@@ -21,6 +21,8 @@ from app.modules.linea_base.models import (
 )
 from app.modules.linea_base.calculo import calcular_linea_base
 from app.modules.linea_base.schemas import RespuestaIn, RespuestasIn
+from app.modules.motor_retiro import mensajes as mensajes_motor
+from app.modules.motor_retiro import verificacion as verificaciones
 
 log = logging.getLogger("app.linea_base")
 
@@ -251,6 +253,19 @@ def validar_respuestas(indice: list[PreguntaInfo], respuestas: list[RespuestaIn]
     return ordenados
 
 
+def _verificaciones_iniciales(db: Session, usuario: Usuario, calculo, reglas: dict) -> list[dict]:
+    """R7 al terminar el diagnóstico. El diagnóstico ya está guardado: un fallo aquí no lo deshace."""
+    try:
+        asignadas = verificaciones.asignar_tras_linea_base(db, usuario.id, calculo.m_por_concepto, reglas)
+        return [
+            {**asdict(v), "mensaje": mensajes_motor.texto_fijo("verificacion", concepto=v.concepto) or ""} for v in asignadas
+        ]
+    except Exception:  # noqa: BLE001
+        db.rollback()
+        log.exception("No se pudo asignar la verificación inicial (usuario %s)", usuario.id)
+        return []
+
+
 # ---------- Guardado ----------
 def guardar_respuestas(db: Session, usuario: Usuario, datos: RespuestasIn) -> dict:
     _exigir_puede_responder(db, usuario)
@@ -353,4 +368,5 @@ def guardar_respuestas(db: Session, usuario: Usuario, datos: RespuestasIn) -> di
         "mensaje": "¡Listo! Completaste el diagnóstico inicial y tu nivel inicial ya quedó definido.",
         "aviso": None,
         "linea_base_completada": True,
+        "verificaciones": _verificaciones_iniciales(db, usuario, calculo, reglas),
     }

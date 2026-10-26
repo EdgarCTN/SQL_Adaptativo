@@ -14,7 +14,9 @@ from app.modules.asistencia.cierre import clasificar_cierre
 from app.modules.asistencia.models import SolicitudAyuda
 from app.modules.desafios import hooks
 from app.modules.desafios.models import Concepto, Desafio, Intento, SesionDesafio
-from app.modules.motor_retiro.motor import AjusteNivel
+from app.modules.linea_base.models import Omision
+from app.modules.motor_retiro import verificacion as verificaciones
+from app.modules.motor_retiro.motor import AjusteNivel, ResultadoMotor
 from app.modules.motor_retiro.niveles import NivelSoporteService
 from app.modules.desafios.sandbox import ErrorConfiguracionDesafio, evaluar_consulta
 
@@ -29,6 +31,8 @@ MSG_NO_ABANDONAR = "No tienes este desafío en curso, así que no hay nada que a
 MSG_ERROR_GUARDADO = "No pudimos guardar tu intento. Inténtalo de nuevo en unos segundos."
 MSG_DESAFIO_ROTO = "Este desafío no se puede evaluar en este momento. Inténtalo más tarde o elige otro."
 MSG_ABANDONADO = "Abandonaste el desafío. Puedes volver a intentarlo cuando quieras."
+MSG_NO_OMITIR = "No tienes este desafío en curso, así que no hay nada que omitir."
+MSG_OMITIDO = "Omitiste el desafío. No cuenta como resuelto ni como fallo."
 
 
 def _concepto_out(c: Concepto) -> dict:
@@ -89,6 +93,7 @@ def listar(db: Session, usuario: Usuario, concepto: str | None) -> dict:
         conceptos.setdefault(c.id, _concepto_out(c))
     codigo = (concepto or "").strip()
     estados = _estados_usuario(db, usuario.id)
+    en_verificacion = verificaciones.ids_verificacion_pendiente(db, usuario.id)
     grupos = {d: [] for d in DIFICULTADES}
     total = 0
     for d, c in activos:
@@ -102,6 +107,7 @@ def listar(db: Session, usuario: Usuario, concepto: str | None) -> dict:
                 "dificultad": d.dificultad,
                 "tiempo_referencia_seg": d.tiempo_referencia_seg,
                 "estado": estados.get(d.id, "sin_iniciar"),
+                "verificacion": d.id in en_verificacion,
             }
         )
         total += 1
@@ -136,6 +142,7 @@ def detalle(db: Session, usuario: Usuario, desafio_id: int) -> dict:
             if sesion
             else None
         ),
+        "verificacion": verificaciones.es_verificacion_pendiente(db, usuario.id, d.id),
     }
 
 
@@ -316,4 +323,48 @@ def abandonar(db: Session, usuario: Usuario, desafio_id: int) -> dict:
         "tiempo_activo_seg": sesion.tiempo_activo_seg,
         "mensaje": MSG_ABANDONADO,
         "ajuste_nivel": ajuste,
+    }
+
+
+def _notificar_omision(db: Session, sesion: SesionDesafio) -> ResultadoMotor:
+    """La omisión ya está guardada: un fallo del motor nunca debe romper la respuesta."""
+    try:
+        resultado = hooks.al_omitir_desafio(db, sesion)
+    except Exception:  # noqa: BLE001
+        log.exception("Falló al_omitir_desafio (sesión %s); la omisión se conserva", sesion.id)
+        db.rollback()
+        return ResultadoMotor()
+    return resultado if isinstance(resultado, ResultadoMotor) else ResultadoMotor()
+
+
+def omitir(db: Session, usuario: Usuario, desafio_id: int, motivo: str) -> dict:
+    """Cierra la sesión como omitida y guarda el motivo. No cuenta como resuelto ni como fallo y no entra en la
+    ventana; el motor aplica R8 («Muy difícil») o R7 («Muy fácil»)."""
+    d = _desafio_activo(db, desafio_id)
+    sesion = _sesion_en_curso(db, usuario.id, d.id)
+    if sesion is None:
+        raise ErrorApp(MSG_NO_OMITIR, 409)
+    _cerrar(sesion, "omitido", None)
+    db.add(
+        Omision(
+            usuario_id=usuario.id, concepto_id=d.concepto_id, desafio_id=d.id, sesion_id=sesion.id,
+            motivo=motivo, origen="desafio",
+        )
+    )
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        log.exception("No se pudo omitir el desafío")
+        raise ErrorApp(MSG_ERROR_GUARDADO, 503)
+    r = _notificar_omision(db, sesion)
+    texto_verificacion = next((m.texto for m in r.mensajes if m.tipo == "verificacion"), "")
+    return {
+        "estado": sesion.estado,
+        "motivo": motivo,
+        "mensaje": MSG_OMITIDO,
+        "ajuste_nivel": asdict(r.ajuste) if r.ajuste else None,
+        "sugerido": asdict(r.sugerido) if r.sugerido else None,
+        "verificacion": {**asdict(r.verificacion), "mensaje": texto_verificacion} if r.verificacion else None,
+        "mensajes": [asdict(m) for m in r.mensajes],
     }

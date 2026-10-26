@@ -1,17 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 
-import { abandonarDesafio, enviarIntento, iniciarDesafio, obtenerDesafio } from "../../api/desafios";
+import { abandonarDesafio, enviarIntento, iniciarDesafio, obtenerDesafio, omitirDesafio } from "../../api/desafios";
 import { ErrorApi, MSG_INESPERADO, mensajeDe } from "../../api/cliente";
-import type { DesafioDetalle, ResultadoIntento as Resultado, SesionResumen } from "../../api/tiposDesafios";
+import type {
+  DesafioDetalle,
+  MotivoOmision,
+  ResultadoIntento as Resultado,
+  ResultadoOmision as ResultadoDeOmision,
+  SesionResumen,
+} from "../../api/tiposDesafios";
 import { useCarga } from "../../api/useCarga";
 import { useAuth } from "../../app/AuthContext";
 import DialogoConfirmacion from "../../components/DialogoConfirmacion";
 import EstadoContenedor from "../../components/EstadoContenedor";
 import { mostrarToast } from "../../components/Toasts";
 import { ETIQUETA_DIFICULTAD, formatearDuracion, textoAjusteNivel } from "./formatos";
+import DialogoOmitir from "./DialogoOmitir";
 import PanelAyuda from "./PanelAyuda";
 import ResultadoIntento from "./ResultadoIntento";
+import ResultadoOmision from "./ResultadoOmision";
 import { useAyuda } from "./useAyuda";
 import { useLatido } from "./useLatido";
 
@@ -100,6 +108,9 @@ function DetalleDesafio({ inicial, alRecargar }: PropsDetalle) {
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
   const [confirmando, setConfirmando] = useState(false);
   const [abandonando, setAbandonando] = useState(false);
+  const [omitiendoMotivo, setOmitiendoMotivo] = useState(false); // diálogo de omisión abierto
+  const [omitiendo, setOmitiendo] = useState(false);
+  const [omitido, setOmitido] = useState<ResultadoDeOmision | null>(null);
 
   // Si la pantalla recarga datos del servidor (p. ej. tras un 409), se vuelve a sincronizar el estado.
   const primera = useRef(true);
@@ -112,6 +123,7 @@ function DetalleDesafio({ inicial, alRecargar }: PropsDetalle) {
     setResuelto(false);
     setIntento(null);
     setErrorEnvio(null);
+    setOmitido(null);
   }, [inicial]);
 
   const noDisponible = (mensaje: string) => {
@@ -130,7 +142,7 @@ function DetalleDesafio({ inicial, alRecargar }: PropsDetalle) {
   const ay4 = ayuda.ayudas.find((a) => a.tipo_ayuda === "AY4");
   const marcadoNR = !!ay4;
   // Mientras la sesión siga abierta, avisa al servidor de que hay actividad real (tiempo activo).
-  useLatido(desafioId, !!sesion && !resuelto && !abandonando);
+  useLatido(desafioId, !!sesion && !resuelto && !abandonando && !omitiendo && !omitido);
 
   const comenzar = async () => {
     if (iniciando) return;
@@ -141,6 +153,7 @@ function DetalleDesafio({ inicial, alRecargar }: PropsDetalle) {
       setCodigo("");
       setIntento(null);
       setResuelto(false);
+      setOmitido(null);
       setSesion({ sesion_id: r.sesion_id, inicio: r.inicio, intentos_realizados: r.intentos_realizados });
       if (r.reanudada) mostrarToast({ tipo: "info", mensaje: "Retomaste tu desafío en curso." });
     } catch (e) {
@@ -206,7 +219,29 @@ function DetalleDesafio({ inicial, alRecargar }: PropsDetalle) {
     }
   };
 
-  const yaResueltoAntes = !sesion && inicial.estado === "resuelto";
+  const confirmarOmision = async (motivo: MotivoOmision) => {
+    setOmitiendo(true);
+    try {
+      const r = await omitirDesafio(desafioId, motivo);
+      guardarBorrador(clave, "");
+      ayuda.descartar();
+      setSesion(null);
+      setIntento(null);
+      setOmitido(r);
+      setOmitiendoMotivo(false);
+    } catch (e) {
+      setOmitiendoMotivo(false);
+      if (e instanceof ErrorApi && e.status === 404) noDisponible(e.mensaje);
+      else if (e instanceof ErrorApi && e.status === 409) {
+        mostrarToast({ tipo: "info", mensaje: e.mensaje });
+        alRecargar();
+      } else mostrarToast({ tipo: "error", mensaje: mensajeDe(e) });
+    } finally {
+      setOmitiendo(false);
+    }
+  };
+
+  const yaResueltoAntes = !sesion && !omitido && inicial.estado === "resuelto";
 
   return (
     <article>
@@ -218,6 +253,12 @@ function DetalleDesafio({ inicial, alRecargar }: PropsDetalle) {
           <span>Tiempo de referencia: {formatearDuracion(inicial.tiempo_referencia_seg)}</span>
           {marcadoNR && <span className="font-semibold text-amber-800">✗ Se marcará como no resuelto</span>}
         </p>
+        {inicial.verificacion && !omitido && (
+          <p className="mt-2 rounded-lg border border-indigo-200 bg-indigo-50 p-2 text-sm text-indigo-900">
+            <strong>Desafío de verificación.</strong> Intenta resolverlo sin ayuda: no se te ofrecerá sola. Si la pides,
+            podrás recibirla, pero ya no contará como resuelto sin ayuda.
+          </p>
+        )}
       </header>
 
       <section className="mt-4 rounded-xl border border-slate-200 bg-white p-4" aria-labelledby="titulo-enunciado">
@@ -244,7 +285,9 @@ function DetalleDesafio({ inicial, alRecargar }: PropsDetalle) {
         </pre>
       </details>
 
-      {!sesion && (
+      {omitido && <ResultadoOmision resultado={omitido} />}
+
+      {!sesion && !omitido && (
         <section className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50 p-4">
           {yaResueltoAntes ? (
             <p className="text-sm text-indigo-900">
@@ -351,6 +394,14 @@ function DetalleDesafio({ inicial, alRecargar }: PropsDetalle) {
                 >
                   Abandonar
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setOmitiendoMotivo(true)}
+                  disabled={enviando || ayuda.pidiendo}
+                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                >
+                  Omitir
+                </button>
               </>
             )}
             <span className="text-xs text-slate-500">
@@ -381,6 +432,14 @@ function DetalleDesafio({ inicial, alRecargar }: PropsDetalle) {
           valorando={ayuda.valorando}
           onPedir={ayuda.pedir}
           onValorar={(id, v) => void ayuda.valorar(id, v)}
+        />
+      )}
+
+      {omitiendoMotivo && (
+        <DialogoOmitir
+          ocupado={omitiendo}
+          onConfirmar={(m) => void confirmarOmision(m)}
+          onCancelar={() => setOmitiendoMotivo(false)}
         />
       )}
 

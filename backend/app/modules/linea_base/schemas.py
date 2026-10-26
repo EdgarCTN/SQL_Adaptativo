@@ -44,8 +44,19 @@ class RespuestasIn(BaseModel):
     respuestas: list[RespuestaIn] = Field(max_length=100)
 
 
+class VerificacionInicialOut(BaseModel):
+    """R0/R7: concepto con todos sus ítems (≥ 2) omitidos por «Muy fácil»; se asigna un desafío de verificación."""
+
+    concepto: str
+    desafio_id: int
+    titulo: str
+    dificultad: Literal["D1", "D2", "D3"]
+    mensaje: str
+
+
 class RespuestasOut(BaseModel):
     ok: bool = True
     mensaje: str
     aviso: str | None = None
     linea_base_completada: bool = True
+    verificaciones: list[VerificacionInicialOut] = Field(default_factory=list)

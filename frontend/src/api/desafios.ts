@@ -3,8 +3,10 @@ import type {
   DesafioDetalle,
   InicioSesion,
   ListaDesafios,
+  MotivoOmision,
   ResultadoAbandono,
   ResultadoIntento,
+  ResultadoOmision,
 } from "./tiposDesafios";
 
 export const listarDesafios = (concepto?: string) =>
@@ -20,6 +22,9 @@ export const enviarIntento = (id: number, codigo: string) =>
 
 export const abandonarDesafio = (id: number) =>
   cliente.post<ResultadoAbandono>(`/desafios/${id}/abandonar`).then((r) => r.data);
+
+export const omitirDesafio = (id: number, motivo: MotivoOmision) =>
+  cliente.post<ResultadoOmision>(`/desafios/${id}/omitir`, { motivo }).then((r) => r.data);
 
 /** Latido de actividad: el llamador ignora cualquier fallo. */
 export const enviarLatido = (id: number) =>

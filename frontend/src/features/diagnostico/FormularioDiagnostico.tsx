@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { ErrorApi, MSG_RED } from "../../api/cliente";
 import { enviarRespuestas } from "../../api/lineaBase";
-import type { Cuestionario, Parte } from "../../api/tiposLineaBase";
+import type { Cuestionario, Parte, VerificacionInicial } from "../../api/tiposLineaBase";
 import type { Usuario } from "../../api/tipos";
 import { useAuth } from "../../app/AuthContext";
 import { DESTINO_TRAS_DIAGNOSTICO } from "../../app/destinos";
@@ -42,6 +42,7 @@ export default function FormularioDiagnostico({ cuestionario, usuario, alRecarga
   const [enviando, setEnviando] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
   const [final, setFinal] = useState<string | null>(null);
+  const [verificaciones, setVerificaciones] = useState<VerificacionInicial[]>([]);
   const tituloRef = useRef<HTMLHeadingElement>(null);
 
   // El borrador se conserva si se recarga la página y se borra al guardar.
@@ -124,6 +125,7 @@ export default function FormularioDiagnostico({ cuestionario, usuario, alRecarga
       const resultado = await enviarRespuestas(construirEnvio(cuestionario, respuestas));
       borrarBorrador(usuario.id);
       actualizarUsuario({ ...usuario, linea_base_completada: true });
+      setVerificaciones(resultado.verificaciones ?? []);
       setFinal(resultado.mensaje);
     } catch (e) {
       manejarErrorEnvio(e);
@@ -139,6 +141,14 @@ export default function FormularioDiagnostico({ cuestionario, usuario, alRecarga
           Diagnóstico completado
         </h1>
         <p className="mt-2 text-sm text-green-900">{final}</p>
+        {verificaciones.map((v) => (
+          <div key={v.desafio_id} className="mt-4 rounded-xl border border-indigo-200 bg-white p-3 text-left text-sm text-indigo-900">
+            <p>{v.mensaje}</p>
+            <Link to={`/desafios/${v.desafio_id}`} className="mt-1 inline-block font-semibold underline">
+              Ir al desafío de verificación: {v.titulo}
+            </Link>
+          </div>
+        ))}
         <button
           type="button"
           onClick={() => navigate(DESTINO_TRAS_DIAGNOSTICO, { replace: true })}

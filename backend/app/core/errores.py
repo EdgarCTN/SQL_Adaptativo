@@ -26,6 +26,7 @@ _ETIQUETAS = {
     "codigo": "Consulta",
     "valor": "Valoración",
     "mensaje_estudiante": "Mensaje",
+    "motivo": "Motivo",
 }
 
 

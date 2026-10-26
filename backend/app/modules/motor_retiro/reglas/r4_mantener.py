@@ -11,13 +11,16 @@ class R4Mantener(Regla):
     """
 
     codigo = "R4"
+    aplica_en_omision = True
 
     def aplica(self, ctx: ContextoRegla) -> bool:
         return True
 
     def ejecutar(self, ctx: ContextoRegla) -> ResultadoRegla:
         minimo = ctx.config["ventana"]["minimo_desafios_desde_cambio"]
-        if ctx.desafios_desde_cambio < minimo:
+        if ctx.omision_motivo is not None:
+            motivo = f"R4 mantener: omisión «{ctx.omision_motivo}» registrada, sin efecto sobre el NS ni sobre la ventana"
+        elif ctx.desafios_desde_cambio < minimo:
             motivo = f"R4 mantener: datos insuficientes ({ctx.desafios_desde_cambio} de {minimo} desafíos desde el último cambio)"
         else:
             motivo = "R4 mantener: no corresponde ninguna otra regla"

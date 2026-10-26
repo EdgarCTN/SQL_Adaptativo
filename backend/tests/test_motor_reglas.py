@@ -13,11 +13,11 @@ def c(res, intentos=1, t=30, ref=120):
     return CierreReciente(res, intentos, t, ref)
 
 
-def ctx(ns, cierres, desde=None, config=None):
+def ctx(ns, cierres, desde=None, config=None, **omision):
     return ContextoRegla(
         usuario_id=1, concepto_id=1, concepto_nombre="JOIN", ns_actual=ns, sesion_id=1,
         resultado_sesion=cierres[-1].resultado if cierres else None, cierres_recientes=cierres,
-        desafios_desde_cambio=len(cierres) if desde is None else desde, config=config or cargar_reglas(),
+        desafios_desde_cambio=len(cierres) if desde is None else desde, config=config or cargar_reglas(), **omision,
     )
 
 
@@ -98,7 +98,7 @@ class Falsa(Regla):
 
 
 def test_orden_r5_r1_r4_segun_reglas_json_y_la_primera_detiene_a_las_demas():
-    assert [r.codigo for r in ordenar_reglas(cargar_reglas()["orden_evaluacion_cierre"])] == ["R5", "R1", "R4"]
+    assert [r.codigo for r in ordenar_reglas(cargar_reglas()["orden_evaluacion_cierre"])] == ["R8", "R7", "R5", "R1", "R4"]
     disp = {"R5": Falsa("R5", ns=2), "R1": Falsa("R1", ns=0), "R4": Falsa("R4")}
     assert evaluar(ctx(1, SA3), disp).regla == "R5"  # R5 antes que R1 aunque ambas correspondan
     cfg = copy.deepcopy(cargar_reglas())
@@ -114,7 +114,7 @@ def test_r4_siempre_cierra_la_secuencia_y_el_ns_se_acota():
     assert [r.codigo for r in ordenar_reglas(cfg["orden_evaluacion_cierre"])][-1] == "R4"
     assert evaluar(ctx(1, SA3), {"R4": Falsa("R4", ns=9)}).ns_nuevo == 3
     assert evaluar(ctx(1, SA3), {"R4": Falsa("R4", ns=-4)}).ns_nuevo == 0
-    assert set(REGLAS_DISPONIBLES) == {"R5", "R1", "R4"}
+    assert set(REGLAS_DISPONIBLES) == {"R8", "R7", "R5", "R1", "R4"}
 
 
 # ---------- Indicadores ----------
@@ -125,3 +125,49 @@ def test_indicadores():
     assert calcular_indicadores([c("SA", 1, None)]).tr is None
     assert calcular_indicadores([c("NR", 0, 30)]).ni == 0.0  # abandonado sin envíos
     assert calcular_indicadores([c("SA", 1, 60), c("SA", 2, 120)]).ni == 1.5  # mediana de dos
+
+
+# ---------- R8 y R7 (entrega 4): tabla de casos ----------
+def _om(motivo, **kw):
+    return {"omision_motivo": motivo, **kw}
+
+
+# (nombre, ns, cierres, kwargs de omisión, regla, ns esperado, acción, extra)
+CASOS_OMISION = [
+    ("R8 NS0 sube a 1", 0, [], _om("muy_dificil", omisiones_muy_dificil_seguidas=1), "R8", 1, "sugerir", {}),
+    ("R8 NS1 sube a 2", 1, [], _om("muy_dificil", omisiones_muy_dificil_seguidas=1), "R8", 2, "sugerir", {}),
+    ("R8 NS2 sube a 3", 2, [], _om("muy_dificil", omisiones_muy_dificil_seguidas=1), "R8", 3, "sugerir", {}),
+    ("R8 NS3 se queda en 3 (una sola omisión)", 3, [], _om("muy_dificil", omisiones_muy_dificil_seguidas=1), "R8", 3, "sugerir", {}),
+    ("R8 NS3 y 2 seguidas: se registra para R6 (b)", 3, [], _om("muy_dificil", omisiones_muy_dificil_seguidas=2), "R8", 3, "sugerir",
+     {"r6_b_pendiente": True}),
+    ("R8 NS2 y 2 seguidas: el NS no era 3, no se registra", 2, [], _om("muy_dificil", omisiones_muy_dificil_seguidas=2), "R8", 3, "sugerir", {}),
+    ("R8 no mira la ventana (ni R5 ni R1)", 1, [c("NR")] * 5, _om("muy_dificil", omisiones_muy_dificil_seguidas=1), "R8", 2, "sugerir", {}),
+    ("R7 con 1 omisión acumulada: solo se mantiene", 1, [], _om("muy_facil", omisiones_muy_facil=1), "R4", 1, "mantener", {}),
+    ("R7 con 2: verificación y el NS no cambia", 2, [], _om("muy_facil", omisiones_muy_facil=2), "R7", 2, "verificacion", {}),
+    ("R7 con 3: verificación", 0, [], _om("muy_facil", omisiones_muy_facil=3), "R7", 0, "verificacion", {}),
+    ("R7 con una verificación pendiente no asigna otra", 1, [], _om("muy_facil", omisiones_muy_facil=2, verificacion_pendiente=True),
+     "R4", 1, "mantener", {}),
+    ("R7 no retira aunque la ventana sea perfecta (R1 no se evalúa)", 2, SA3 + [c("SA"), c("SA")], _om("muy_facil", omisiones_muy_facil=1),
+     "R4", 2, "mantener", {}),
+    ("Sin omisión R8 y R7 no intervienen: gana R5", 1, [c("NR")] * 3, {}, "R5", 2, "cambiar_ns", {}),
+]
+
+
+@pytest.mark.parametrize("nombre,ns,cierres,omision,regla,ns_esperado,accion,extra", CASOS_OMISION, ids=[x[0] for x in CASOS_OMISION])
+def test_tabla_r8_y_r7(nombre, ns, cierres, omision, regla, ns_esperado, accion, extra):
+    ev = evaluar(ctx(ns, cierres, **omision))
+    assert (ev.regla, ev.ns_nuevo, ev.accion, ev.extra) == (regla, ns_esperado, accion, extra), nombre
+
+
+def test_el_umbral_de_r7_sale_de_reglas_json():
+    cfg = copy.deepcopy(cargar_reglas())
+    cfg["r7_muy_facil"]["omisiones_para_verificacion"] = 3
+    assert evaluar(ctx(1, [], config=cfg, **_om("muy_facil", omisiones_muy_facil=2))).regla == "R4"
+    assert evaluar(ctx(1, [], config=cfg, **_om("muy_facil", omisiones_muy_facil=3))).regla == "R7"
+
+
+def test_el_umbral_de_omisiones_seguidas_de_r8_sale_de_reglas_json():
+    cfg = copy.deepcopy(cargar_reglas())
+    cfg["r6_estancamiento"]["omisiones_muy_dificil_seguidas"] = 3
+    assert evaluar(ctx(3, [], config=cfg, **_om("muy_dificil", omisiones_muy_dificil_seguidas=2))).extra == {}
+    assert evaluar(ctx(3, [], config=cfg, **_om("muy_dificil", omisiones_muy_dificil_seguidas=3))).extra == {"r6_b_pendiente": True}

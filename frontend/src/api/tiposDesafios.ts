@@ -13,6 +13,7 @@ export interface DesafioResumen {
   dificultad: Dificultad;
   tiempo_referencia_seg: number;
   estado: EstadoDesafio;
+  verificacion: boolean; // R7: es el desafío de verificación pendiente
 }
 
 export interface GrupoDesafios {
@@ -44,6 +45,7 @@ export interface DesafioDetalle {
   tiempo_referencia_seg: number;
   estado: EstadoDesafio;
   sesion_en_curso: SesionResumen | null;
+  verificacion: boolean; // R7: la ayuda no se ofrece sola y, si la pides, ya no cuenta como «sin ayuda»
 }
 
 export interface InicioSesion {
@@ -96,6 +98,38 @@ export interface ResultadoAbandono {
   tiempo_activo_seg: number;
   mensaje: string;
   ajuste_nivel: AjusteNivel | null;
+}
+
+export type MotivoOmision = "muy_facil" | "muy_dificil";
+
+export interface DesafioSugerido {
+  id: number;
+  titulo: string;
+  dificultad: Dificultad;
+}
+
+export interface VerificacionAsignada {
+  concepto: string;
+  desafio_id: number;
+  titulo: string;
+  dificultad: Dificultad;
+  mensaje: string;
+}
+
+export interface MensajeMotor {
+  clave: string;
+  tipo: "retiro" | "refuerzo" | "verificacion" | "sugerencia";
+  texto: string;
+}
+
+export interface ResultadoOmision {
+  estado: string;
+  motivo: MotivoOmision;
+  mensaje: string;
+  ajuste_nivel: AjusteNivel | null;
+  sugerido: DesafioSugerido | null;
+  verificacion: VerificacionAsignada | null;
+  mensajes: MensajeMotor[];
 }
 
 export type TipoAyuda = "AY1" | "AY2" | "AY3" | "AY4";

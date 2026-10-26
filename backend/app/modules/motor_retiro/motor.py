@@ -22,6 +22,7 @@ from app.modules.motor_retiro.mensajes import MensajeEstudiante
 from app.modules.motor_retiro.models import EventoMotor, HistorialNivel
 from app.modules.motor_retiro.niveles import NivelSoporteService
 from app.modules.motor_retiro.reglas.base import ACCION_SUGERIR, ACCION_VERIFICACION
+from app.modules.motor_retiro.verificacion import VerificacionAsignada
 
 log = logging.getLogger("app.motor")
 
@@ -47,7 +48,7 @@ class ResultadoMotor:
 
     ajuste: AjusteNivel | None = None
     sugerido: DesafioSugerido | None = None  # R8
-    verificacion: verificacion.VerificacionAsignada | None = None  # R7
+    verificacion: VerificacionAsignada | None = None  # R7 (el campo se llama como el módulo: por eso se importa la clase aparte)
     mensajes: tuple[MensajeEstudiante, ...] = field(default_factory=tuple)
 
 

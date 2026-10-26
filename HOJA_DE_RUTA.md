@@ -1,6 +1,6 @@
 # HOJA DE RUTA
 
-**Siguiente entrega: 4**
+**Siguiente entrega: 5**
 
 Este archivo es el tablero del proyecto: dice qué entrega toca, qué módulos debe revisar Claude y qué quedó hecho. Lo actualizas tú al terminar cada entrega; va dentro del zip, así que Claude también lo ve.
 
@@ -48,7 +48,7 @@ Si el mismo error persiste tras dos intentos, abre un chat nuevo con el zip, `CO
 | 3A  | Prerrequisitos y 4 conceptos nuevos con desafío                             | RF-09                    | `desafios` + 1 desafío de ejemplo           | hecha     |
 | 3B  | Segundos desafíos: filtrado, ordenamiento, join                             | RF-09                    | `desafios` + 1 desafío de ejemplo           | hecha     |
 | 3C  | Segundos desafíos: having, subconsulta, funciones de ventana                | RF-09                    | `desafios` + 1 desafío de ejemplo           | hecha     |
-| 4   | Omitir desafío; reglas R8 y R7                                              | RF-18, 19                | `motor_retiro desafios linea_base` + matriz | pendiente |
+| 4   | Omitir desafío; reglas R8 y R7                                              | RF-18, 19                | `motor_retiro desafios linea_base` + matriz | hecha     |
 | 5   | Retiro acelerado R2 y estancamiento R6                                      | RF-19                    | `motor_retiro` + matriz                     | pendiente |
 | 6   | Recaída R3, cambio de dificultad R12, inactividad R14                       | RF-19                    | `motor_retiro auth` + matriz                | pendiente |
 | 7   | Ajuste 3.1, dificultad inicial y preferencia de retiro (R13)                | RF-08, 19                | `linea_base motor_retiro` + matriz          | pendiente |

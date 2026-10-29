@@ -226,15 +226,17 @@ def registrar_latido(db: Session, usuario: Usuario, desafio_id: int) -> dict:
     return {"ok": True, "tiempo_activo_seg": sesion.tiempo_activo_seg}
 
 
-def _notificar_cierre(db: Session, sesion: SesionDesafio) -> dict | None:
-    """El cierre ya está guardado: un fallo del hook nunca debe romper la respuesta. Devuelve el ajuste de nivel."""
+def _notificar_cierre(db: Session, sesion: SesionDesafio) -> ResultadoMotor:
+    """El cierre ya está guardado: un fallo del hook nunca debe romper la respuesta. Devuelve lo que decidió el motor."""
     try:
-        ajuste = hooks.al_cerrar_desafio(db, sesion)
+        r = hooks.al_cerrar_desafio(db, sesion)
     except Exception:  # noqa: BLE001
         log.exception("Falló al_cerrar_desafio (sesión %s); el cierre se conserva", sesion.id)
         db.rollback()
-        return None
-    return asdict(ajuste) if isinstance(ajuste, AjusteNivel) else None
+        return ResultadoMotor()
+    if isinstance(r, AjusteNivel):  # hook con la firma de las entregas anteriores
+        return ResultadoMotor(ajuste=r)
+    return r if isinstance(r, ResultadoMotor) else ResultadoMotor()
 
 
 def registrar_intento(db: Session, usuario: Usuario, desafio_id: int, codigo: str) -> dict:
@@ -284,7 +286,7 @@ def registrar_intento(db: Session, usuario: Usuario, desafio_id: int, codigo: st
             raise ErrorApp(MSG_ERROR_GUARDADO, 503)
     if intento is None:
         raise ErrorApp(MSG_ERROR_GUARDADO, 503)
-    ajuste = _notificar_cierre(db, sesion) if res.correcto else None
+    r = _notificar_cierre(db, sesion) if res.correcto else ResultadoMotor()
     return {
         "numero": intento.numero,
         "correcto": res.correcto,
@@ -300,7 +302,8 @@ def registrar_intento(db: Session, usuario: Usuario, desafio_id: int, codigo: st
         "resultado_cierre": sesion.resultado_cierre,
         "tiempo_activo_seg": sesion.tiempo_activo_seg,
         "creado_en": intento.creado_en,
-        "ajuste_nivel": ajuste,
+        "ajuste_nivel": asdict(r.ajuste) if r.ajuste else None,
+        "mensajes": [asdict(m) for m in r.mensajes],
     }
 
 
@@ -316,13 +319,14 @@ def abandonar(db: Session, usuario: Usuario, desafio_id: int) -> dict:
         db.rollback()
         log.exception("No se pudo abandonar el desafío")
         raise ErrorApp(MSG_ERROR_GUARDADO, 503)
-    ajuste = _notificar_cierre(db, sesion)
+    r = _notificar_cierre(db, sesion)
     return {
         "estado": sesion.estado,
         "resultado_cierre": sesion.resultado_cierre,
         "tiempo_activo_seg": sesion.tiempo_activo_seg,
         "mensaje": MSG_ABANDONADO,
-        "ajuste_nivel": ajuste,
+        "ajuste_nivel": asdict(r.ajuste) if r.ajuste else None,
+        "mensajes": [asdict(m) for m in r.mensajes],
     }
 
 

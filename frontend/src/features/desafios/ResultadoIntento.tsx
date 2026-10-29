@@ -1,6 +1,7 @@
 import type { ResultadoIntento as Resultado, TipoResultado } from "../../api/tiposDesafios";
+import AvisoEstancamiento from "./AvisoEstancamiento";
 import AvisoNivel from "./AvisoNivel";
-import { formatearDuracion } from "./formatos";
+import { formatearDuracion, mensajeEstancamiento } from "./formatos";
 import TablaResultado from "./TablaResultado";
 
 const TITULOS: Record<TipoResultado, string> = {
@@ -26,6 +27,7 @@ export default function ResultadoIntento({ intento }: { intento: Resultado }) {
   const hayTabla = tipo === "correcto" || tipo === "resultado_distinto";
   // Correcta pero con la solución completa a la vista (AY4): el desafío queda como no resuelto.
   const correctaNR = intento.desafio_resuelto && intento.resultado_cierre === "NR";
+  const estancamiento = mensajeEstancamiento(intento.mensajes);
   return (
     <section
       className={`rounded-xl border p-4 ${correctaNR ? "border-amber-300 bg-amber-50 text-amber-900" : (ESTILOS[tipo] ?? ESTILOS.error_sql)}`}
@@ -49,6 +51,7 @@ export default function ResultadoIntento({ intento }: { intento: Resultado }) {
       )}
 
       {intento.ajuste_nivel && <AvisoNivel ajuste={intento.ajuste_nivel} />}
+      {estancamiento && <AvisoEstancamiento mensaje={estancamiento} />}
 
       {hayTabla && (
         <details open={tipo === "resultado_distinto"} className="mt-3">

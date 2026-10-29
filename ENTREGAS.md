@@ -93,6 +93,8 @@ Orden: primero lo que hace funcionar el motor y la ayuda (entregas 1 a 9), despu
 
 ## ENTREGA 5: Retiro acelerado (R2) y estancamiento (R6)
 
+**Estado: hecha** (notas en `HOJA_DE_RUTA.md`, decisiones PROVISIONAL en `DECISIONES.md`).
+
 **Revisa en el proyecto:** `python scripts/contexto.py motor_retiro` + `docs/referencia/matriz_resumen.md` · **Cubre:** RF-19.
 
 **Tarea**
@@ -116,6 +118,7 @@ Orden: primero lo que hace funcionar el motor y la ayuda (entregas 1 a 9), despu
 2. **R12 Cambio de dificultad:** el NS del concepto pasa a ser el mayor entre su NS actual y 1, y R1 y R2 se pausan 3 desafíos. La Matriz no define cuándo «pasa» el estudiante a una dificultad mayor: usa una definición operativa **PROVISIONAL** (iniciar un desafío de una dificultad mayor a la más alta ya cerrada en ese concepto) y anótala en DECISIONES.md.
 3. **R14 Inactividad:** 14 días o más sin actividad (usa la última sesión de desafío del estudiante) → el NS de cada concepto sube 1 **sin superar `ns_maximo_historico`** y se muestra el mensaje de reenganche. Se evalúa al iniciar sesión (sin tareas programadas) dentro de un `try/except`; el login devuelve un campo opcional `mensaje_motor` y el frontend lo muestra como aviso.
 4. Todo pasa por `motor_retiro/mensajes.py` y se registra en `eventos_motor` e `historial_niveles`.
+5. **Ya resuelto en la entrega 5:** R2 existe y va antes que R1, así que la pausa de R3 y R12 debe bloquear **R1 y R2**, y para R3 «retiro» son las filas de `historial_niveles` con regla R1 o R2. R3, R12 y R14 **no** cuentan como refuerzo previo de R6 (lista en `reglas.json`, PROVISIONAL). Para pruebas de retiro R1 con `resolver` usa `resolver_con_error` (2 envíos), porque 3 SA con 1 envío son R2.
 
 **Pruebas:** tabla de casos de R3, R12 y R14; la pausa de 3 desafíos bloquea R1 y R2 y después se levanta; el login no falla si el motor falla.
 

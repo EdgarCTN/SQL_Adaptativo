@@ -1,7 +1,7 @@
 """Único punto por donde el motor produce textos para el estudiante (mensajes_fijos.json).
 
 La entrega de notificaciones (entrega 10) solo tiene que enganchar aquí: las reglas no construyen textos.
-Tipos de mensaje: retiro, refuerzo, verificacion, sugerencia.
+Tipos de mensaje: retiro, refuerzo, verificacion, sugerencia, estancamiento.
 """
 from dataclasses import dataclass
 
@@ -11,12 +11,15 @@ TIPO_RETIRO = "retiro"
 TIPO_REFUERZO = "refuerzo"
 TIPO_VERIFICACION = "verificacion"
 TIPO_SUGERENCIA = "sugerencia"
+TIPO_ESTANCAMIENTO = "estancamiento"
 
 _TIPO_POR_CLAVE = {
     "retiro_automatico": TIPO_RETIRO,
     "refuerzo": TIPO_REFUERZO,
     "verificacion": TIPO_VERIFICACION,
     "sugerencia_mas_basico": TIPO_SUGERENCIA,
+    "estancamiento_derivar": TIPO_ESTANCAMIENTO,
+    "estancamiento_previo_sin_dominar": TIPO_ESTANCAMIENTO,
 }
 
 
@@ -25,6 +28,7 @@ class MensajeEstudiante:
     clave: str
     tipo: str
     texto: str
+    enlace: str | None = None  # ruta del frontend (p. ej. /desafios?concepto=join) cuando el mensaje la ofrece
 
 
 def texto_fijo(clave: str | None, **marcadores: str) -> str | None:
@@ -47,8 +51,8 @@ def texto_cambio_ns(clave: str | None, concepto: str, ns_anterior: int, ns_nuevo
     return texto_fijo(clave, concepto=concepto) or f"Tu nivel de ayuda en {concepto} pasó de {ns_anterior} a {ns_nuevo}."
 
 
-def mensaje(clave: str, **marcadores: str) -> MensajeEstudiante | None:
+def mensaje(clave: str, enlace: str | None = None, **marcadores: str) -> MensajeEstudiante | None:
     texto = texto_fijo(clave, **marcadores)
     if texto is None:
         return None
-    return MensajeEstudiante(clave, _TIPO_POR_CLAVE.get(clave, TIPO_REFUERZO), texto)
+    return MensajeEstudiante(clave, _TIPO_POR_CLAVE.get(clave, TIPO_REFUERZO), texto, enlace)

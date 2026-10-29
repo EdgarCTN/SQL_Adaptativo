@@ -1,19 +1,25 @@
 """Evaluador de reglas. Respeta el orden de reglas.json (orden_evaluacion_cierre: R6 → R8 → R7 → R5 → R2 → R1 → R4);
-de esas, hoy existen R8, R7, R5, R1 y R4 (R6 y R2 llegan en la entrega 5). La primera que corresponde detiene las
-siguientes. Si el cierre fue una omisión, solo se evalúan las reglas con `aplica_en_omision` (R8, R7, R4)."""
+completo desde la entrega 5. La primera que corresponde detiene las siguientes. Si el cierre fue una omisión, solo se
+evalúan las reglas con `aplica_en_omision` (R6 (b), R8, R7, R4)."""
 from dataclasses import dataclass, field
 
 from app.modules.motor_retiro.contexto import ContextoRegla
 from app.modules.motor_retiro.niveles import NS_MAXIMO, NS_MINIMO
 from app.modules.motor_retiro.reglas.base import ACCION_CAMBIAR_NS, ACCION_MANTENER, Regla
 from app.modules.motor_retiro.reglas.r1_retiro_estandar import R1RetiroEstandar
+from app.modules.motor_retiro.reglas.r2_retiro_acelerado import R2RetiroAcelerado
 from app.modules.motor_retiro.reglas.r4_mantener import R4Mantener
 from app.modules.motor_retiro.reglas.r5_refuerzo import R5Refuerzo
+from app.modules.motor_retiro.reglas.r6_estancamiento import R6Estancamiento
 from app.modules.motor_retiro.reglas.r7_omision_muy_facil import R7OmisionMuyFacil
 from app.modules.motor_retiro.reglas.r8_omision_muy_dificil import R8OmisionMuyDificil
 
 REGLAS_DISPONIBLES: dict[str, Regla] = {
-    r.codigo: r for r in (R8OmisionMuyDificil(), R7OmisionMuyFacil(), R5Refuerzo(), R1RetiroEstandar(), R4Mantener())
+    r.codigo: r
+    for r in (
+        R6Estancamiento(), R8OmisionMuyDificil(), R7OmisionMuyFacil(), R5Refuerzo(), R2RetiroAcelerado(),
+        R1RetiroEstandar(), R4Mantener(),
+    )
 }
 
 
@@ -23,7 +29,7 @@ class Evaluacion:
     ns_nuevo: int
     motivo: str
     clave_mensaje: str | None = None
-    accion: str = ACCION_MANTENER  # cambiar_ns | verificacion | sugerir | mantener
+    accion: str = ACCION_MANTENER  # cambiar_ns | verificacion | sugerir | estancamiento | mantener
     extra: dict = field(default_factory=dict)
 
 

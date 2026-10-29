@@ -8,8 +8,9 @@ class R8OmisionMuyDificil(Regla):
 
     Condición: el desafío que se acaba de cerrar se omitió por «Muy difícil». No cuenta como fallo ni entra en la
     ventana. Acción: el NS sube 1 (máximo 3) y se ofrece un desafío más básico del mismo concepto (lo busca el motor).
-    Si es la segunda omisión «Muy difícil» seguida y el NS ya era 3, se registra para R6 (b), que llega en la
-    entrega 5. Umbral (reglas.json): r6_estancamiento.omisiones_muy_dificil_seguidas.
+    Si es la segunda omisión «Muy difícil» seguida y el NS ya era 3, corresponde R6 (b), que va antes en el orden y
+    detiene a R8; la marca r6_b_pendiente solo se escribe si R6 no está en orden_evaluacion_cierre.
+    Umbral (reglas.json): r6_estancamiento.omisiones_muy_dificil_seguidas.
     """
 
     codigo = "R8"

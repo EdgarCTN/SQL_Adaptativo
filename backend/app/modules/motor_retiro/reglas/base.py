@@ -7,6 +7,7 @@ from app.modules.motor_retiro.contexto import ContextoRegla
 ACCION_CAMBIAR_NS = "cambiar_ns"  # el NS cambia (R1, R5; también R8 cuando no hay sugerencia)
 ACCION_VERIFICACION = "verificacion"  # asignar un desafío de verificación (R7)
 ACCION_SUGERIR = "sugerir"  # ofrecer un desafío más básico del mismo concepto (R8)
+ACCION_ESTANCAMIENTO = "estancamiento"  # el NS no cambia; se deriva o se sugiere el concepto previo (R6)
 ACCION_MANTENER = "mantener"  # nada que hacer (R4)
 
 

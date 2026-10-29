@@ -76,6 +76,13 @@ class IntentoIn(BaseModel):
         return v
 
 
+class MensajeMotorOut(BaseModel):
+    clave: str
+    tipo: str  # retiro | refuerzo | verificacion | sugerencia | estancamiento
+    texto: str
+    enlace: str | None = None  # ruta del frontend, p. ej. /desafios?concepto=join (R6)
+
+
 class AjusteNivelOut(BaseModel):
     concepto: str
     ns_anterior: int
@@ -100,6 +107,7 @@ class IntentoOut(BaseModel):
     tiempo_activo_seg: int | None = None
     creado_en: datetime
     ajuste_nivel: AjusteNivelOut | None = None  # solo si al resolver cambió el nivel de ayuda del concepto
+    mensajes: list[MensajeMotorOut] = []  # avisos del motor (p. ej. R6 estancamiento, que no cambia el NS)
 
 
 class AbandonarOut(BaseModel):
@@ -108,6 +116,7 @@ class AbandonarOut(BaseModel):
     tiempo_activo_seg: int
     mensaje: str
     ajuste_nivel: AjusteNivelOut | None = None
+    mensajes: list[MensajeMotorOut] = []
 
 
 MotivoOmision = Literal["muy_facil", "muy_dificil"]
@@ -137,12 +146,6 @@ class VerificacionOut(BaseModel):
     titulo: str
     dificultad: Dificultad
     mensaje: str
-
-
-class MensajeMotorOut(BaseModel):
-    clave: str
-    tipo: str  # retiro | refuerzo | verificacion | sugerencia
-    texto: str
 
 
 class OmitirOut(BaseModel):

@@ -1,11 +1,12 @@
-"""Motor de reglas (R5, R1, R4 y, desde la entrega 4, R8 y R7). Se invoca al cerrar un desafío (resuelto, abandonado
-u omitido).
+"""Motor de reglas (R6, R8, R7, R5, R2, R1, R4; completo desde la entrega 5). Se invoca al cerrar un desafío (resuelto,
+abandonado u omitido).
 
 Nunca rompe el cierre: ante cualquier fallo (reglas.json ilegible, error de base, etc.) mantiene el NS,
 registra el error en eventos_motor y devuelve un resultado vacío (CU04 EX2).
 """
 import logging
 from dataclasses import dataclass, field
+from urllib.parse import quote
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -21,7 +22,7 @@ from app.modules.motor_retiro.evaluador import evaluar
 from app.modules.motor_retiro.mensajes import MensajeEstudiante
 from app.modules.motor_retiro.models import EventoMotor, HistorialNivel
 from app.modules.motor_retiro.niveles import NivelSoporteService
-from app.modules.motor_retiro.reglas.base import ACCION_SUGERIR, ACCION_VERIFICACION
+from app.modules.motor_retiro.reglas.base import ACCION_ESTANCAMIENTO, ACCION_SUGERIR, ACCION_VERIFICACION
 from app.modules.motor_retiro.verificacion import VerificacionAsignada
 
 log = logging.getLogger("app.motor")
@@ -145,13 +146,12 @@ def _procesar(db: Session, sesion: SesionDesafio, reglas: dict | None, omision_m
                 detalle += " (sin desafío disponible: el contador no se reinicia)"
 
         indicadores = {**ctx.indicadores.como_dict(), "desafios_desde_cambio": ctx.desafios_desde_cambio,
-                       "resultado_sesion": ctx.resultado_sesion}
+                       "resultado_sesion": ctx.resultado_sesion, **ev.extra}  # extra: p. ej. r6_condicion, prerrequisito
         if omision_motivo is not None:
             indicadores.update(
                 omision=omision_motivo, omisiones_muy_facil=ctx.omisiones_muy_facil,
                 omisiones_muy_dificil_seguidas=ctx.omisiones_muy_dificil_seguidas,
                 sugerido_id=sugerido.id if sugerido else None, verificacion_id=asignada.desafio_id if asignada else None,
-                **ev.extra,  # r6_b_pendiente: 2 omisiones «Muy difícil» seguidas con NS 3 (la usa R6 en la entrega 5)
             )
         db.add(
             EventoMotor(
@@ -179,6 +179,16 @@ def _procesar(db: Session, sesion: SesionDesafio, reglas: dict | None, omision_m
             m = mensajes.mensaje(ev.clave_mensaje or "verificacion", concepto=concepto.nombre)
             if m:
                 lista.append(m)
+        if ev.accion == ACCION_ESTANCAMIENTO:  # R6: el NS no cambia; deriva o manda a practicar el concepto previo
+            previo = ev.clave_mensaje == "estancamiento_previo_sin_dominar" and ctx.prerrequisito_codigo is not None
+            m = mensajes.mensaje(
+                ev.clave_mensaje,
+                enlace=f"/desafios?concepto={quote(ctx.prerrequisito_codigo, safe='')}" if previo else None,
+                concepto=concepto.nombre,
+                concepto_previo=ctx.prerrequisito_nombre or "",
+            )
+            if m:
+                lista.append(m)
         return ResultadoMotor(ajuste, sugerido, asignada, tuple(lista))
     except Exception as e:  # noqa: BLE001  (el cierre del desafío nunca se rompe)
         log.exception("Falló el motor de reglas (sesión %s): se mantiene el NS", sesion_id)
@@ -187,9 +197,14 @@ def _procesar(db: Session, sesion: SesionDesafio, reglas: dict | None, omision_m
         return ResultadoMotor()
 
 
+def cerrar_desafio_con_mensajes(db: Session, sesion: SesionDesafio, reglas: dict | None = None) -> ResultadoMotor:
+    """Cierre por resolución o abandono: ajuste de NS y mensajes al estudiante (R6 añade el suyo sin cambiar el NS)."""
+    return _procesar(db, sesion, reglas, None)
+
+
 def cerrar_desafio(db: Session, sesion: SesionDesafio, reglas: dict | None = None) -> AjusteNivel | None:
     """Cierre por resolución o abandono. Conserva la firma de las entregas anteriores."""
-    return _procesar(db, sesion, reglas, None).ajuste
+    return cerrar_desafio_con_mensajes(db, sesion, reglas).ajuste
 
 
 def cerrar_omision(db: Session, sesion: SesionDesafio, reglas: dict | None = None) -> ResultadoMotor:

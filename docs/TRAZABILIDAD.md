@@ -22,7 +22,7 @@ Estado de cada requisito de `docs/referencia/requisitos.md`. Se actualiza al ter
 | RF-16 | Ayuda con contexto del estudiante | Parcial: sin historial del desafío en el prompt | 9 | tests/test_prompt_builder.py |
 | RF-17 | Registro de ayudas | Cumplido (el frontend las pierde al cerrar la pestaña) | 9 | tests/test_asistencia_api.py |
 | RF-18 | Cálculo de indicadores | Cumplido: TA, NI, TR y UA con pandas; TR con tiempo activo por latidos (PROVISIONAL, hueco 45 s); UA PROVISIONAL (ver DECISIONES) | 2 | tests/test_analitica_indicadores.py, tests/test_motor_reglas.py, tests/test_latidos.py |
-| RF-19 | Ajuste del nivel de ayuda (R0 a R14) | Parcial: 5 de 15 reglas (R1, R4, R5, R7, R8) y R0 parcial; omitir un desafío y verificación (R7) PROVISIONAL en la elección del desafío (ver DECISIONES) | 4 a 8 | tests/test_motor_reglas.py, tests/test_omitir.py |
+| RF-19 | Ajuste del nivel de ayuda (R0 a R14) | Parcial: 7 de 15 reglas (R1, R2, R4, R5, R6, R7, R8) y R0 parcial; R6 (lista de refuerzo previo y mapa de prerrequisitos) y R2 (TR de los 3 últimos) PROVISIONAL; omitir y verificación (R7) PROVISIONAL en la elección del desafío (ver DECISIONES) | 4 a 8 | tests/test_motor_reglas.py, tests/test_omitir.py |
 | RF-20 | Estado de sesión en Redis | Fuera de alcance actual: el nivel vive en la base de datos | — | niveles_soporte |
 | RF-21 | Notificaciones | Parcial: solo aviso en pantalla al cerrar un desafío | 10 | tests/test_motor_integracion.py |
 | RF-22 | Progreso del estudiante | Cumplido | — | tests/test_progreso.py |

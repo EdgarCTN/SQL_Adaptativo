@@ -10,7 +10,7 @@ class R5Refuerzo(Regla):
     Acción: el NS sube 1 (máximo 3).
     Umbrales (reglas.json): ventana.minimo_desafios_desde_cambio, retiro_refuerzo.ta_refuerzo_max,
     ni_refuerzo_min y ta_retiro_min (el «0.80» de la segunda condición es el mismo umbral que el de R1).
-    Con NS = 3 la regla corresponde pero no hay a dónde subir: queda en 3 (R6 Estancamiento aún no está).
+    Con NS = 3 la regla corresponde pero no hay a dónde subir: queda en 3 (R6 va antes y atiende el estancamiento).
     Indicadores: TA y NI de la ventana (ver indicadores.py).
     """
 

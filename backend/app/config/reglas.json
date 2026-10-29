@@ -22,7 +22,8 @@
   "ni_refuerzo_min": 4,
   "tr_retiro_estandar_max": 1.25,
   "tr_retiro_acelerado_max": 1.0,
-  "desafios_limpios_acelerado": 3
+  "desafios_limpios_acelerado": 3,
+  "intentos_desafio_limpio": 1
  },
  "recaida_y_pausas": {
   "desafios_ce_nr_para_recaida": 2,
@@ -30,7 +31,13 @@
  },
  "r6_estancamiento": {
   "ns_maximo_prerrequisito_dominado": 1,
-  "omisiones_muy_dificil_seguidas": 2
+  "omisiones_muy_dificil_seguidas": 2,
+  "reglas_que_cuentan_como_refuerzo": [
+   "R5",
+   "R8"
+  ],
+  "provisional": true,
+  "nota": "provisional aplica a reglas_que_cuentan_como_refuerzo: filas de historial_niveles del concepto cuya regla esté en la lista cuentan como «refuerzo previo» para R6 (a). No cuentan R12, R14 ni R3. Se cambia aquí, sin tocar el código."
  },
  "r7_muy_facil": {
   "omisiones_para_verificacion": 2

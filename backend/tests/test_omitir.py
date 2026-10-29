@@ -181,7 +181,7 @@ def test_r8_reinicia_la_ventana_y_cambia_la_primera_ayuda(client, db, sin_sembra
     assert client.post(f"{API}/desafios/{did}/ayuda", json={}, headers=h).json()["tipo_ayuda"] == "AY2"  # NS2: primera ayuda AY2
 
 
-def test_r8_dos_omisiones_seguidas_con_ns3_se_registran_para_r6(client, db, sin_sembrados):
+def test_r6_b_dos_omisiones_muy_dificil_seguidas_con_ns3_derivan(client, db, sin_sembrados):
     h = estudiante(client)
     facil = crear_desafio(db, "filtrado", "D1", "Facil")
     dificil = crear_desafio(db, "filtrado", "D2", "Dificil")
@@ -189,10 +189,29 @@ def test_r8_dos_omisiones_seguidas_con_ns3_se_registran_para_r6(client, db, sin_
     primera = omitir(client, h, dificil, "muy_dificil").json()
     segunda = omitir(client, h, dificil, "muy_dificil").json()
     assert primera["ajuste_nivel"] is None and segunda["ajuste_nivel"] is None and ns_de(db) == 3
-    assert segunda["sugerido"]["id"] == facil
+    assert primera["sugerido"]["id"] == facil  # la primera sigue R8: sugiere uno más básico
+    assert segunda["sugerido"] is None  # la segunda es R6 (b): va antes que R8 y la detiene
+    assert [(m["clave"], m["tipo"], m["enlace"]) for m in segunda["mensajes"]] == [("estancamiento_derivar", "estancamiento", None)]
+    assert segunda["mensajes"][0]["texto"] == MENSAJES["estancamiento_derivar"]["texto"]
     ev = eventos(db)
-    assert "r6_b_pendiente" not in ev[0].indicadores and ev[1].indicadores["r6_b_pendiente"] is True
+    assert (ev[0].regla, ev[1].regla, ev[1].resultado) == ("R8", "R6", "mantiene")
+    assert "r6_condicion" not in ev[0].indicadores and ev[1].indicadores["r6_condicion"] == "b"
     assert "R6 (b)" in ev[1].detalle and ev[1].indicadores["omisiones_muy_dificil_seguidas"] == 2
+    assert contar(db, HistorialNivel) == 0
+
+
+def test_r6_b_con_el_prerrequisito_sin_dominar_manda_a_practicarlo(client, db, sin_sembrados):
+    h = estudiante(client)
+    dificil = crear_desafio(db, "join", "D2", "Unir tablas")  # join depende de filtrado (mapa PROVISIONAL)
+    poner_ns(db, 3, "join")
+    poner_ns(db, 2, "filtrado")
+    omitir(client, h, dificil, "muy_dificil")
+    segunda = omitir(client, h, dificil, "muy_dificil").json()
+    m = segunda["mensajes"][0]
+    assert (m["clave"], m["tipo"], m["enlace"]) == ("estancamiento_previo_sin_dominar", "estancamiento", "/desafios?concepto=filtrado")
+    assert "Filtrado (WHERE)" in m["texto"] and segunda["sugerido"] is None
+    ev = eventos(db)[-1]
+    assert ev.regla == "R6" and ev.indicadores["prerrequisito"] == "filtrado" and ev.indicadores["prerrequisito_ns"] == 2
 
 
 def test_r8_las_omisiones_seguidas_se_cortan_con_otro_cierre(client, db, sin_sembrados):
@@ -213,9 +232,9 @@ def test_r8_en_ns2_dos_seguidas_no_registran_r6_porque_el_ns_no_era_3(client, db
     poner_ns(db, 1)
     omitir(client, h, dificil, "muy_dificil")  # 1 → 2
     omitir(client, h, dificil, "muy_dificil")  # 2 → 3, el NS no era 3 al llegar
-    assert ns_de(db) == 3 and "r6_b_pendiente" not in eventos(db)[-1].indicadores
+    assert ns_de(db) == 3 and eventos(db)[-1].regla == "R8" and "r6_condicion" not in eventos(db)[-1].indicadores
     omitir(client, h, dificil, "muy_dificil")  # tercera seguida, ahora sí estaba en 3
-    assert eventos(db)[-1].indicadores["r6_b_pendiente"] is True
+    assert eventos(db)[-1].regla == "R6" and eventos(db)[-1].indicadores["r6_condicion"] == "b"
 
 
 # ---------- las omisiones no entran en la ventana ----------
@@ -364,6 +383,20 @@ def test_resolver_la_verificacion_sin_ayuda_la_completa_como_sa(client, db, sin_
     assert client.get(f"{API}/desafios/{b}", headers=h).json()["verificacion"] is False
     # es un cierre normal más de la ventana (así contará como el primero de los 3 limpios de R2 en la entrega 5)
     assert eventos(db)[-1].indicadores["n"] == 1 and eventos(db)[-1].indicadores["resultado_sesion"] == "SA"
+
+
+def test_la_verificacion_resuelta_cuenta_como_el_primero_de_los_3_limpios_de_r2(client, db, sin_sembrados):
+    h = estudiante(client)
+    a = crear_desafio(db, "filtrado", "D1", "A")
+    b = crear_desafio(db, "filtrado", "D2", "B")
+    omitir(client, h, a, "muy_facil")
+    omitir(client, h, a, "muy_facil")  # verificación asignada: b
+    assert resolver(client, h, b)["ajuste_nivel"] is None  # SA: el 1.º limpio (las omisiones no entran en la ventana)
+    assert resolver(client, h, a)["ajuste_nivel"] is None  # 2.º
+    j = resolver(client, h, a)  # 3.º: R2, NS 1 → 0
+    assert (j["ajuste_nivel"]["ns_anterior"], j["ajuste_nivel"]["ns_nuevo"]) == (1, 0)
+    db.expire_all()
+    assert db.scalar(select(HistorialNivel.regla)) == "R2"
 
 
 def test_en_la_verificacion_la_ayuda_sigue_disponible_pero_ya_no_cuenta_como_sa(client, db, sin_sembrados):

@@ -10,7 +10,7 @@ from app.modules.desafios.models import Desafio
 from app.modules.motor_retiro import motor
 from conftest import API, cabecera, registrar, token_de
 from test_desafios import crear_desafio
-from test_motor_integracion import abandonar, ana, concepto, estado, poner_ns, preparar, primera_ayuda, resolver
+from test_motor_integracion import abandonar, ana, concepto, estado, poner_ns, preparar, primera_ayuda, resolver, resolver_con_error
 
 
 @pytest.fixture(autouse=True)
@@ -51,9 +51,18 @@ def test_retiro_r1_guarda_el_ns_resultante(client, db):
     h, did = preparar(client, db)
     poner_ns(db, 2)
     for _ in range(3):
-        resolver(client, h, did)
+        resolver_con_error(client, h, did)  # 2 envíos por desafío: no son «limpios», retira R1 y no R2
     rs = filas(db)
     assert [r.ns for r in rs] == [2, 2, 1] and rs[-1].ta == 1.0
+
+
+def test_retiro_r2_guarda_el_ns_resultante(client, db):
+    h, did = preparar(client, db)
+    poner_ns(db, 2)
+    for _ in range(3):
+        resolver(client, h, did)
+    rs = filas(db)
+    assert [r.ns for r in rs] == [2, 2, 0] and rs[-1].ta == 1.0
 
 
 def test_un_fallo_al_guardar_el_historico_no_rompe_el_cierre_ni_el_ajuste(client, db, monkeypatch):

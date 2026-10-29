@@ -1,18 +1,22 @@
 import { Link } from "react-router-dom";
 
 import type { ResultadoOmision as Resultado } from "../../api/tiposDesafios";
+import AvisoEstancamiento from "./AvisoEstancamiento";
 import AvisoNivel from "./AvisoNivel";
-import { ETIQUETA_DIFICULTAD } from "./formatos";
+import { ETIQUETA_DIFICULTAD, mensajeEstancamiento } from "./formatos";
 
-/** Qué pasó al omitir: aviso de nivel (R8), desafío más básico sugerido (R8) y desafío de verificación (R7). */
+/** Qué pasó al omitir: aviso de nivel (R8), desafío más básico (R8), verificación (R7) y estancamiento (R6 b). */
 export default function ResultadoOmision({ resultado }: { resultado: Resultado }) {
   const sugerencia = resultado.mensajes.find((m) => m.tipo === "sugerencia");
+  const estancamiento = mensajeEstancamiento(resultado.mensajes);
   return (
     <section role="status" className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-indigo-900">
       <h2 className="text-base font-semibold">Desafío omitido</h2>
       <p className="mt-1 text-sm">{resultado.mensaje}</p>
 
       {resultado.ajuste_nivel && <AvisoNivel ajuste={resultado.ajuste_nivel} />}
+
+      {estancamiento && <AvisoEstancamiento mensaje={estancamiento} />}
 
       {resultado.sugerido && (
         <div className="mt-3 rounded-lg border border-indigo-300 bg-white p-3 text-sm">

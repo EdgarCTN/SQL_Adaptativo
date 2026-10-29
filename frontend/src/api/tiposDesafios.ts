@@ -90,6 +90,7 @@ export interface ResultadoIntento {
   tiempo_activo_seg: number | null;
   creado_en: string;
   ajuste_nivel: AjusteNivel | null;
+  mensajes: MensajeMotor[]; // avisos del motor que no cambian el nivel (R6 estancamiento)
 }
 
 export interface ResultadoAbandono {
@@ -98,6 +99,7 @@ export interface ResultadoAbandono {
   tiempo_activo_seg: number;
   mensaje: string;
   ajuste_nivel: AjusteNivel | null;
+  mensajes: MensajeMotor[];
 }
 
 export type MotivoOmision = "muy_facil" | "muy_dificil";
@@ -118,8 +120,9 @@ export interface VerificacionAsignada {
 
 export interface MensajeMotor {
   clave: string;
-  tipo: "retiro" | "refuerzo" | "verificacion" | "sugerencia";
+  tipo: "retiro" | "refuerzo" | "verificacion" | "sugerencia" | "estancamiento";
   texto: string;
+  enlace?: string | null; // ruta del frontend; R6 la usa para llevar a los desafíos del concepto previo
 }
 
 export interface ResultadoOmision {

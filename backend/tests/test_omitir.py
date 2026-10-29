@@ -196,7 +196,7 @@ def test_r6_b_dos_omisiones_muy_dificil_seguidas_con_ns3_derivan(client, db, sin
     ev = eventos(db)
     assert (ev[0].regla, ev[1].regla, ev[1].resultado) == ("R8", "R6", "mantiene")
     assert "r6_condicion" not in ev[0].indicadores and ev[1].indicadores["r6_condicion"] == "b"
-    assert "R6 (b)" in ev[1].detalle and ev[1].indicadores["omisiones_muy_dificil_seguidas"] == 2
+    assert "R6 estancamiento (b)" in ev[1].detalle and ev[1].indicadores["omisiones_muy_dificil_seguidas"] == 2
     assert contar(db, HistorialNivel) == 0
 
 

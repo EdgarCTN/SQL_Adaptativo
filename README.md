@@ -1,6 +1,6 @@
 # Desafíos SQL adaptativos (MVP del estudiante)
 
-Plataforma web (proyecto de tesis) donde el estudiante se registra, acepta el consentimiento, responde un diagnóstico, resuelve desafíos de SQL en un sandbox, pide ayuda cuando la necesita y ve cómo el sistema ajusta su **nivel de soporte (NS 0 a 3)** por concepto. Hay una pantalla de progreso. El motor de reglas decide el nivel y el tipo de ayuda; el LLM solo redacta. Sin API key funciona en **modo demostración**.
+Plataforma web (proyecto de tesis) donde el estudiante se registra, acepta el consentimiento, responde un diagnóstico, resuelve desafíos de SQL en un sandbox, pide ayuda cuando la necesita y ve cómo el sistema ajusta su **nivel de soporte (NS 0 a 3)** por concepto. Hay una pantalla de progreso. El motor de reglas (retiro, refuerzo, estancamiento, recaída, cambio de dificultad e inactividad) decide el nivel y el tipo de ayuda; el LLM solo redacta. Sin API key funciona en **modo demostración**.
 
 No incluye (aún): rol docente, reportes, Redis ni Docker.
 
@@ -48,7 +48,7 @@ cd frontend && npm run dev
 
 - Usuario demo: `estudiante@demo.edu` / `Demo12345!` (definido en `.env.example`; se crea si `SEED_USUARIO_DEMO=true`).
 - Puedes registrar tu propia cuenta. El primer ingreso lleva al consentimiento y al diagnóstico.
-- `python scripts/reset_db.py` borra y recrea la BD (detén antes el servidor).
+- `python scripts/reset_db.py` borra y recrea la BD (detén antes el servidor). Hazlo después de actualizar el código si la entrega cambió tablas o columnas (no hay migraciones; la entrega 6 añadió dos columnas a `niveles_soporte`).
 
 ## Pruebas
 

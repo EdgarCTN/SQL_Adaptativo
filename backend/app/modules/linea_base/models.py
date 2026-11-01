@@ -91,6 +91,10 @@ class NivelSoporte(Base):
     ultimo_cambio_en: Mapped[Any] = mapped_column(UTCDateTime, default=ahora_utc)
     desafios_desde_cambio: Mapped[int] = mapped_column(Integer, default=0)
     ns_maximo_historico: Mapped[int] = mapped_column(Integer)
+    # R3: NS que tenía antes del último retiro (R1/R2); None si el último cambio de NS no fue un retiro.
+    ns_previo_retiro: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # R3 y R12: desafíos que faltan por cerrar con R1 y R2 pausados; None o 0 = sin pausa.
+    pausa_retiros_restante: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
 class Omision(Base):

@@ -5,7 +5,7 @@ Estado de cada requisito de `docs/referencia/requisitos.md`. Se actualiza al ter
 | ID | Requisito | Estado | Entrega | Evidencia |
 |---|---|---|---|---|
 | RF-01 | Registro de usuarios | Cumplido | — | tests/test_auth.py |
-| RF-02 | Inicio de sesión | Cumplido | — | tests/test_auth.py |
+| RF-02 | Inicio de sesión | Cumplido (el login puede devolver `mensaje_motor` de reenganche, R14; nunca falla por el motor) | 6 | tests/test_auth.py, tests/test_motor_recaida_dificultad_inactividad.py |
 | RF-03 | Cierre de sesión | Cumplido (el servidor revoca el jti) | 1 | tests/test_logout.py |
 | RF-04 | Gestión de roles | Parcial: el rol existe y da 403; falta gestionarlo | 13A | — |
 | RF-05 | Perfil | Cumplido | — | tests/test_auth.py |
@@ -22,9 +22,9 @@ Estado de cada requisito de `docs/referencia/requisitos.md`. Se actualiza al ter
 | RF-16 | Ayuda con contexto del estudiante | Parcial: sin historial del desafío en el prompt | 9 | tests/test_prompt_builder.py |
 | RF-17 | Registro de ayudas | Cumplido (el frontend las pierde al cerrar la pestaña) | 9 | tests/test_asistencia_api.py |
 | RF-18 | Cálculo de indicadores | Cumplido: TA, NI, TR y UA con pandas; TR con tiempo activo por latidos (PROVISIONAL, hueco 45 s); UA PROVISIONAL (ver DECISIONES) | 2 | tests/test_analitica_indicadores.py, tests/test_motor_reglas.py, tests/test_latidos.py |
-| RF-19 | Ajuste del nivel de ayuda (R0 a R14) | Parcial: 7 de 15 reglas (R1, R2, R4, R5, R6, R7, R8) y R0 parcial; R6 (lista de refuerzo previo y mapa de prerrequisitos) y R2 (TR de los 3 últimos) PROVISIONAL; omitir y verificación (R7) PROVISIONAL en la elección del desafío (ver DECISIONES) | 4 a 8 | tests/test_motor_reglas.py, tests/test_omitir.py |
+| RF-19 | Ajuste del nivel de ayuda (R0 a R14) | Parcial: 10 de 15 reglas (R1 a R8, R12, R14) y R0 parcial; R6 (lista de refuerzo previo y mapa de prerrequisitos), R2 (TR de los 3 últimos) y R12 (cuándo «pasa» a una dificultad mayor) PROVISIONAL; omitir y verificación (R7) PROVISIONAL en la elección del desafío (ver DECISIONES) | 4 a 8 y 6 | tests/test_motor_reglas.py, tests/test_omitir.py, tests/test_motor_recaida_dificultad_inactividad.py |
 | RF-20 | Estado de sesión en Redis | Fuera de alcance actual: el nivel vive en la base de datos | — | niveles_soporte |
-| RF-21 | Notificaciones | Parcial: solo aviso en pantalla al cerrar un desafío | 10 | tests/test_motor_integracion.py |
+| RF-21 | Notificaciones | Parcial: avisos en pantalla al cerrar o iniciar un desafío (R3, R12) y aviso de reenganche al iniciar sesión (R14); sin campana ni tabla | 10 | tests/test_motor_integracion.py |
 | RF-22 | Progreso del estudiante | Cumplido | — | tests/test_progreso.py |
 | RF-23 | Gráficos de evolución | Parcial: datos listos (`serie_historica`, tabla `indicadores_historicos`); faltan los gráficos (entrega 11) | 2, 11 | tests/test_analitica_historico.py |
 | RF-24 | Filtro de historial de intentos | Pendiente | 11 | — |

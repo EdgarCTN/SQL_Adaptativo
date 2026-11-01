@@ -111,6 +111,8 @@ Orden: primero lo que hace funcionar el motor y la ayuda (entregas 1 a 9), despu
 
 ## ENTREGA 6: Recaída (R3), cambio de dificultad (R12) e inactividad (R14)
 
+**Estado: hecha** (requirió `reset_db.py`; notas en `HOJA_DE_RUTA.md`, decisiones PROVISIONAL en `DECISIONES.md`).
+
 **Revisa en el proyecto:** `python scripts/contexto.py motor_retiro auth` + `docs/referencia/matriz_resumen.md` · **Cubre:** RF-19.
 
 **Tarea**
@@ -135,7 +137,9 @@ Orden: primero lo que hace funcionar el motor y la ayuda (entregas 1 a 9), despu
 2. **Dificultad inicial.** El listado de desafíos marca con «Empieza aquí» el nivel (D1, D2 o D3) que corresponde al estudiante, sin bloquear los demás.
 3. **R13, pregunta 3.4 (cómo retirar la ayuda).** Los retiros de R1 y R2 respetan la preferencia: `automatico` (como hoy); `aviso_previo` (se avisa y se aplica en el siguiente desafío salvo que pulse «Mantener la ayuda»); `preguntar` (se aplica solo si acepta); `mantener` (no se retira ni se avisa; el motor registra que se cumplió el criterio). Tabla `ajustes_pendientes` y `POST /ajustes/{id}/responder` {aceptar | mantener}. Usa los mensajes `retiro_aviso_previo`, `retiro_preguntar` y `retiro_mantener_nivel` de `mensajes_fijos.json`. Frontend: botón «Mantener la ayuda» y diálogo de pregunta.
 
-**Pruebas:** tabla del ajuste por 3.1 (cada opción y cada excepción); dificultad inicial; un retiro bajo cada valor de 3.4; aceptar y mantener actualizan o no el NS.
+4. **Ya resuelto en la entrega 6:** `ContextoRegla.pausa_retiros` ya bloquea R1 y R2 (con pausa no se crean ajustes pendientes). R3 reconoce un retiro por la última fila de `historial_niveles` del concepto con regla R1 o R2 **y** `niveles_soporte.ns_previo_retiro`: todo retiro que se aplique después de la respuesta del estudiante (`aviso_previo`, `preguntar`) debe guardarse con `motor._guardar_cambio_ns(..., regla="R1" | "R2", es_retiro=True)`, para que la recaída siga funcionando; si no se aplica (`mantener`), no se escribe nada. `hooks.al_iniciar_desafio` ya ejecuta R12 al iniciar un desafío: si aplicas ahí un retiro diferido, hazlo antes de R12. R14 sube el NS hasta `ns_maximo_historico`: al aplicar el ajuste 3.1 decide qué guardar como máximo histórico (el NS previo al ajuste o el ajustado), anótalo en DECISIONES.md como **PROVISIONAL** y avísame en una línea. Las filas de `niveles_soporte` de la línea base dejan `ns_previo_retiro` y `pausa_retiros_restante` en NULL.
+
+**Pruebas:** tabla del ajuste por 3.1 (cada opción y cada excepción); dificultad inicial; un retiro bajo cada valor de 3.4; aceptar y mantener actualizan o no el NS; un retiro aplicado tras «aceptar» sigue permitiendo la recaída (R3).
 
 **Hecho cuando:** un estudiante nuevo que eligió «una pista general» en 3.1 empieza con un NS menor; con la preferencia «preguntar» el retiro espera mi respuesta.
 
@@ -179,7 +183,7 @@ Orden: primero lo que hace funcionar el motor y la ayuda (entregas 1 a 9), despu
 **Revisa en el proyecto:** `python scripts/contexto.py motor_retiro` · **Cubre:** RF-21.
 
 **Tarea**
-1. Tabla `notificaciones` (usuario_id, tipo, texto, regla, concepto_id nullable, leida, creada_en, ajuste_id nullable). Se crean desde `motor_retiro/mensajes.py`: retiro, refuerzo, recaída, reenganche, verificación y estancamiento. Sin duplicados por evento. Los textos salen de `mensajes_fijos.json`.
+1. Tabla `notificaciones` (usuario_id, tipo, texto, regla, concepto_id nullable, leida, creada_en, ajuste_id nullable). Se crean desde `motor_retiro/mensajes.py`: retiro, refuerzo, recaída (R3), cambio de dificultad (R12), reenganche (R14), verificación y estancamiento. Los mensajes ya existen con su `tipo` (`recaida`, `cambio_dificultad`, `reenganche`); R14 se genera al iniciar sesión (`motor.evaluar_inactividad`, hoy solo devuelve `mensaje_motor` en el login) y R12 al iniciar un desafío (`motor.iniciar_desafio`). Sin duplicados por evento. Los textos salen de `mensajes_fijos.json`.
 2. Endpoints propios del estudiante: `GET /notificaciones`, `POST /notificaciones/{id}/leida`, `POST /notificaciones/leer-todas`.
 3. Frontend: campana con contador en el encabezado (se actualiza al cerrar un desafío y cada 60 s con la pestaña visible), un panel desplegable y la página `/notificaciones`. Las que requieren decisión (R13) son accionables. Cada pantalla con sus 4 estados. Sin correo ni push.
 

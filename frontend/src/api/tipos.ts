@@ -15,6 +15,7 @@ export interface TokenOut {
   token_type: string;
   expira_en: number;
   usuario: Usuario;
+  mensaje_motor?: string | null; // R14: reenganche tras ≥ 14 días sin actividad
 }
 
 export interface Mensaje {

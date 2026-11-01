@@ -7,6 +7,8 @@ import type { Usuario } from "../api/tipos";
 
 interface AuthValor {
   usuario: Usuario | null;
+  avisoMotor: string | null; // R14: mensaje de reenganche devuelto por el login
+  descartarAvisoMotor: () => void;
   cargando: boolean;
   login: (correo: string, contrasena: string) => Promise<Usuario>;
   registrar: (nombre: string, correo: string, contrasena: string) => Promise<Usuario>;
@@ -19,6 +21,7 @@ const AuthContext = createContext<AuthValor | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [avisoMotor, setAvisoMotor] = useState<string | null>(null);
   const [cargando, setCargando] = useState<boolean>(() => leerToken() !== null);
 
   // Al abrir la app, recupera la sesión si hay token guardado.
@@ -50,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const r = await iniciarSesion(correo, contrasena);
     guardarToken(r.access_token);
     setUsuario(r.usuario);
+    setAvisoMotor(r.mensaje_motor ?? null);
     return r.usuario;
   }, []);
 
@@ -66,12 +70,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     borrarToken();
     setUsuario(null);
+    setAvisoMotor(null);
     navigate("/login", { replace: true, state: { mensaje: "Cerraste sesión correctamente." } });
   }, [navigate]);
 
+  const descartarAvisoMotor = useCallback(() => setAvisoMotor(null), []);
+
   const valor = useMemo<AuthValor>(
-    () => ({ usuario, cargando, login, registrar, logout, actualizarUsuario: setUsuario }),
-    [usuario, cargando, login, registrar, logout]
+    () => ({ usuario, avisoMotor, descartarAvisoMotor, cargando, login, registrar, logout, actualizarUsuario: setUsuario }),
+    [usuario, avisoMotor, descartarAvisoMotor, cargando, login, registrar, logout]
   );
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;

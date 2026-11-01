@@ -200,7 +200,9 @@ def test_fallo_del_motor_mantiene_el_ns_y_el_desafio_se_cierra(client, db, monke
     ses = list(db.scalars(select(SesionDesafio)))
     assert len(ses) == 3 and all(s.estado == "resuelto" and s.resultado_cierre == "SA" for s in ses)
     ev = list(db.scalars(select(EventoMotor)))
-    assert len(ev) == 3 and all(e.resultado == "error" and e.ns_antes == 2 and e.ns_despues == 2 for e in ev)
+    # Con reglas.json ilegible falla también R12 al iniciar cada desafío (entrega 6): un error de inicio y otro de cierre por sesión.
+    esperados = 6 if fallo == "reglas" else 3
+    assert len(ev) == esperados and all(e.resultado == "error" and e.ns_antes == 2 and e.ns_despues == 2 for e in ev)
     assert db.scalar(select(HistorialNivel.id)) is None
     assert any(x in ev[0].detalle for x in ("boom", "reglas.json", "tabla rota"))
 

@@ -1,7 +1,7 @@
 """Único punto por donde el motor produce textos para el estudiante (mensajes_fijos.json).
 
 La entrega de notificaciones (entrega 10) solo tiene que enganchar aquí: las reglas no construyen textos.
-Tipos de mensaje: retiro, refuerzo, verificacion, sugerencia, estancamiento.
+Tipos de mensaje: retiro, refuerzo, verificacion, sugerencia, estancamiento, recaida, cambio_dificultad, reenganche.
 """
 from dataclasses import dataclass
 
@@ -12,6 +12,9 @@ TIPO_REFUERZO = "refuerzo"
 TIPO_VERIFICACION = "verificacion"
 TIPO_SUGERENCIA = "sugerencia"
 TIPO_ESTANCAMIENTO = "estancamiento"
+TIPO_RECAIDA = "recaida"  # R3
+TIPO_CAMBIO_DIFICULTAD = "cambio_dificultad"  # R12
+TIPO_REENGANCHE = "reenganche"  # R14
 
 _TIPO_POR_CLAVE = {
     "retiro_automatico": TIPO_RETIRO,
@@ -20,6 +23,9 @@ _TIPO_POR_CLAVE = {
     "sugerencia_mas_basico": TIPO_SUGERENCIA,
     "estancamiento_derivar": TIPO_ESTANCAMIENTO,
     "estancamiento_previo_sin_dominar": TIPO_ESTANCAMIENTO,
+    "recaida": TIPO_RECAIDA,
+    "cambio_dificultad": TIPO_CAMBIO_DIFICULTAD,
+    "reenganche": TIPO_REENGANCHE,
 }
 
 
@@ -49,6 +55,20 @@ def texto_fijo(clave: str | None, **marcadores: str) -> str | None:
 def texto_cambio_ns(clave: str | None, concepto: str, ns_anterior: int, ns_nuevo: int) -> str:
     """Aviso de cambio de NS; sin mensaje fijo, uno genérico (provisional)."""
     return texto_fijo(clave, concepto=concepto) or f"Tu nivel de ayuda en {concepto} pasó de {ns_anterior} a {ns_nuevo}."
+
+
+def tipo_de(clave: str | None, por_defecto: str) -> str:
+    """Tipo del mensaje de esa clave; si no tiene uno propio, `por_defecto` (retiro o refuerzo según la dirección del NS)."""
+    return _TIPO_POR_CLAVE.get(clave or "", por_defecto)
+
+
+def unir_nombres(nombres: list[str], maximo: int = 3) -> str:
+    """«A», «A y B», «A, B y C» o «A, B, C y 2 más» (R14 puede subir varios conceptos a la vez; PROVISIONAL)."""
+    if len(nombres) <= 1:
+        return "".join(nombres)
+    if len(nombres) <= maximo:
+        return ", ".join(nombres[:-1]) + " y " + nombres[-1]
+    return ", ".join(nombres[:maximo]) + f" y {len(nombres) - maximo} más"
 
 
 def mensaje(clave: str, enlace: str | None = None, **marcadores: str) -> MensajeEstudiante | None:

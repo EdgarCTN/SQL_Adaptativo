@@ -90,6 +90,13 @@
    ],
    "texto": "Bienvenido/a de vuelta. Retomamos {{concepto}} con un poco más de apoyo."
   },
+  "cambio_dificultad": {
+   "regla": [
+    "R12"
+   ],
+   "texto": "Este desafío es de una dificultad mayor. En {{concepto}} volvemos a ofrecerte un poco de apoyo.",
+   "provisional": true
+  },
   "sugerencia_mas_basico": {
    "regla": [
     "R8 (sugerencia)"

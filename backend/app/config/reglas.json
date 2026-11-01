@@ -27,7 +27,16 @@
  },
  "recaida_y_pausas": {
   "desafios_ce_nr_para_recaida": 2,
-  "desafios_sin_retiro_tras_recaida_o_cambio_dificultad": 3
+  "desafios_sin_retiro_tras_recaida_o_cambio_dificultad": 3,
+  "reglas_que_cuentan_como_retiro": [
+   "R1",
+   "R2"
+  ]
+ },
+ "r12_cambio_dificultad": {
+  "ns_minimo_tras_cambio": 1,
+  "provisional": true,
+  "nota": "PROVISIONAL: el estudiante «pasa» a una dificultad mayor al iniciar un desafío de dificultad superior a la más alta ya cerrada (resuelta o abandonada) en ese concepto."
  },
  "r6_estancamiento": {
   "ns_maximo_prerrequisito_dominado": 1,

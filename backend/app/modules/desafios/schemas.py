@@ -55,15 +55,6 @@ class DesafioDetalleOut(BaseModel):
     verificacion: bool = False  # R7: sin ayuda automática; si pide ayuda no cuenta como SA
 
 
-class IniciarOut(BaseModel):
-    sesion_id: int
-    desafio_id: int
-    estado: str
-    inicio: datetime
-    reanudada: bool
-    intentos_realizados: int
-
-
 class IntentoIn(BaseModel):
     codigo: str = Field(max_length=MAX_CODIGO)
 
@@ -88,6 +79,17 @@ class AjusteNivelOut(BaseModel):
     ns_anterior: int
     ns_nuevo: int
     motivo: str  # texto para el estudiante
+
+
+class IniciarOut(BaseModel):
+    sesion_id: int
+    desafio_id: int
+    estado: str
+    inicio: datetime
+    reanudada: bool
+    intentos_realizados: int
+    ajuste_nivel: AjusteNivelOut | None = None  # R12: el NS subió a 1 al pasar a una dificultad mayor
+    mensajes: list[MensajeMotorOut] = []
 
 
 class IntentoOut(BaseModel):

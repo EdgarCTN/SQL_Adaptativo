@@ -1,5 +1,5 @@
 """Evaluador de reglas. Respeta el orden de reglas.json (orden_evaluacion_cierre: R6 → R8 → R7 → R5 → R2 → R1 → R4);
-completo desde la entrega 5. La primera que corresponde detiene las siguientes. Si el cierre fue una omisión, solo se
+completo desde la entrega 5. Antes de la secuencia se mira R3 (recaída), que no forma parte de ella. La primera que corresponde detiene las siguientes. Si el cierre fue una omisión, solo se
 evalúan las reglas con `aplica_en_omision` (R6 (b), R8, R7, R4)."""
 from dataclasses import dataclass, field
 
@@ -8,6 +8,7 @@ from app.modules.motor_retiro.niveles import NS_MAXIMO, NS_MINIMO
 from app.modules.motor_retiro.reglas.base import ACCION_CAMBIAR_NS, ACCION_MANTENER, Regla
 from app.modules.motor_retiro.reglas.r1_retiro_estandar import R1RetiroEstandar
 from app.modules.motor_retiro.reglas.r2_retiro_acelerado import R2RetiroAcelerado
+from app.modules.motor_retiro.reglas.r3_recaida import R3Recaida
 from app.modules.motor_retiro.reglas.r4_mantener import R4Mantener
 from app.modules.motor_retiro.reglas.r5_refuerzo import R5Refuerzo
 from app.modules.motor_retiro.reglas.r6_estancamiento import R6Estancamiento
@@ -22,6 +23,9 @@ REGLAS_DISPONIBLES: dict[str, Regla] = {
     )
 }
 
+# R3 no está en la secuencia de la Matriz (condiciona a las demás): se mira antes y solo al cerrar un desafío.
+REGLAS_PREVIAS: dict[str, Regla] = {"R3": R3Recaida()}
+
 
 @dataclass(frozen=True)
 class Evaluacion:
@@ -31,6 +35,7 @@ class Evaluacion:
     clave_mensaje: str | None = None
     accion: str = ACCION_MANTENER  # cambiar_ns | verificacion | sugerir | estancamiento | mantener
     extra: dict = field(default_factory=dict)
+    pausa_retiros: int | None = None  # R3: pausa de R1 y R2 que el motor debe guardar
 
 
 def ordenar_reglas(orden: list[str], disponibles: dict[str, Regla] | None = None) -> list[Regla]:
@@ -41,14 +46,22 @@ def ordenar_reglas(orden: list[str], disponibles: dict[str, Regla] | None = None
     return reglas
 
 
+def _evaluacion(regla: Regla, ctx: ContextoRegla) -> Evaluacion:
+    res = regla.ejecutar(ctx)
+    ns = max(NS_MINIMO, min(NS_MAXIMO, int(res.ns_nuevo)))
+    accion = res.accion or (ACCION_CAMBIAR_NS if ns != ctx.ns_actual else ACCION_MANTENER)
+    clave = res.clave_mensaje or regla.clave_mensaje
+    return Evaluacion(regla.codigo, ns, res.motivo, clave, accion, dict(res.extra), res.pausa_retiros)
+
+
 def evaluar(ctx: ContextoRegla, disponibles: dict[str, Regla] | None = None) -> Evaluacion:
+    if ctx.omision_motivo is None:
+        for previa in REGLAS_PREVIAS.values():
+            if previa.aplica(ctx):
+                return _evaluacion(previa, ctx)
     for regla in ordenar_reglas(ctx.config["orden_evaluacion_cierre"], disponibles):
         if ctx.omision_motivo is not None and not regla.aplica_en_omision:
             continue  # al omitir no se mira la ventana: R5 y R1 no se evalúan
         if regla.aplica(ctx):
-            res = regla.ejecutar(ctx)
-            ns = max(NS_MINIMO, min(NS_MAXIMO, int(res.ns_nuevo)))
-            accion = res.accion or (ACCION_CAMBIAR_NS if ns != ctx.ns_actual else ACCION_MANTENER)
-            clave = res.clave_mensaje or regla.clave_mensaje
-            return Evaluacion(regla.codigo, ns, res.motivo, clave, accion, dict(res.extra))
+            return _evaluacion(regla, ctx)
     return Evaluacion("R4", ctx.ns_actual, "ninguna regla corresponde: se mantiene")

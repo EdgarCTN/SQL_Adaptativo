@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 
 from sqlalchemy import delete, select
@@ -10,6 +11,8 @@ from app.core.seguridad import HASH_FALSO, crear_token, hashear_password, verifi
 from app.core.db import ahora_utc
 from app.modules.auth.models import Rol, TokenRevocado, Usuario
 from app.modules.auth.schemas import PerfilIn, RegistroIn
+
+log = logging.getLogger("app.auth")
 
 MSG_CREDENCIALES = "El correo o la contraseña no son válidos."
 MSG_DUPLICADO = "Ya existe una cuenta con ese correo."
@@ -56,6 +59,22 @@ def autenticar(db: Session, correo: str, contrasena: str) -> tuple[Usuario, str,
         raise ErrorApp(MSG_CREDENCIALES, 401)
     token, segundos = crear_token(usuario.id, usuario.rol)
     return usuario, token, segundos
+
+
+def mensaje_de_reenganche(db: Session, usuario: Usuario) -> str | None:
+    """R14 al iniciar sesión. Solo estudiantes. Cualquier fallo (reglas.json, base de datos, etc.) se registra y se ignora:
+    el login nunca debe fallar por el motor."""
+    if usuario.rol != Rol.estudiante.value:
+        return None
+    try:
+        from app.modules.motor_retiro.motor import evaluar_inactividad  # importación tardía: evita ciclos y fallos de carga
+
+        m = evaluar_inactividad(db, usuario.id)
+        return m.texto if m else None
+    except Exception:  # noqa: BLE001
+        log.exception("Falló R14 al iniciar sesión (usuario %s); el login continúa", usuario.id)
+        db.rollback()
+        return None
 
 
 def actualizar_perfil(db: Session, usuario: Usuario, datos: PerfilIn) -> Usuario:

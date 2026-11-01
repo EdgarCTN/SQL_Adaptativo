@@ -13,7 +13,7 @@ const ENLACES: { a: string; etiqueta: string; roles?: Rol[] }[] = [
 ];
 
 export default function Layout() {
-  const { usuario, logout } = useAuth();
+  const { usuario, logout, avisoMotor, descartarAvisoMotor } = useAuth();
   const ubicacion = useLocation();
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [saliendo, setSaliendo] = useState(false);
@@ -69,6 +69,14 @@ export default function Layout() {
           </div>
         </header>
         <main className="flex-1 p-4 sm:p-6">
+          {avisoMotor && (
+            <div role="status" className="mb-4 flex items-start justify-between gap-3 rounded-lg border border-indigo-300 bg-indigo-50 p-3 text-sm text-indigo-900">
+              <p>{avisoMotor}</p>
+              <button type="button" onClick={descartarAvisoMotor} className="shrink-0 font-semibold underline">
+                Entendido
+              </button>
+            </div>
+          )}
           {usuario?.rol === "estudiante" && !usuario.linea_base_completada && (
             <div role="status" className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
               <strong>Diagnóstico pendiente.</strong> Complétalo para ajustar la dificultad y la ayuda a tu nivel.{" "}

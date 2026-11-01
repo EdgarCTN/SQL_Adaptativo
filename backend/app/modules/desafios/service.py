@@ -147,8 +147,10 @@ def detalle(db: Session, usuario: Usuario, desafio_id: int) -> dict:
 
 
 # ---------- Sesión ----------
-def _respuesta_inicio(db: Session, sesion: SesionDesafio, reanudada: bool) -> dict:
+def _respuesta_inicio(db: Session, sesion: SesionDesafio, reanudada: bool, r: ResultadoMotor | None = None) -> dict:
     return {
+        "ajuste_nivel": asdict(r.ajuste) if r is not None and r.ajuste else None,  # R12: el NS subió al cambiar de dificultad
+        "mensajes": [asdict(m) for m in r.mensajes] if r is not None else [],
         "sesion_id": sesion.id,
         "desafio_id": sesion.desafio_id,
         "estado": sesion.estado,
@@ -156,6 +158,17 @@ def _respuesta_inicio(db: Session, sesion: SesionDesafio, reanudada: bool) -> di
         "reanudada": reanudada,
         "intentos_realizados": _n_intentos(db, sesion.id),
     }
+
+
+def _notificar_inicio(db: Session, sesion: SesionDesafio) -> ResultadoMotor:
+    """La sesión ya está guardada: un fallo del motor (R12) nunca debe romper el inicio."""
+    try:
+        r = hooks.al_iniciar_desafio(db, sesion)
+    except Exception:  # noqa: BLE001
+        log.exception("Falló al_iniciar_desafio (sesión %s); la sesión se conserva", sesion.id)
+        db.rollback()
+        return ResultadoMotor()
+    return r if isinstance(r, ResultadoMotor) else ResultadoMotor()
 
 
 def iniciar(db: Session, usuario: Usuario, desafio_id: int) -> dict:
@@ -177,7 +190,7 @@ def iniciar(db: Session, usuario: Usuario, desafio_id: int) -> dict:
         db.rollback()
         log.exception("No se pudo iniciar la sesión")
         raise ErrorApp(MSG_ERROR_GUARDADO, 503)
-    return _respuesta_inicio(db, sesion, False)
+    return _respuesta_inicio(db, sesion, False, _notificar_inicio(db, sesion))
 
 
 def _cerrar(sesion: SesionDesafio, estado: str, resultado: str) -> None:

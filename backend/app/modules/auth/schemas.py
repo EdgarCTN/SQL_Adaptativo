@@ -65,6 +65,7 @@ class TokenOut(BaseModel):
     token_type: str = "bearer"
     expira_en: int
     usuario: UsuarioOut
+    mensaje_motor: str | None = None  # R14: mensaje de reenganche tras ≥ 14 días sin actividad (opcional)
 
 
 class MensajeOut(BaseModel):

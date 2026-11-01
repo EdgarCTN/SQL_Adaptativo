@@ -26,7 +26,9 @@ def registro(datos: RegistroIn, db: Session = Depends(get_db)):
 @router.post("/login", response_model=TokenOut)
 def login(datos: LoginIn, db: Session = Depends(get_db)):
     usuario, token, segundos = service.autenticar(db, datos.correo, datos.contrasena)
-    return TokenOut(access_token=token, expira_en=segundos, usuario=UsuarioOut.model_validate(usuario))
+    salida = UsuarioOut.model_validate(usuario)  # antes del motor: si este hace rollback, el usuario ya está serializado
+    mensaje = service.mensaje_de_reenganche(db, usuario)
+    return TokenOut(access_token=token, expira_en=segundos, usuario=salida, mensaje_motor=mensaje)
 
 
 @router.post("/logout", response_model=MensajeOut)

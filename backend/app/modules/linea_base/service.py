@@ -351,6 +351,7 @@ def guardar_respuestas(db: Session, usuario: Usuario, datos: RespuestasIn) -> di
                 )
             else:
                 fila.ns, fila.ns_maximo_historico, fila.desafios_desde_cambio = ns, ns, 0
+                fila.ns_previo_retiro = fila.pausa_retiros_restante = None  # R3 y R12 empiezan de cero
         usuario.linea_base_completada = True
         db.add(usuario)
         db.commit()

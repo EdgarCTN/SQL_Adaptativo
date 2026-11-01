@@ -37,6 +37,9 @@ class ContextoRegla:
     prerrequisito_codigo: str | None = None  # None = el concepto no tiene prerrequisito
     prerrequisito_nombre: str | None = None
     prerrequisito_ns: int | None = None  # NS vigente del estudiante en el prerrequisito (NS por defecto si no hay registro)
+    # R3 y pausas (R3, R12). ns_previo_retiro solo viene con valor si el último cambio de NS del concepto fue un retiro.
+    ns_previo_retiro: int | None = None
+    pausa_retiros: int = 0  # desafíos que faltan con R1 y R2 pausados (0 = sin pausa)
     indicadores: Indicadores = field(init=False)
 
     def __post_init__(self) -> None:
@@ -66,6 +69,21 @@ def _datos_r6(db: Session, usuario_id: int, concepto: Concepto, reglas: dict) ->
             prerrequisito_ns=NivelSoporteService(db).obtener(usuario_id, previo.id),
         )
     return datos
+
+
+def _ns_previo_retiro(db: Session, fila: NivelSoporte | None, concepto_id: int, reglas: dict) -> int | None:
+    """NS previo al último retiro, solo si el último cambio de NS del concepto fue un retiro (fila de historial_niveles
+    con regla en recaida_y_pausas.reglas_que_cuentan_como_retiro)."""
+    if fila is None or fila.ns_previo_retiro is None:
+        return None
+    retiros = [str(r) for r in reglas["recaida_y_pausas"]["reglas_que_cuentan_como_retiro"]]
+    ultima = db.scalar(
+        select(HistorialNivel.regla)
+        .where(HistorialNivel.usuario_id == fila.usuario_id, HistorialNivel.concepto_id == concepto_id)
+        .order_by(HistorialNivel.id.desc())
+        .limit(1)
+    )
+    return int(fila.ns_previo_retiro) if ultima in retiros else None
 
 
 def construir_contexto(
@@ -105,5 +123,7 @@ def construir_contexto(
         verificacion_pendiente=(
             hay_verificacion_pendiente(db, sesion.usuario_id, concepto.id) if omision_motivo == "muy_facil" else False
         ),
+        ns_previo_retiro=_ns_previo_retiro(db, fila, concepto.id, reglas),
+        pausa_retiros=int(fila.pausa_retiros_restante or 0) if fila is not None else 0,
         **(_datos_r6(db, sesion.usuario_id, concepto, reglas) if ns_actual >= NS_MAXIMO else {}),
     )

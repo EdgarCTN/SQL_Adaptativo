@@ -18,6 +18,7 @@ class ResultadoRegla:
     accion: str | None = None  # None = cambiar_ns si el NS cambia, mantener si no
     clave_mensaje: str | None = None  # si es None se usa la de la regla (Regla.clave_mensaje)
     extra: dict = field(default_factory=dict)  # datos para el evento del motor (p. ej. r6_b_pendiente)
+    pausa_retiros: int | None = None  # si no es None, el motor pausa R1 y R2 durante ese número de desafíos (R3)
 
 
 class Regla(ABC):

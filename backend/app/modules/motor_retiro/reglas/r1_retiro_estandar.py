@@ -10,9 +10,10 @@ class R1RetiroEstandar(Regla):
     Umbrales (reglas.json): ventana.minimo_desafios_desde_cambio, retiro_refuerzo.ta_retiro_min, ni_retiro_max,
     tr_retiro_estandar_max.
     Simplificaciones de esta versión mínima: TR usa fin − inicio como tiempo activo (provisional); si ningún
-    desafío de la ventana tiene tiempo medido, TR no se puede evaluar y NO se retira. No se aplican aún R11
-    (exigir 2 SA tras sobreconfianza), R3 (pausa tras recaída), R12 (pausa por cambio de dificultad) ni la
+    desafío de la ventana tiene tiempo medido, TR no se puede evaluar y NO se retira. No se aplica aún R11
+    (exigir 2 SA tras sobreconfianza) ni la
     preferencia 3.4 de R13: el retiro es siempre automático.
+    Con `ctx.pausa_retiros > 0` (R3 o R12) no se retira. Simplificaciones pendientes: R11 y la preferencia 3.4 (R13).
     """
 
     codigo = "R1"
@@ -20,6 +21,8 @@ class R1RetiroEstandar(Regla):
 
     def aplica(self, ctx: ContextoRegla) -> bool:
         ind, rr = ctx.indicadores, ctx.config["retiro_refuerzo"]
+        if ctx.pausa_retiros > 0:  # pausa tras recaída (R3) o cambio de dificultad (R12)
+            return False
         if ctx.ns_actual < 1 or ctx.desafios_desde_cambio < ctx.config["ventana"]["minimo_desafios_desde_cambio"]:
             return False
         if ind.ta is None or ind.ni is None or ind.tr is None:

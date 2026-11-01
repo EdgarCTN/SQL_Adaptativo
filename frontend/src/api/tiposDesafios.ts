@@ -55,6 +55,8 @@ export interface InicioSesion {
   inicio: string;
   reanudada: boolean;
   intentos_realizados: number;
+  ajuste_nivel?: AjusteNivel | null; // R12: el nivel de ayuda subió a 1 al pasar a una dificultad mayor
+  mensajes?: MensajeMotor[];
 }
 
 export type TipoResultado =
@@ -120,7 +122,7 @@ export interface VerificacionAsignada {
 
 export interface MensajeMotor {
   clave: string;
-  tipo: "retiro" | "refuerzo" | "verificacion" | "sugerencia" | "estancamiento";
+  tipo: "retiro" | "refuerzo" | "verificacion" | "sugerencia" | "estancamiento" | "recaida" | "cambio_dificultad" | "reenganche";
   texto: string;
   enlace?: string | null; // ruta del frontend; R6 la usa para llevar a los desafíos del concepto previo
 }

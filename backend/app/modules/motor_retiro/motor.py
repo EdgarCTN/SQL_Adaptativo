@@ -1,5 +1,6 @@
-"""Motor de reglas (R6, R8, R7, R5, R2, R1, R4; completo desde la entrega 5). Se invoca al cerrar un desafío (resuelto,
-abandonado u omitido).
+"""Motor de reglas (R6, R8, R7, R5, R2, R1, R4; completo desde la entrega 5; R3 como condicionante desde la 6). Se invoca
+al cerrar un desafío (resuelto, abandonado u omitido). Entrega 6: `iniciar_desafio` (R12, al iniciar un desafío) y
+`evaluar_inactividad` (R14, al iniciar sesión).
 
 Nunca rompe el cierre: ante cualquier fallo (reglas.json ilegible, error de base, etc.) mantiene el NS,
 registra el error en eventos_motor y devuelve un resultado vacío (CU04 EX2).
@@ -8,20 +9,22 @@ import logging
 from dataclasses import dataclass, field
 from urllib.parse import quote
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.db import ahora_utc
 from app.core.reglas import cargar_reglas
+from app.modules.analitica.extractores import sesiones_cerradas_df
 from app.modules.analitica.servicio import registrar_historico
+from app.modules.auth.models import Usuario
 from app.modules.desafios.models import Concepto, Desafio, SesionDesafio
 from app.modules.linea_base.models import NivelSoporte, Omision
-from app.modules.motor_retiro import mensajes, omisiones, verificacion
+from app.modules.motor_retiro import cambio_dificultad, inactividad, mensajes, omisiones, verificacion
 from app.modules.motor_retiro.contexto import construir_contexto
 from app.modules.motor_retiro.evaluador import evaluar
 from app.modules.motor_retiro.mensajes import MensajeEstudiante
 from app.modules.motor_retiro.models import EventoMotor, HistorialNivel
-from app.modules.motor_retiro.niveles import NivelSoporteService
+from app.modules.motor_retiro.niveles import NS_POR_DEFECTO, NivelSoporteService
 from app.modules.motor_retiro.reglas.base import ACCION_ESTANCAMIENTO, ACCION_SUGERIR, ACCION_VERIFICACION
 from app.modules.motor_retiro.verificacion import VerificacionAsignada
 
@@ -102,6 +105,29 @@ def _motivo_omision(db: Session, sesion_id: int) -> str | None:
     return db.scalar(select(Omision.motivo).where(Omision.sesion_id == sesion_id).order_by(Omision.id.desc()).limit(1))
 
 
+def _guardar_cambio_ns(
+    db: Session, fila: NivelSoporte | None, usuario_id: int, concepto_id: int, ns_antes: int, ns_nuevo: int,
+    regla: str, motivo: str, ahora, es_retiro: bool,
+) -> NivelSoporte:
+    """Aplica un cambio de NS (sin confirmar): fila de niveles_soporte (se crea si falta), ventana reiniciada y fila de
+    historial_niveles. `es_retiro` guarda el NS previo para R3; cualquier otro cambio lo borra."""
+    if fila is None:  # sin registro (NS por defecto): se crea al primer cambio
+        fila = NivelSoporte(usuario_id=usuario_id, concepto_id=concepto_id, ns=ns_nuevo, ns_maximo_historico=ns_nuevo)
+        db.add(fila)
+    fila.ns = ns_nuevo
+    fila.ultimo_cambio_en = ahora  # reinicia la ventana
+    fila.desafios_desde_cambio = 0
+    fila.ns_maximo_historico = max(int(fila.ns_maximo_historico or 0), ns_antes, ns_nuevo)
+    fila.ns_previo_retiro = ns_antes if es_retiro else None
+    db.add(
+        HistorialNivel(
+            usuario_id=usuario_id, concepto_id=concepto_id, ns_anterior=ns_antes, ns_nuevo=ns_nuevo,
+            regla=regla, motivo=motivo, creado_en=ahora,
+        )
+    )
+    return fila
+
+
 def _procesar(db: Session, sesion: SesionDesafio, reglas: dict | None, omision_motivo: str | None) -> ResultadoMotor:
     sesion_id, usuario_id = sesion.id, sesion.usuario_id
     try:
@@ -117,22 +143,19 @@ def _procesar(db: Session, sesion: SesionDesafio, reglas: dict | None, omision_m
             select(NivelSoporte).where(NivelSoporte.usuario_id == usuario_id, NivelSoporte.concepto_id == concepto.id)
         )
         ahora = ahora_utc()
+        retiros = [str(r) for r in reglas["recaida_y_pausas"]["reglas_que_cuentan_como_retiro"]]
         if cambio:
-            if fila is None:  # sin registro (NS por defecto): se crea al primer cambio
-                fila = NivelSoporte(usuario_id=usuario_id, concepto_id=concepto.id, ns=ns_nuevo, ns_maximo_historico=ns_nuevo)
-                db.add(fila)
-            fila.ns = ns_nuevo
-            fila.ultimo_cambio_en = ahora  # reinicia la ventana
-            fila.desafios_desde_cambio = 0
-            fila.ns_maximo_historico = max(int(fila.ns_maximo_historico or 0), ns_antes, ns_nuevo)
-            db.add(
-                HistorialNivel(
-                    usuario_id=usuario_id, concepto_id=concepto.id, ns_anterior=ns_antes, ns_nuevo=ns_nuevo,
-                    regla=ev.regla, motivo=ev.motivo, creado_en=ahora,
-                )
+            fila = _guardar_cambio_ns(
+                db, fila, usuario_id, concepto.id, ns_antes, ns_nuevo, ev.regla, ev.motivo, ahora,
+                es_retiro=ev.regla in retiros,
             )
         elif fila is not None:
             fila.desafios_desde_cambio = ctx.desafios_desde_cambio
+        # Pausa de R1 y R2: R3 la inicia; cada desafío cerrado (no omitido) la gasta uno.
+        if ev.pausa_retiros and fila is not None:
+            fila.pausa_retiros_restante = ev.pausa_retiros
+        elif omision_motivo is None and fila is not None and ctx.pausa_retiros > 0:
+            fila.pausa_retiros_restante = ctx.pausa_retiros - 1
 
         # Acciones que necesitan la base de datos (las reglas solo deciden).
         sugerido = asignada = None
@@ -146,7 +169,8 @@ def _procesar(db: Session, sesion: SesionDesafio, reglas: dict | None, omision_m
                 detalle += " (sin desafío disponible: el contador no se reinicia)"
 
         indicadores = {**ctx.indicadores.como_dict(), "desafios_desde_cambio": ctx.desafios_desde_cambio,
-                       "resultado_sesion": ctx.resultado_sesion, **ev.extra}  # extra: p. ej. r6_condicion, prerrequisito
+                       "resultado_sesion": ctx.resultado_sesion, "pausa_retiros": ctx.pausa_retiros,
+                       **ev.extra}  # extra: p. ej. r6_condicion, prerrequisito
         if omision_motivo is not None:
             indicadores.update(
                 omision=omision_motivo, omisiones_muy_facil=ctx.omisiones_muy_facil,
@@ -170,7 +194,8 @@ def _procesar(db: Session, sesion: SesionDesafio, reglas: dict | None, omision_m
         if cambio:
             texto = mensajes.texto_cambio_ns(ev.clave_mensaje, concepto.nombre, ns_antes, ns_nuevo)
             ajuste = AjusteNivel(concepto.nombre, ns_antes, ns_nuevo, texto)
-            lista.append(MensajeEstudiante(ev.clave_mensaje or "cambio_ns", mensajes.TIPO_REFUERZO if ns_nuevo > ns_antes else mensajes.TIPO_RETIRO, texto))
+            tipo = mensajes.tipo_de(ev.clave_mensaje, mensajes.TIPO_REFUERZO if ns_nuevo > ns_antes else mensajes.TIPO_RETIRO)
+            lista.append(MensajeEstudiante(ev.clave_mensaje or "cambio_ns", tipo, texto))
         if sugerido is not None:
             m = mensajes.mensaje("sugerencia_mas_basico", concepto=concepto.nombre, desafio=sugerido.titulo)
             if m:
@@ -214,3 +239,121 @@ def cerrar_omision(db: Session, sesion: SesionDesafio, reglas: dict | None = Non
         log.error("La sesión %s está omitida pero no tiene fila en omisiones", sesion.id)
         return ResultadoMotor()
     return _procesar(db, sesion, reglas, motivo)
+
+
+def iniciar_desafio(db: Session, sesion: SesionDesafio, reglas: dict | None = None) -> ResultadoMotor:
+    """R12 Cambio de dificultad, al iniciar un desafío nuevo (la sesión ya está guardada). Nunca rompe el inicio: ante
+    cualquier fallo no cambia nada y deja el error en eventos_motor. Solo deja evento cuando la regla corresponde."""
+    sesion_id, usuario_id = sesion.id, sesion.usuario_id
+    try:
+        reglas = reglas or cargar_reglas()
+        desafio = db.get(Desafio, sesion.desafio_id)
+        concepto = db.get(Concepto, desafio.concepto_id)
+        cerradas = sesiones_cerradas_df(db, usuario_id, concepto.id)
+        mayor_cerrada = max(cerradas["dificultad"], key=cambio_dificultad.RANGO.get, default=None)
+        en_curso = db.scalars(
+            select(Desafio.dificultad)
+            .join(SesionDesafio, SesionDesafio.desafio_id == Desafio.id)
+            .where(
+                SesionDesafio.usuario_id == usuario_id, Desafio.concepto_id == concepto.id,
+                SesionDesafio.estado == "en_curso", SesionDesafio.id != sesion_id,
+            )
+        ).all()
+        mayor_en_curso = max(en_curso, key=cambio_dificultad.RANGO.get, default=None)
+        fila = db.scalar(
+            select(NivelSoporte).where(NivelSoporte.usuario_id == usuario_id, NivelSoporte.concepto_id == concepto.id)
+        )
+        ns_antes = int(fila.ns) if fila is not None else NS_POR_DEFECTO
+        decision = cambio_dificultad.evaluar_cambio_dificultad(
+            ns_antes, desafio.dificultad, mayor_cerrada, mayor_en_curso, reglas
+        )
+        if decision is None:
+            return ResultadoMotor()
+
+        ahora = ahora_utc()
+        if decision.cambia_ns:
+            fila = _guardar_cambio_ns(
+                db, fila, usuario_id, concepto.id, ns_antes, decision.ns_nuevo, "R12", decision.motivo, ahora, es_retiro=False
+            )
+        elif fila is None:  # la pausa necesita fila; sin cambio de NS la ventana no se reinicia (cuenta desde el registro)
+            usuario = db.get(Usuario, usuario_id)
+            fila = NivelSoporte(
+                usuario_id=usuario_id, concepto_id=concepto.id, ns=ns_antes, ns_maximo_historico=ns_antes,
+                ultimo_cambio_en=(usuario.creado_en if usuario is not None and usuario.creado_en else ahora),
+            )
+            db.add(fila)
+        fila.pausa_retiros_restante = max(int(fila.pausa_retiros_restante or 0), decision.pausa_retiros)
+        db.add(
+            EventoMotor(
+                usuario_id=usuario_id, concepto_id=concepto.id, sesion_id=sesion_id, regla="R12", ns_antes=ns_antes,
+                ns_despues=decision.ns_nuevo, resultado="cambio" if decision.cambia_ns else "mantiene",
+                indicadores={"dificultad": desafio.dificultad, "mayor_cerrada": mayor_cerrada,
+                             "pausa_retiros": fila.pausa_retiros_restante},
+                detalle=decision.motivo, creado_en=ahora,
+            )
+        )
+        db.commit()
+        if not decision.cambia_ns:
+            return ResultadoMotor()
+        texto = mensajes.texto_cambio_ns("cambio_dificultad", concepto.nombre, ns_antes, decision.ns_nuevo)
+        ajuste = AjusteNivel(concepto.nombre, ns_antes, decision.ns_nuevo, texto)
+        tipo = mensajes.tipo_de("cambio_dificultad", mensajes.TIPO_REFUERZO)
+        return ResultadoMotor(ajuste, mensajes=(MensajeEstudiante("cambio_dificultad", tipo, texto),))
+    except Exception as e:  # noqa: BLE001  (iniciar un desafío nunca se rompe)
+        log.exception("Falló R12 (sesión %s): no se cambia nada", sesion_id)
+        db.rollback()
+        _registrar_error(db, sesion_id, usuario_id, e)
+        return ResultadoMotor()
+
+
+def evaluar_inactividad(
+    db: Session, usuario_id: int, reglas: dict | None = None, ahora=None
+) -> MensajeEstudiante | None:
+    """R14 Inactividad, al iniciar sesión. Con ≥ r14_inactividad.dias días desde la última sesión de desafío, el NS de
+    cada concepto con fila sube 1 sin superar ns_maximo_historico. Una sola vez por periodo de inactividad: si ya hay un
+    evento R14 posterior a la última actividad no hace nada. Devuelve el mensaje de reenganche, o None si no subió nada.
+    PROVISIONAL: con varios conceptos, un solo mensaje que los nombra. Puede lanzar excepciones: quien llama las captura."""
+    reglas = reglas or cargar_reglas()
+    ahora = ahora or ahora_utc()
+    dias = int(reglas["r14_inactividad"]["dias"])
+    inicio_max, fin_max = db.execute(
+        select(func.max(SesionDesafio.inicio), func.max(SesionDesafio.fin)).where(SesionDesafio.usuario_id == usuario_id)
+    ).one()
+    fechas = [inactividad.a_utc(f) for f in (inicio_max, fin_max) if f is not None]
+    ultima = max(fechas) if fechas else None
+    if not inactividad.esta_inactivo(ultima, ahora, dias):
+        return None
+    previo = db.scalar(
+        select(func.max(EventoMotor.creado_en)).where(EventoMotor.usuario_id == usuario_id, EventoMotor.regla == "R14")
+    )
+    if previo is not None and inactividad.a_utc(previo) > ultima:
+        return None  # ya se aplicó en esta inactividad
+    dias_inactivo = (inactividad.a_utc(ahora) - ultima).days
+    indicadores = {"dias_inactivo": dias_inactivo, "ultima_actividad": ultima.isoformat()}
+    cambiados: list[str] = []
+    filas = db.scalars(
+        select(NivelSoporte).where(NivelSoporte.usuario_id == usuario_id).order_by(NivelSoporte.concepto_id)
+    ).all()
+    for fila in filas:
+        antes = int(fila.ns)
+        nuevo = inactividad.ns_tras_inactividad(antes, int(fila.ns_maximo_historico))
+        if nuevo == antes:
+            continue
+        motivo = f"R14 inactividad: {dias_inactivo} días sin actividad; NS {antes} → {nuevo} (máximo histórico {fila.ns_maximo_historico})"
+        _guardar_cambio_ns(db, fila, usuario_id, fila.concepto_id, antes, nuevo, "R14", motivo, ahora, es_retiro=False)
+        db.add(
+            EventoMotor(
+                usuario_id=usuario_id, concepto_id=fila.concepto_id, regla="R14", ns_antes=antes, ns_despues=nuevo,
+                resultado="cambio", indicadores=indicadores, detalle=motivo, creado_en=ahora,
+            )
+        )
+        cambiados.append(db.get(Concepto, fila.concepto_id).nombre)
+    if not cambiados:  # deja constancia para no volver a evaluar en cada inicio de sesión
+        db.add(
+            EventoMotor(
+                usuario_id=usuario_id, regla="R14", resultado="mantiene", indicadores=indicadores, creado_en=ahora,
+                detalle=f"R14 inactividad: {dias_inactivo} días sin actividad, ningún concepto puede subir (máximo histórico)",
+            )
+        )
+    db.commit()
+    return mensajes.mensaje("reenganche", concepto=mensajes.unir_nombres(cambiados)) if cambiados else None

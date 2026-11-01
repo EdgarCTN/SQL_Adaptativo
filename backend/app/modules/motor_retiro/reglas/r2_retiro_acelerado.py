@@ -11,7 +11,7 @@ class R2RetiroAcelerado(Regla):
     Acción: el NS baja 2 (mínimo 0). Un desafío con ayuda mostrada sola no es SA, así que ya queda fuera por su resultado.
     Umbrales (reglas.json): retiro_refuerzo.desafios_limpios_acelerado, intentos_desafio_limpio, tr_retiro_acelerado_max.
     PROVISIONAL: TR se calcula sobre esos 3 desafíos (mediana de sus razones), no sobre toda la ventana de 5; si ninguno
-    tiene tiempo medido, TR no se puede evaluar y NO se retira (igual que R1). Sin R3, R11, R12 ni preferencia 3.4 (entrega 6 y 7).
+    tiene tiempo medido, TR no se puede evaluar y NO se retira (igual que R1). Respeta la pausa de R3 y R12; sin R11 ni preferencia 3.4 (entregas 7 y 8).
     """
 
     codigo = "R2"
@@ -23,6 +23,8 @@ class R2RetiroAcelerado(Regla):
 
     def aplica(self, ctx: ContextoRegla) -> bool:
         rr = ctx.config["retiro_refuerzo"]
+        if ctx.pausa_retiros > 0:  # pausa tras recaída (R3) o cambio de dificultad (R12)
+            return False
         n, ultimos = self._ultimos(ctx)
         if ctx.ns_actual < 1 or ctx.desafios_desde_cambio < n or len(ultimos) < n:
             return False

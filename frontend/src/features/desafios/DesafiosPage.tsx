@@ -4,6 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { listarDesafios } from "../../api/desafios";
 import { useCarga } from "../../api/useCarga";
 import EstadoContenedor from "../../components/EstadoContenedor";
+import AjustesPendientes from "./AjustesPendientes";
 import { ESTILO_ESTADO, ETIQUETA_DIFICULTAD, ETIQUETA_ESTADO, formatearDuracion } from "./formatos";
 
 export default function DesafiosPage() {
@@ -18,6 +19,10 @@ export default function DesafiosPage() {
     <div className="mx-auto max-w-4xl">
       <h1 className="text-2xl font-bold text-slate-900">Desafíos</h1>
       <p className="mt-1 text-sm text-slate-600">Elige un desafío y escribe la consulta SQL que resuelve el enunciado.</p>
+
+      <div className="mt-3">
+        <AjustesPendientes />
+      </div>
 
       {datos && datos.conceptos.length > 0 && (
         <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -51,8 +56,11 @@ export default function DesafiosPage() {
           <div className="space-y-6">
             {datos?.grupos.map((g) => (
               <section key={g.dificultad} aria-labelledby={`grupo-${g.dificultad}`}>
-                <h2 id={`grupo-${g.dificultad}`} className="text-lg font-semibold text-slate-900">
+                <h2 id={`grupo-${g.dificultad}`} className="flex flex-wrap items-center gap-2 text-lg font-semibold text-slate-900">
                   {ETIQUETA_DIFICULTAD[g.dificultad]}
+                  {g.empieza_aqui && (
+                    <span className="rounded-full bg-indigo-600 px-2 py-0.5 text-xs font-semibold text-white">Empieza aquí</span>
+                  )}
                 </h2>
                 {g.desafios.length === 0 ? (
                   <p className="mt-2 text-sm text-slate-500">No hay desafíos de esta dificultad con el filtro elegido.</p>

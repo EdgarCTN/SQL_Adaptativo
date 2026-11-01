@@ -20,10 +20,11 @@ class ResultadoLineaBase:
     m_por_concepto: dict = field(default_factory=dict)
     m_por_nivel: dict = field(default_factory=dict)
     m_global: float | None = None
-    ns_inicial: dict = field(default_factory=dict)  # código de concepto → NS que se aplica
-    ajuste_3_1: dict = field(default_factory=dict)  # código → NS tras la preferencia 3.1 (NO se aplica)
-    dificultad_inicial: str | None = None  # NO se aplica
-    banderas: dict = field(default_factory=dict)  # r9, r11 (NO se aplican)
+    ns_inicial: dict = field(default_factory=dict)  # código de concepto → NS que se aplica (ya con el ajuste 3.1)
+    # código → {"previo": NS antes del ajuste, "aplicado": NS final, "motivo": aplicado | sin_cambio | ns0 | muy_facil | riesgo_r9}
+    ajuste_3_1: dict = field(default_factory=dict)
+    dificultad_inicial: str | None = None  # la muestra el listado de desafíos («Empieza aquí»); no bloquea nada
+    banderas: dict = field(default_factory=dict)  # r9, r11 y el detalle del ajuste 3.1
     preferencias: dict = field(default_factory=dict)  # Parte 3: 3.1 a 3.6 como códigos
     contexto: dict = field(default_factory=dict)  # Parte 1 cruda
 
@@ -59,6 +60,18 @@ def ajustar_por_3_1(ns: int, preferencia: str | None) -> int:
     if preferencia in ("AY3", "AY4"):
         return min(2, ns + 1)
     return ns
+
+
+def aplicar_ajuste_3_1(ns: int, preferencia: str | None, *, todas_muy_facil: bool, riesgo_r9: bool) -> tuple[int, str]:
+    """R0: NS final y motivo. El ajuste no se aplica a NS0, al NS1 de la excepción «Muy fácil» ni con riesgo de R9."""
+    if ns == 0:
+        return ns, "ns0"
+    if todas_muy_facil:
+        return ns, "muy_facil"
+    if riesgo_r9:
+        return ns, "riesgo_r9"
+    nuevo = ajustar_por_3_1(ns, preferencia)
+    return nuevo, "aplicado" if nuevo != ns else "sin_cambio"
 
 
 def _dificultad_inicial(m_por_nivel: dict, minimo: float) -> str:
@@ -113,6 +126,21 @@ def calcular_linea_base(
         _dificultad_inicial(res.m_por_nivel, cortes["dominio_por_nivel_minimo"]) if res.m_por_nivel else None
     )
 
+    senales = {
+        "1.6": bool(set(res.contexto.get("1.6", [])) & OPCIONES_1_6_RIESGO),
+        "3.2": res.preferencias.get("3.2") == CODIGO_INMEDIATO,
+        "3.6": res.preferencias.get("3.6") == CODIGO_INMEDIATO,
+    }
+    cumplidas = sum(senales.values())
+    riesgo_r9 = cumplidas >= reglas["r9_dependencia"]["senales_linea_base_minimas"]
+    res.banderas = {
+        "r9": {"riesgo": riesgo_r9, "senales": senales, "senales_cumplidas": cumplidas},
+        "r11": {
+            "errores_confianza_alta": errores_altos,
+            "sobreconfianza": errores_altos >= reglas["r11_sobreconfianza"]["errores_con_confianza_alta_minimos"],
+        },
+    }
+
     pref_3_1 = res.preferencias.get("3.1")
     for codigo in conceptos:
         valores = por_concepto.get(codigo, [])
@@ -133,25 +161,9 @@ def calcular_linea_base(
             ns = NS_POR_DEFECTO
         else:
             ns = ns_desde_m(m, cortes)
-        res.ns_inicial[codigo] = ns
-        res.ajuste_3_1[codigo] = ns if todas_muy_facil else ajustar_por_3_1(ns, pref_3_1)
+        final, motivo = aplicar_ajuste_3_1(ns, pref_3_1, todas_muy_facil=todas_muy_facil, riesgo_r9=riesgo_r9)
+        res.ns_inicial[codigo] = final
+        res.ajuste_3_1[codigo] = {"previo": ns, "aplicado": final, "motivo": motivo}
 
-    senales = {
-        "1.6": bool(set(res.contexto.get("1.6", [])) & OPCIONES_1_6_RIESGO),
-        "3.2": res.preferencias.get("3.2") == CODIGO_INMEDIATO,
-        "3.6": res.preferencias.get("3.6") == CODIGO_INMEDIATO,
-    }
-    cumplidas = sum(senales.values())
-    res.banderas = {
-        "r9": {
-            "riesgo": cumplidas >= reglas["r9_dependencia"]["senales_linea_base_minimas"],
-            "senales": senales,
-            "senales_cumplidas": cumplidas,
-        },
-        "r11": {
-            "errores_confianza_alta": errores_altos,
-            "sobreconfianza": errores_altos >= reglas["r11_sobreconfianza"]["errores_con_confianza_alta_minimos"],
-        },
-        "ajuste_ns_3_1": res.ajuste_3_1,
-    }
+    res.banderas["ajuste_ns_3_1"] = res.ajuste_3_1
     return res

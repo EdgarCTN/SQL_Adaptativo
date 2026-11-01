@@ -338,19 +338,21 @@ def guardar_respuestas(db: Session, usuario: Usuario, datos: RespuestasIn) -> di
                 reglas_version=reglas.get("version"),
             )
         )
-        # NS inicial (R0): un registro por concepto; el máximo histórico arranca igual.
+        # NS inicial (R0, ya con el ajuste 3.1): un registro por concepto. PROVISIONAL: el máximo histórico (techo de R14)
+        # es el mayor entre el NS previo al ajuste y el ajustado; el NS previo queda en banderas_iniciales.ajuste_ns_3_1.
         existentes = {
             n.concepto_id: n for n in db.scalars(select(NivelSoporte).where(NivelSoporte.usuario_id == usuario.id))
         }
         for codigo, concepto_id in conceptos.items():
             ns = calculo.ns_inicial[codigo]
+            maximo = max(ns, int(calculo.ajuste_3_1[codigo]["previo"]))
             fila = existentes.get(concepto_id)
             if fila is None:
                 db.add(
-                    NivelSoporte(usuario_id=usuario.id, concepto_id=concepto_id, ns=ns, ns_maximo_historico=ns)
+                    NivelSoporte(usuario_id=usuario.id, concepto_id=concepto_id, ns=ns, ns_maximo_historico=maximo)
                 )
             else:
-                fila.ns, fila.ns_maximo_historico, fila.desafios_desde_cambio = ns, ns, 0
+                fila.ns, fila.ns_maximo_historico, fila.desafios_desde_cambio = ns, maximo, 0
                 fila.ns_previo_retiro = fila.pausa_retiros_restante = None  # R3 y R12 empiezan de cero
         usuario.linea_base_completada = True
         db.add(usuario)

@@ -1,6 +1,7 @@
 """Puntos de enganche al cerrar un desafío."""
 from sqlalchemy.orm import Session
 
+from app.modules.ajustes.service import aplicar_al_iniciar
 from app.modules.desafios.models import SesionDesafio
 from app.modules.motor_retiro.motor import ResultadoMotor, cerrar_desafio_con_mensajes, cerrar_omision, iniciar_desafio
 
@@ -16,5 +17,10 @@ def al_omitir_desafio(db: Session, sesion: SesionDesafio) -> ResultadoMotor:
 
 
 def al_iniciar_desafio(db: Session, sesion: SesionDesafio) -> ResultadoMotor:
-    """Se invoca al crear una sesión nueva (no al reanudar una en curso). Ejecuta R12 (cambio de dificultad)."""
-    return iniciar_desafio(db, sesion)
+    """Se invoca al crear una sesión nueva (no al reanudar una en curso). Primero aplica el retiro `aviso_previo` que
+    esperaba en el concepto (R13) y después ejecuta R12 (cambio de dificultad): el orden importa."""
+    retiro = aplicar_al_iniciar(db, sesion)
+    r = iniciar_desafio(db, sesion)
+    if not retiro:
+        return r
+    return ResultadoMotor(r.ajuste, r.sugerido, r.verificacion, tuple(retiro) + tuple(r.mensajes))

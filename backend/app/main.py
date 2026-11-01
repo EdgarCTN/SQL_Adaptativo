@@ -7,6 +7,7 @@ from app.core import health
 from app.core.config import settings
 from app.core.db import SessionLocal, init_db
 from app.core.errores import registrar_manejadores
+from app.modules.ajustes.router import router as ajustes_router
 from app.modules.asistencia.router import router as asistencia_router
 from app.modules.auth.router import perfil_router
 from app.modules.auth.router import router as auth_router
@@ -42,4 +43,5 @@ api.include_router(linea_base_router)
 api.include_router(desafios_router)
 api.include_router(asistencia_router)
 api.include_router(progreso_router)
+api.include_router(ajustes_router)
 app.include_router(api)

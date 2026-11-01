@@ -26,6 +26,7 @@ class DesafioResumenOut(BaseModel):
 class GrupoOut(BaseModel):
     dificultad: Dificultad
     desafios: list[DesafioResumenOut]
+    empieza_aqui: bool = False  # R0: es la dificultad inicial del estudiante según el diagnóstico (no bloquea las demás)
 
 
 class ListaDesafiosOut(BaseModel):
@@ -69,9 +70,10 @@ class IntentoIn(BaseModel):
 
 class MensajeMotorOut(BaseModel):
     clave: str
-    tipo: str  # retiro | refuerzo | verificacion | sugerencia | estancamiento
+    tipo: str  # retiro | refuerzo | verificacion | sugerencia | estancamiento | recaida | cambio_dificultad | reenganche | retiro_aviso | retiro_pregunta
     texto: str
     enlace: str | None = None  # ruta del frontend, p. ej. /desafios?concepto=join (R6)
+    ajuste_id: int | None = None  # R13: retiro pendiente al que responde el estudiante (POST /ajustes/{id}/responder)
 
 
 class AjusteNivelOut(BaseModel):

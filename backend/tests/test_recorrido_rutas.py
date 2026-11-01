@@ -13,7 +13,7 @@ from app.modules.auth.models import Rol, Usuario
 from conftest import API, cabecera, registrar, token_de
 
 PUBLICAS = {f"{API}/health", f"{API}/auth/registro", f"{API}/auth/login"}
-SOLO_ESTUDIANTE = ("/desafios", "/ayudas", "/linea-base", "/progreso")
+SOLO_ESTUDIANTE = ("/desafios", "/ayudas", "/linea-base", "/progreso", "/ajustes")
 METODOS = ("get", "post", "put", "delete", "patch")
 
 

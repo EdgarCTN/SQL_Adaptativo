@@ -14,7 +14,7 @@ from app.modules.asistencia.cierre import clasificar_cierre
 from app.modules.asistencia.models import SolicitudAyuda
 from app.modules.desafios import hooks
 from app.modules.desafios.models import Concepto, Desafio, Intento, SesionDesafio
-from app.modules.linea_base.models import Omision
+from app.modules.linea_base.models import LineaBaseResultado, Omision
 from app.modules.motor_retiro import verificacion as verificaciones
 from app.modules.motor_retiro.motor import AjusteNivel, ResultadoMotor
 from app.modules.motor_retiro.niveles import NivelSoporteService
@@ -81,6 +81,12 @@ def _estados_usuario(db: Session, usuario_id: int) -> dict[int, str]:
 
 
 # ---------- Lectura ----------
+def _dificultad_inicial(db: Session, usuario_id: int) -> str | None:
+    """Dificultad con la que empieza el estudiante (R0, guardada por el diagnóstico). None si aún no lo completó."""
+    valor = db.scalar(select(LineaBaseResultado.dificultad_inicial).where(LineaBaseResultado.usuario_id == usuario_id))
+    return valor if valor in DIFICULTADES else None
+
+
 def listar(db: Session, usuario: Usuario, concepto: str | None) -> dict:
     activos = db.execute(
         select(Desafio, Concepto)
@@ -114,11 +120,12 @@ def listar(db: Session, usuario: Usuario, concepto: str | None) -> dict:
     mensaje = None
     if total == 0:  # EX1
         mensaje = MSG_SIN_DESAFIOS_FILTRO if codigo and activos else MSG_SIN_DESAFIOS
+    inicial = _dificultad_inicial(db, usuario.id)
     return {
         "total": total,
         "mensaje": mensaje,
         "conceptos": list(conceptos.values()),
-        "grupos": [{"dificultad": k, "desafios": v} for k, v in grupos.items()],
+        "grupos": [{"dificultad": k, "desafios": v, "empieza_aqui": k == inicial} for k, v in grupos.items()],
     }
 
 

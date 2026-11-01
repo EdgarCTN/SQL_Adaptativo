@@ -16,6 +16,7 @@ import DialogoConfirmacion from "../../components/DialogoConfirmacion";
 import EstadoContenedor from "../../components/EstadoContenedor";
 import { mostrarToast } from "../../components/Toasts";
 import { ETIQUETA_DIFICULTAD, formatearDuracion, mensajeEstancamiento, textoAjusteNivel } from "./formatos";
+import AjustesPendientes from "./AjustesPendientes";
 import DialogoOmitir from "./DialogoOmitir";
 import PanelAyuda from "./PanelAyuda";
 import ResultadoIntento from "./ResultadoIntento";
@@ -111,6 +112,7 @@ function DetalleDesafio({ inicial, alRecargar }: PropsDetalle) {
   const [omitiendoMotivo, setOmitiendoMotivo] = useState(false); // diálogo de omisión abierto
   const [omitiendo, setOmitiendo] = useState(false);
   const [omitido, setOmitido] = useState<ResultadoDeOmision | null>(null);
+  const [cierres, setCierres] = useState(0); // R13: sube al cerrar un desafío para volver a consultar los retiros pendientes
 
   // Si la pantalla recarga datos del servidor (p. ej. tras un 409), se vuelve a sincronizar el estado.
   const primera = useRef(true);
@@ -156,9 +158,14 @@ function DetalleDesafio({ inicial, alRecargar }: PropsDetalle) {
       setOmitido(null);
       setSesion({ sesion_id: r.sesion_id, inicio: r.inicio, intentos_realizados: r.intentos_realizados });
       if (r.reanudada) mostrarToast({ tipo: "info", mensaje: "Retomaste tu desafío en curso." });
-      else if (r.ajuste_nivel) {
-        // R12: al pasar a una dificultad mayor el nivel de ayuda del concepto puede subir a 1
-        mostrarToast({ tipo: "info", mensaje: `${textoAjusteNivel(r.ajuste_nivel)} ${r.ajuste_nivel.motivo}`, duracion: 9000 });
+      else {
+        // R13: un retiro con aviso previo se aplicó al iniciar este desafío
+        const retiro = r.mensajes?.find((m) => m.tipo === "retiro");
+        if (retiro) mostrarToast({ id: "retiro-aplicado", tipo: "info", mensaje: retiro.texto, duracion: 9000 });
+        if (r.ajuste_nivel) {
+          // R12: al pasar a una dificultad mayor el nivel de ayuda del concepto puede subir a 1
+          mostrarToast({ tipo: "info", mensaje: `${textoAjusteNivel(r.ajuste_nivel)} ${r.ajuste_nivel.motivo}`, duracion: 9000 });
+        }
       }
     } catch (e) {
       if (e instanceof ErrorApi && e.status === 404) noDisponible(e.mensaje);
@@ -190,6 +197,7 @@ function DetalleDesafio({ inicial, alRecargar }: PropsDetalle) {
       if (r.desafio_resuelto) {
         setResuelto(true);
         guardarBorrador(clave, "");
+        setCierres((n) => n + 1);
       }
     } catch (e) {
       if (!(e instanceof ErrorApi)) setErrorEnvio(MSG_INESPERADO);
@@ -419,6 +427,10 @@ function DetalleDesafio({ inicial, alRecargar }: PropsDetalle) {
 
       <div aria-live="polite" className="mt-4">
         {intento && <ResultadoIntento intento={intento} />}
+      </div>
+
+      <div className="mt-4">
+        <AjustesPendientes refrescar={cierres} abrirPregunta={cierres > 0} />
       </div>
 
       {marcadoNR && (

@@ -1,7 +1,8 @@
 """Único punto por donde el motor produce textos para el estudiante (mensajes_fijos.json).
 
 La entrega de notificaciones (entrega 10) solo tiene que enganchar aquí: las reglas no construyen textos.
-Tipos de mensaje: retiro, refuerzo, verificacion, sugerencia, estancamiento, recaida, cambio_dificultad, reenganche.
+Tipos de mensaje: retiro, refuerzo, verificacion, sugerencia, estancamiento, recaida, cambio_dificultad, reenganche,
+retiro_aviso y retiro_pregunta (R13: retiro que espera al estudiante; el mensaje lleva `ajuste_id`).
 """
 from dataclasses import dataclass
 
@@ -15,6 +16,8 @@ TIPO_ESTANCAMIENTO = "estancamiento"
 TIPO_RECAIDA = "recaida"  # R3
 TIPO_CAMBIO_DIFICULTAD = "cambio_dificultad"  # R12
 TIPO_REENGANCHE = "reenganche"  # R14
+TIPO_RETIRO_AVISO = "retiro_aviso"  # R13, preferencia 3.4 = aviso_previo
+TIPO_RETIRO_PREGUNTA = "retiro_pregunta"  # R13, preferencia 3.4 = preguntar
 
 _TIPO_POR_CLAVE = {
     "retiro_automatico": TIPO_RETIRO,
@@ -26,6 +29,9 @@ _TIPO_POR_CLAVE = {
     "recaida": TIPO_RECAIDA,
     "cambio_dificultad": TIPO_CAMBIO_DIFICULTAD,
     "reenganche": TIPO_REENGANCHE,
+    "retiro_aviso_previo": TIPO_RETIRO_AVISO,
+    "retiro_preguntar": TIPO_RETIRO_PREGUNTA,
+    "retiro_mantener_nivel": TIPO_RETIRO,
 }
 
 
@@ -35,6 +41,7 @@ class MensajeEstudiante:
     tipo: str
     texto: str
     enlace: str | None = None  # ruta del frontend (p. ej. /desafios?concepto=join) cuando el mensaje la ofrece
+    ajuste_id: int | None = None  # R13: ajuste pendiente al que responde el estudiante (POST /ajustes/{id}/responder)
 
 
 def texto_fijo(clave: str | None, **marcadores: str) -> str | None:
@@ -71,8 +78,8 @@ def unir_nombres(nombres: list[str], maximo: int = 3) -> str:
     return ", ".join(nombres[:maximo]) + f" y {len(nombres) - maximo} más"
 
 
-def mensaje(clave: str, enlace: str | None = None, **marcadores: str) -> MensajeEstudiante | None:
+def mensaje(clave: str, enlace: str | None = None, ajuste_id: int | None = None, **marcadores: str) -> MensajeEstudiante | None:
     texto = texto_fijo(clave, **marcadores)
     if texto is None:
         return None
-    return MensajeEstudiante(clave, _TIPO_POR_CLAVE.get(clave, TIPO_REFUERZO), texto, enlace)
+    return MensajeEstudiante(clave, _TIPO_POR_CLAVE.get(clave, TIPO_REFUERZO), texto, enlace, ajuste_id)

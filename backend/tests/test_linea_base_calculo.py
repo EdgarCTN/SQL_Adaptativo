@@ -152,7 +152,7 @@ def test_los_valores_salen_de_reglas_json():
     assert calcular(armar({"P1": "no_se"}), reglas=otras).m_por_item["P1"]["m"] == 0.9
 
 
-# ---------- se guardan pero no se aplican ----------
+# ---------- dificultad inicial y ajuste 3.1 ----------
 def test_dificultad_inicial():
     d1 = {f"P{n}": ("mal", 5) for n in (1, 2, 3, 4)}
     d2 = {f"P{n}": ("mal", 5) for n in (5, 6, 7, 8)}
@@ -181,16 +181,16 @@ def test_ajuste_por_preferencia_3_1(ns, pref, esperado):
     assert ajustar_por_3_1(ns, pref) == esperado
 
 
-def test_ajuste_3_1_se_guarda_y_no_se_aplica():
+def test_ajuste_3_1_se_aplica_y_guarda_el_ns_previo():
     p2 = {"P2": ("mal", 2), "P3": "no_se", "P1": "muy_facil", "P4": "muy_facil"}
     r = calcular(armar(p2, part3={"3.1": "c"}))  # preferencia AY3 «solución parcial»
-    assert r.ns_inicial["ordenamiento"] == 1 and r.ajuste_3_1["ordenamiento"] == 2
-    assert r.ns_inicial["conteo_agregacion"] == 2 and r.ajuste_3_1["conteo_agregacion"] == 2
-    assert r.ns_inicial["filtrado"] == 1 and r.ajuste_3_1["filtrado"] == 1  # excepción «Muy fácil»
-    assert r.ns_inicial["join"] == 0 and r.ajuste_3_1["join"] == 0
+    assert r.ns_inicial["ordenamiento"] == 2 and r.ajuste_3_1["ordenamiento"] == {"previo": 1, "aplicado": 2, "motivo": "aplicado"}
+    assert r.ns_inicial["conteo_agregacion"] == 2 and r.ajuste_3_1["conteo_agregacion"]["motivo"] == "sin_cambio"
+    assert r.ns_inicial["filtrado"] == 1 and r.ajuste_3_1["filtrado"]["motivo"] == "muy_facil"  # excepción «Muy fácil»
+    assert r.ns_inicial["join"] == 0 and r.ajuste_3_1["join"]["motivo"] == "ns0"
     assert r.banderas["ajuste_ns_3_1"] == r.ajuste_3_1
     r = calcular(armar(p2, part3={"3.1": "a"}))  # AY1 «pista general»
-    assert r.ajuste_3_1["conteo_agregacion"] == 1 and r.ns_inicial["conteo_agregacion"] == 2
+    assert r.ns_inicial["conteo_agregacion"] == 1 and r.ajuste_3_1["conteo_agregacion"]["previo"] == 2
 
 
 @pytest.mark.parametrize(

@@ -130,6 +130,8 @@ Orden: primero lo que hace funcionar el motor y la ayuda (entregas 1 a 9), despu
 
 ## ENTREGA 7: Lo que faltaba de R0 y preferencias de retiro (R13, pregunta 3.4)
 
+**Estado: hecha** (no requirió `reset_db.py`: solo una tabla nueva, `ajustes_pendientes`; notas en `HOJA_DE_RUTA.md`, decisiones PROVISIONAL en `DECISIONES.md`).
+
 **Revisa en el proyecto:** `python scripts/contexto.py linea_base motor_retiro` + `docs/referencia/matriz_resumen.md` · **Cubre:** RF-08, RF-19.
 
 **Tarea**
@@ -155,6 +157,8 @@ Orden: primero lo que hace funcionar el motor y la ayuda (entregas 1 a 9), despu
 3. **R10 (dentro del desafío):** 3 envíos fallidos seguidos con menos de 30 s entre ellos → la respuesta del intento incluye `reflexion` con el mensaje `ensayo_error`. No bloquea la ayuda. Se registra en `eventos_motor`.
 4. **Oferta de ayuda:** con 2 o más fallos, o TR del desafío en curso ≥ 1.5, y NS ≥ 1, la respuesta del intento incluye `oferta_ayuda` (según la preferencia 3.3: `a_solicitud` no ofrece; `ofrecer` muestra una tarjeta «¿Quieres una pista?»; `mostrar_sola` pide la ayuda automáticamente y la marca `ayuda_mostrada_sola`, que no cuenta para UA ni para R9). En NS 0 solo existe el botón.
 5. Las banderas llegan al prompt **solo como los códigos de la plantilla**, nunca como números ni indicadores. Registra en `eventos_motor` cada activación de R9, R10 y R11.
+
+5b. **Ya resuelto en la entrega 7:** el ajuste 3.1 ya lee `banderas_iniciales.r9.riesgo` (no se aplica con riesgo); la preferencia 3.4 ya filtra los retiros en `motor._procesar` (`retiro_diferido.decidir`). R11 debe exigir los 2 últimos SA **dentro de `R1.aplica`** (como pausa, antes de que R13 vea el retiro), no en el desvío de R13. La preferencia 3.3 sigue pendiente: aquí se lee de `linea_base_resultados.preferencias["3.3"]`.
 
 **Pruebas:** tabla por bandera; el mínimo de AY3 y AY4 sube con R9; el prompt generado con banderas no contiene NS ni indicadores ni datos personales; la oferta respeta cada valor de 3.3.
 

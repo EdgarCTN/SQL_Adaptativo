@@ -11,7 +11,7 @@ Estado de cada requisito de `docs/referencia/requisitos.md`. Se actualiza al ter
 | RF-05 | Perfil | Cumplido | — | tests/test_auth.py |
 | RF-06 | Consentimiento informado | Cumplido (texto provisional) | 14 | tests/test_linea_base.py |
 | RF-07 | Diagnóstico (línea base) | Cumplido | — | tests/test_linea_base.py |
-| RF-08 | Nivel de ayuda inicial | Parcial: falta aplicar el ajuste 3.1 y la dificultad inicial | 7 | tests/test_linea_base_calculo.py |
+| RF-08 | Nivel de ayuda inicial | Cumplido: ajuste 3.1 aplicado (no a NS0, a «Muy fácil» ni con riesgo R9) y dificultad inicial marcada en el listado; el máximo histórico inicial y la marca fija son PROVISIONALES (ver DECISIONES) | 7 | tests/test_linea_base_calculo.py, tests/test_retiro_preferencias.py |
 | RF-09 | Lista de desafíos por dificultad | Cumplido: 16 desafíos, los 10 conceptos con contenido y 2 desafíos en `filtrado`, `ordenamiento`, `join`, `having`, `subconsulta` y `funciones_ventana`; contenido y prerrequisitos entre conceptos PROVISIONALES (validar con la profesora) | — | tests/test_desafios.py, tests/test_desafios_seeds.py |
 | RF-10 | Enunciado y recursos | Cumplido | — | tests/test_desafios.py |
 | RF-11 | Envío de consulta | Cumplido | — | tests/test_desafios.py |
@@ -22,9 +22,9 @@ Estado de cada requisito de `docs/referencia/requisitos.md`. Se actualiza al ter
 | RF-16 | Ayuda con contexto del estudiante | Parcial: sin historial del desafío en el prompt | 9 | tests/test_prompt_builder.py |
 | RF-17 | Registro de ayudas | Cumplido (el frontend las pierde al cerrar la pestaña) | 9 | tests/test_asistencia_api.py |
 | RF-18 | Cálculo de indicadores | Cumplido: TA, NI, TR y UA con pandas; TR con tiempo activo por latidos (PROVISIONAL, hueco 45 s); UA PROVISIONAL (ver DECISIONES) | 2 | tests/test_analitica_indicadores.py, tests/test_motor_reglas.py, tests/test_latidos.py |
-| RF-19 | Ajuste del nivel de ayuda (R0 a R14) | Parcial: 10 de 15 reglas (R1 a R8, R12, R14) y R0 parcial; R6 (lista de refuerzo previo y mapa de prerrequisitos), R2 (TR de los 3 últimos) y R12 (cuándo «pasa» a una dificultad mayor) PROVISIONAL; omitir y verificación (R7) PROVISIONAL en la elección del desafío (ver DECISIONES) | 4 a 8 y 6 | tests/test_motor_reglas.py, tests/test_omitir.py, tests/test_motor_recaida_dificultad_inactividad.py |
+| RF-19 | Ajuste del nivel de ayuda (R0 a R14) | Parcial: 11 de 15 reglas (R0 a R8, R12, R14, y R13 con la pregunta 3.4; la 3.3 llega en la 8); R6 (lista de refuerzo previo y mapa de prerrequisitos), R2 (TR de los 3 últimos) y R12 (cuándo «pasa» a una dificultad mayor) PROVISIONAL; omitir y verificación (R7) PROVISIONAL en la elección del desafío; R13 (3.4) PROVISIONAL en el «siguiente desafío» del aviso previo, el respeto permanente de `mantener` y la reproposición (ver DECISIONES) | 4 a 8, 6 y 7 | tests/test_motor_reglas.py, tests/test_omitir.py, tests/test_motor_recaida_dificultad_inactividad.py, tests/test_retiro_preferencias.py |
 | RF-20 | Estado de sesión en Redis | Fuera de alcance actual: el nivel vive en la base de datos | — | niveles_soporte |
-| RF-21 | Notificaciones | Parcial: avisos en pantalla al cerrar o iniciar un desafío (R3, R12) y aviso de reenganche al iniciar sesión (R14); sin campana ni tabla | 10 | tests/test_motor_integracion.py |
+| RF-21 | Notificaciones | Parcial: avisos en pantalla al cerrar o iniciar un desafío (R3, R12, retiros pendientes de R13) y aviso de reenganche al iniciar sesión (R14); sin campana ni tabla de notificaciones | 10 | tests/test_motor_integracion.py, tests/test_retiro_preferencias.py |
 | RF-22 | Progreso del estudiante | Cumplido | — | tests/test_progreso.py |
 | RF-23 | Gráficos de evolución | Parcial: datos listos (`serie_historica`, tabla `indicadores_historicos`); faltan los gráficos (entrega 11) | 2, 11 | tests/test_analitica_historico.py |
 | RF-24 | Filtro de historial de intentos | Pendiente | 11 | — |

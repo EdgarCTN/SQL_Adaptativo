@@ -1,6 +1,6 @@
 from typing import Any
 
-from sqlalchemy import JSON, CheckConstraint, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, CheckConstraint, ForeignKey, Index, Integer, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, UTCDateTime, ahora_utc
@@ -67,3 +67,36 @@ class Verificacion(Base):
     resultado: Mapped[str | None] = mapped_column(String(10), nullable=True)  # SA | CP | CE | NR | omitido
     creada_en: Mapped[Any] = mapped_column(UTCDateTime, default=ahora_utc)
     completada_en: Mapped[Any] = mapped_column(UTCDateTime, nullable=True)
+
+
+class AjustePendiente(Base):
+    """Retiro (R1 o R2) que espera la respuesta del estudiante según su preferencia 3.4 (R13).
+
+    `aviso_previo`: se aplica al iniciar el siguiente desafío del concepto salvo que pulse «Mantener la ayuda».
+    `preguntar`: se aplica solo si acepta. Un solo ajuste pendiente por estudiante y concepto.
+    Estados: pendiente | aplicado | mantenido | caducado (el NS o la pausa cambiaron y el retiro ya no corresponde).
+    """
+
+    __tablename__ = "ajustes_pendientes"
+    __table_args__ = (
+        CheckConstraint("modo IN ('aviso_previo','preguntar')", name="ck_ajuste_modo"),
+        CheckConstraint("estado IN ('pendiente','aplicado','mantenido','caducado')", name="ck_ajuste_estado"),
+        CheckConstraint("ns_antes BETWEEN 0 AND 3 AND ns_nuevo BETWEEN 0 AND 3", name="ck_ajuste_ns"),
+        Index(
+            "uq_ajuste_pendiente_por_concepto", "usuario_id", "concepto_id", unique=True,
+            sqlite_where=text("estado = 'pendiente'"), postgresql_where=text("estado = 'pendiente'"),
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), index=True)
+    concepto_id: Mapped[int] = mapped_column(ForeignKey("conceptos.id"))
+    sesion_id: Mapped[int | None] = mapped_column(ForeignKey("sesiones_desafio.id"), nullable=True)  # cierre que lo originó
+    regla: Mapped[str] = mapped_column(String(10))  # R1 | R2
+    modo: Mapped[str] = mapped_column(String(15))
+    ns_antes: Mapped[int] = mapped_column(Integer)
+    ns_nuevo: Mapped[int] = mapped_column(Integer)
+    motivo: Mapped[str] = mapped_column(Text)  # texto técnico de la regla que lo propuso
+    estado: Mapped[str] = mapped_column(String(10), default="pendiente")
+    creado_en: Mapped[Any] = mapped_column(UTCDateTime, default=ahora_utc)
+    resuelto_en: Mapped[Any] = mapped_column(UTCDateTime, nullable=True)

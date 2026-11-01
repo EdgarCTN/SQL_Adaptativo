@@ -1,4 +1,5 @@
-"""Motor de reglas (R6, R8, R7, R5, R2, R1, R4; completo desde la entrega 5; R3 como condicionante desde la 6). Se invoca
+"""Motor de reglas (R6, R8, R7, R5, R2, R1, R4; completo desde la entrega 5; R3 como condicionante desde la 6; la
+preferencia 3.4 (R13) decide desde la 7 si un retiro se aplica, espera al estudiante o se omite). Se invoca
 al cerrar un desafío (resuelto, abandonado u omitido). Entrega 6: `iniciar_desafio` (R12, al iniciar un desafío) y
 `evaluar_inactividad` (R14, al iniciar sesión).
 
@@ -19,7 +20,7 @@ from app.modules.analitica.servicio import registrar_historico
 from app.modules.auth.models import Usuario
 from app.modules.desafios.models import Concepto, Desafio, SesionDesafio
 from app.modules.linea_base.models import NivelSoporte, Omision
-from app.modules.motor_retiro import cambio_dificultad, inactividad, mensajes, omisiones, verificacion
+from app.modules.motor_retiro import cambio_dificultad, inactividad, mensajes, omisiones, retiro_diferido, verificacion
 from app.modules.motor_retiro.contexto import construir_contexto
 from app.modules.motor_retiro.evaluador import evaluar
 from app.modules.motor_retiro.mensajes import MensajeEstudiante
@@ -144,6 +145,15 @@ def _procesar(db: Session, sesion: SesionDesafio, reglas: dict | None, omision_m
         )
         ahora = ahora_utc()
         retiros = [str(r) for r in reglas["recaida_y_pausas"]["reglas_que_cuentan_como_retiro"]]
+        # R13 (pregunta 3.4): un retiro de R1 o R2 puede esperar al estudiante o no aplicarse; entonces el NS no cambia.
+        diferido = None
+        if cambio and omision_motivo is None and ev.regla in retiros and ns_nuevo < ns_antes:
+            diferido = retiro_diferido.decidir(
+                db, usuario_id, concepto.id, sesion_id, ev.regla, ns_antes, ns_nuevo, ev.motivo, ahora,
+                ns_antes, ctx.pausa_retiros,
+            )
+            if diferido is not None:
+                ns_nuevo, cambio = ns_antes, False
         if cambio:
             fila = _guardar_cambio_ns(
                 db, fila, usuario_id, concepto.id, ns_antes, ns_nuevo, ev.regla, ev.motivo, ahora,
@@ -159,7 +169,7 @@ def _procesar(db: Session, sesion: SesionDesafio, reglas: dict | None, omision_m
 
         # Acciones que necesitan la base de datos (las reglas solo deciden).
         sugerido = asignada = None
-        detalle = ev.motivo
+        detalle = diferido.detalle if diferido is not None else ev.motivo
         if ev.accion == ACCION_SUGERIR:
             ref = omisiones.buscar_mas_basico(db, usuario_id, desafio.id)
             sugerido = DesafioSugerido(ref.id, ref.titulo, ref.dificultad) if ref else None
@@ -171,6 +181,12 @@ def _procesar(db: Session, sesion: SesionDesafio, reglas: dict | None, omision_m
         indicadores = {**ctx.indicadores.como_dict(), "desafios_desde_cambio": ctx.desafios_desde_cambio,
                        "resultado_sesion": ctx.resultado_sesion, "pausa_retiros": ctx.pausa_retiros,
                        **ev.extra}  # extra: p. ej. r6_condicion, prerrequisito
+        if diferido is not None:
+            indicadores["r13"] = {
+                "preferencia_3_4": diferido.modo, "criterio_cumplido": ev.regla, "ns_propuesto": ev.ns_nuevo,
+                "ajuste_id": diferido.ajuste.id if diferido.ajuste is not None else None,
+                "mensaje": diferido.clave_mensaje,
+            }
         if omision_motivo is not None:
             indicadores.update(
                 omision=omision_motivo, omisiones_muy_facil=ctx.omisiones_muy_facil,
@@ -196,6 +212,10 @@ def _procesar(db: Session, sesion: SesionDesafio, reglas: dict | None, omision_m
             ajuste = AjusteNivel(concepto.nombre, ns_antes, ns_nuevo, texto)
             tipo = mensajes.tipo_de(ev.clave_mensaje, mensajes.TIPO_REFUERZO if ns_nuevo > ns_antes else mensajes.TIPO_RETIRO)
             lista.append(MensajeEstudiante(ev.clave_mensaje or "cambio_ns", tipo, texto))
+        if diferido is not None and diferido.nuevo and diferido.clave_mensaje:  # R13: aviso previo o pregunta
+            m = mensajes.mensaje(diferido.clave_mensaje, ajuste_id=diferido.ajuste.id, concepto=concepto.nombre)
+            if m:
+                lista.append(m)
         if sugerido is not None:
             m = mensajes.mensaje("sugerencia_mas_basico", concepto=concepto.nombre, desafio=sugerido.titulo)
             if m:

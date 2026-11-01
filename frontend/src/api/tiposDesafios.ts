@@ -19,6 +19,7 @@ export interface DesafioResumen {
 export interface GrupoDesafios {
   dificultad: Dificultad;
   desafios: DesafioResumen[];
+  empieza_aqui: boolean; // R0: dificultad inicial del estudiante (no bloquea las demás)
 }
 
 export interface ListaDesafios {
@@ -122,9 +123,20 @@ export interface VerificacionAsignada {
 
 export interface MensajeMotor {
   clave: string;
-  tipo: "retiro" | "refuerzo" | "verificacion" | "sugerencia" | "estancamiento" | "recaida" | "cambio_dificultad" | "reenganche";
+  tipo:
+    | "retiro"
+    | "refuerzo"
+    | "verificacion"
+    | "sugerencia"
+    | "estancamiento"
+    | "recaida"
+    | "cambio_dificultad"
+    | "reenganche"
+    | "retiro_aviso" // R13: aviso previo, el retiro se aplica en el siguiente desafío salvo que mantengas la ayuda
+    | "retiro_pregunta"; // R13: el retiro solo se aplica si aceptas
   texto: string;
   enlace?: string | null; // ruta del frontend; R6 la usa para llevar a los desafíos del concepto previo
+  ajuste_id?: number | null; // R13: retiro pendiente al que se responde en POST /ajustes/{id}/responder
 }
 
 export interface ResultadoOmision {

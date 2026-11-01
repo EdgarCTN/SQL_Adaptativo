@@ -8,6 +8,8 @@ Orden: primero lo que hace funcionar el motor y la ayuda (entregas 1 a 9), despu
 
 ## ENTREGA 1: Cierre de sesión seguro y tiempo activo real
 
+**Estado: hecha** (requirió `reset_db.py`; notas en `HOJA_DE_RUTA.md`, decisiones PROVISIONAL en `DECISIONES.md`).
+
 **Revisa en el proyecto:** `python scripts/contexto.py auth desafios` · **Cubre:** RF-03, y mejora TR (indicador de tiempo relativo).
 
 **Tarea**
@@ -22,6 +24,8 @@ Orden: primero lo que hace funcionar el motor y la ayuda (entregas 1 a 9), despu
 ---
 
 ## ENTREGA 2: Capa analítica con pandas
+
+**Estado: hecha** (no requirió `reset_db.py`; notas en `HOJA_DE_RUTA.md`, decisiones PROVISIONAL en `DECISIONES.md`).
 
 **Revisa en el proyecto:** `python scripts/contexto.py motor_retiro progreso` + `docs/referencia/matriz_resumen.md` · **Cubre:** RF-18, RF-23 (datos), RF-26, RF-27, RNF-23.
 
@@ -39,6 +43,8 @@ Orden: primero lo que hace funcionar el motor y la ayuda (entregas 1 a 9), despu
 
 ## ENTREGA 3A: Contenido, prerrequisitos y 4 conceptos nuevos
 
+**Estado: hecha** (no requirió `reset_db.py`; notas en `HOJA_DE_RUTA.md`, decisiones PROVISIONAL en `DECISIONES.md`).
+
 **Revisa en el proyecto:** `python scripts/contexto.py desafios` + **un** desafío completo de `modules/desafios/seeds.py` como modelo de calidad + la sección 9 de `matriz_resumen.md` · **Cubre:** RF-09 (contenido).
 
 **Tarea**
@@ -55,6 +61,8 @@ Orden: primero lo que hace funcionar el motor y la ayuda (entregas 1 a 9), despu
 
 ## ENTREGA 3B: Contenido, segundos desafíos (parte 1)
 
+**Estado: hecha** (no requirió `reset_db.py`; notas en `HOJA_DE_RUTA.md`, decisiones PROVISIONAL en `DECISIONES.md`).
+
 **Revisa en el proyecto:** `python scripts/contexto.py desafios` + un desafío completo de `seeds.py` · **Cubre:** RF-09 (contenido), base para R8.
 
 **Tarea:** 3 desafíos nuevos: un segundo desafío para `filtrado`, `ordenamiento` y `join`. Intenta que su dificultad sea **distinta** a la del primero (si el existente es D1, el nuevo es D2; si es D2 o D3, el nuevo es de una dificultad menor), para que R8 pueda ofrecer «un desafío más básico del mismo concepto» cuando sea posible. Mismas reglas de contenido que la entrega 3A. Si no cabe, entrega 2 y espera `continúa`.
@@ -65,6 +73,8 @@ Orden: primero lo que hace funcionar el motor y la ayuda (entregas 1 a 9), despu
 
 ## ENTREGA 3C: Contenido, segundos desafíos (parte 2)
 
+**Estado: hecha** (no requirió `reset_db.py`; notas en `HOJA_DE_RUTA.md`, decisiones PROVISIONAL en `DECISIONES.md`).
+
 **Revisa en el proyecto:** `python scripts/contexto.py desafios` + un desafío completo de `seeds.py` · **Cubre:** RF-09 (contenido).
 
 **Tarea:** 3 desafíos nuevos: un segundo desafío para `having`, `subconsulta` y `funciones_ventana`, con las mismas reglas que la 3B. Al terminar habrá 16 desafíos y los 10 conceptos con contenido.
@@ -74,6 +84,8 @@ Orden: primero lo que hace funcionar el motor y la ayuda (entregas 1 a 9), despu
 ---
 
 ## ENTREGA 4: Omitir un desafío, R8 y R7
+
+**Estado: hecha** (requirió `reset_db.py`; notas en `HOJA_DE_RUTA.md`, decisiones PROVISIONAL en `DECISIONES.md`).
 
 **Revisa en el proyecto:** `python scripts/contexto.py motor_retiro desafios linea_base` + `docs/referencia/matriz_resumen.md` · **Cubre:** RF-18, RF-19.
 

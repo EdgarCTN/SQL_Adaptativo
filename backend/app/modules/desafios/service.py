@@ -15,7 +15,9 @@ from app.modules.asistencia.models import SolicitudAyuda
 from app.modules.desafios import hooks
 from app.modules.desafios.models import Concepto, Desafio, Intento, SesionDesafio
 from app.modules.linea_base.models import LineaBaseResultado, Omision
+from app.modules.motor_retiro import banderas, ensayo_error, mensajes as mensajes_motor
 from app.modules.motor_retiro import verificacion as verificaciones
+from app.modules.motor_retiro.mensajes import MensajeEstudiante
 from app.modules.motor_retiro.motor import AjusteNivel, ResultadoMotor
 from app.modules.motor_retiro.niveles import NivelSoporteService
 from app.modules.desafios.sandbox import ErrorConfiguracionDesafio, evaluar_consulta
@@ -259,7 +261,34 @@ def _notificar_cierre(db: Session, sesion: SesionDesafio) -> ResultadoMotor:
     return r if isinstance(r, ResultadoMotor) else ResultadoMotor()
 
 
-def registrar_intento(db: Session, usuario: Usuario, desafio_id: int, codigo: str) -> dict:
+def _mensaje_sobreconfianza(db: Session, usuario: Usuario, desafio: Desafio, sesion: SesionDesafio) -> MensajeEstudiante | None:
+    """R11: con la bandera inicial de sobreconfianza, tras un acierto se muestra el mensaje fijo `sobreconfianza_acierto`
+    (PROVISIONAL: en cada desafío resuelto, también si quedó como NR). Deja constancia en eventos_motor. Nunca lanza."""
+    try:
+        if not banderas.sobreconfianza_inicial(db, usuario.id):
+            return None
+        mensaje = mensajes_motor.mensaje("sobreconfianza_acierto")
+        if mensaje is not None:
+            banderas.registrar_activacion(
+                db, usuario.id, desafio.concepto_id, sesion.id, "R11",
+                "R11 sobreconfianza: mensaje de explicar o simplificar tras un acierto",
+                {"mensaje": "sobreconfianza_acierto", "resultado_cierre": sesion.resultado_cierre},
+                NivelSoporteService(db).obtener(usuario.id, desafio.concepto_id),
+            )
+        return mensaje
+    except Exception:  # noqa: BLE001
+        db.rollback()
+        log.exception("Falló el mensaje de R11 (sesión %s)", sesion.id)
+        return None
+
+
+def _oferta_ayuda(db: Session, usuario: Usuario, desafio: Desafio, sesion: SesionDesafio, proveedor) -> dict | None:
+    from app.modules.asistencia.oferta import evaluar_oferta  # import tardío: asistencia.service importa este módulo
+
+    return evaluar_oferta(db, usuario, desafio, sesion, proveedor)
+
+
+def registrar_intento(db: Session, usuario: Usuario, desafio_id: int, codigo: str, proveedor=None) -> dict:
     d = _desafio_activo(db, desafio_id)
     sesion = _sesion_en_curso(db, usuario.id, d.id)
     if sesion is None:
@@ -307,6 +336,16 @@ def registrar_intento(db: Session, usuario: Usuario, desafio_id: int, codigo: st
     if intento is None:
         raise ErrorApp(MSG_ERROR_GUARDADO, 503)
     r = _notificar_cierre(db, sesion) if res.correcto else ResultadoMotor()
+    lista = [asdict(m) for m in r.mensajes]
+    reflexion = oferta = None
+    if res.correcto:
+        m11 = _mensaje_sobreconfianza(db, usuario, d, sesion)  # R11
+        if m11 is not None:
+            lista.append(asdict(m11))
+    else:
+        r10 = ensayo_error.evaluar_r10(db, sesion, d)  # R10: dentro del desafío, no bloquea la ayuda
+        reflexion = asdict(r10) if r10 is not None else None
+        oferta = _oferta_ayuda(db, usuario, d, sesion, proveedor)  # Tabla 11 + preferencia 3.3
     return {
         "numero": intento.numero,
         "correcto": res.correcto,
@@ -323,7 +362,9 @@ def registrar_intento(db: Session, usuario: Usuario, desafio_id: int, codigo: st
         "tiempo_activo_seg": sesion.tiempo_activo_seg,
         "creado_en": intento.creado_en,
         "ajuste_nivel": asdict(r.ajuste) if r.ajuste else None,
-        "mensajes": [asdict(m) for m in r.mensajes],
+        "mensajes": lista,
+        "reflexion": reflexion,
+        "oferta_ayuda": oferta,
     }
 
 

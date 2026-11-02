@@ -18,6 +18,7 @@ import { mostrarToast } from "../../components/Toasts";
 import { ETIQUETA_DIFICULTAD, formatearDuracion, mensajeEstancamiento, textoAjusteNivel } from "./formatos";
 import AjustesPendientes from "./AjustesPendientes";
 import DialogoOmitir from "./DialogoOmitir";
+import OfertaAyuda from "./OfertaAyuda";
 import PanelAyuda from "./PanelAyuda";
 import ResultadoIntento from "./ResultadoIntento";
 import ResultadoOmision from "./ResultadoOmision";
@@ -140,6 +141,13 @@ function DetalleDesafio({ inicial, alRecargar }: PropsDetalle) {
     alNoDisponible: noDisponible,
     alRecargar,
   });
+  // Preferencia 3.3 = mostrar_sola: el servidor ya entregó la ayuda; se añade al panel (no cuenta para UA ni R9).
+  const { incorporar } = ayuda;
+  const ofertaSola = intento?.oferta_ayuda?.modo === "mostrar_sola" ? intento.oferta_ayuda.ayuda : null;
+  useEffect(() => {
+    if (ofertaSola) incorporar(ofertaSola, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ofertaSola?.solicitud_id]);
   // Al entregarse la solución completa (AY4) el desafío queda como no resuelto.
   const ay4 = ayuda.ayudas.find((a) => a.tipo_ayuda === "AY4");
   const marcadoNR = !!ay4;
@@ -427,6 +435,16 @@ function DetalleDesafio({ inicial, alRecargar }: PropsDetalle) {
 
       <div aria-live="polite" className="mt-4">
         {intento && <ResultadoIntento intento={intento} />}
+        {intento?.oferta_ayuda && sesion && !resuelto && !marcadoNR && (
+          <div className="mt-3">
+            <OfertaAyuda
+              key={intento.numero}
+              oferta={intento.oferta_ayuda}
+              pidiendo={ayuda.pidiendo}
+              onAceptar={() => ayuda.pedir("")}
+            />
+          </div>
+        )}
       </div>
 
       <div className="mt-4">

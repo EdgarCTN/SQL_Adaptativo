@@ -71,20 +71,31 @@ def intentos_df(db: Session, sesion_ids: list[int]) -> pd.DataFrame:
 
 
 def ayudas_df(db: Session, sesion_ids: list[int]) -> pd.DataFrame:
-    """Un renglón por ayuda entregada; `mostrada_sola` es la marca de la sesión."""
+    """Un renglón por ayuda entregada; `mostrada_sola` es la marca de la solicitud (entrega 8)."""
     filas = _por_trozos(
         db,
         sesion_ids,
         lambda t: select(
             SolicitudAyuda.sesion_id, SolicitudAyuda.tipo_ayuda, SolicitudAyuda.momento, SolicitudAyuda.fue_respaldo,
-            func.coalesce(SesionDesafio.ayuda_mostrada_sola, False),
-        )
-        .join(SesionDesafio, SesionDesafio.id == SolicitudAyuda.sesion_id)
-        .where(SolicitudAyuda.sesion_id.in_(t)),
+            func.coalesce(SolicitudAyuda.mostrada_sola, False),
+        ).where(SolicitudAyuda.sesion_id.in_(t)),
     )
     df = _df(filas, ["sesion_id", "tipo_ayuda", "momento", "fue_respaldo", "mostrada_sola"])
     df["mostrada_sola"] = df["mostrada_sola"].astype(bool)
     return df
+
+
+def pedidos_df(db: Session, sesion_ids: list[int]) -> pd.DataFrame:
+    """Un renglón por ayuda PEDIDA o aceptada (sin las mostradas solas): tipo solicitado e intentos previos (R9)."""
+    filas = _por_trozos(
+        db,
+        sesion_ids,
+        lambda t: select(
+            SolicitudAyuda.sesion_id, SolicitudAyuda.tipo_ayuda, SolicitudAyuda.tipo_solicitado,
+            SolicitudAyuda.intentos_previos,
+        ).where(SolicitudAyuda.sesion_id.in_(t), func.coalesce(SolicitudAyuda.mostrada_sola, False).is_(False)),
+    )
+    return _df(filas, ["sesion_id", "tipo_ayuda", "tipo_solicitado", "intentos_previos"], ("intentos_previos",))
 
 
 def historial_niveles_df(db: Session, usuario_id: int | None = None, concepto_id: int | None = None) -> pd.DataFrame:

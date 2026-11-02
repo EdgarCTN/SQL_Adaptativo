@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
@@ -15,8 +16,10 @@ from app.modules.asistencia.models import SolicitudAyuda, ValoracionAyuda
 from app.modules.asistencia.preferencias import tono_guardado
 from app.modules.asistencia.prompt_builder import DatosPrompt, construir_prompt, descripciones_errores
 from app.modules.auth.models import Usuario
-from app.modules.desafios.models import Concepto, Intento
+from app.modules.desafios.models import Concepto, Intento, SesionDesafio
 from app.modules.desafios.service import _desafio_activo, _sesion_en_curso
+from app.modules.motor_retiro import banderas as banderas_motor
+from app.modules.motor_retiro.dependencia import EstadoDependencia, estado_dependencia
 from app.modules.motor_retiro.niveles import NivelSoporteService
 
 log = logging.getLogger("app.ayuda")
@@ -88,23 +91,68 @@ def _pedir_al_llm(proveedor: LLMProvider, solicitud: SolicitudLLM) -> tuple[obje
     return None, None, incidentes
 
 
-def solicitar_ayuda(db: Session, usuario: Usuario, desafio_id: int, mensaje_estudiante: str | None, proveedor: LLMProvider) -> dict:
+def _banderas_prompt(db: Session, usuario_id: int, dependencia: bool) -> list[str]:
+    """Solo los códigos de la plantilla (R9 «dependencia», R11 «sobreconfianza»): nunca números ni indicadores."""
+    codigos = []
+    if dependencia:
+        codigos.append("dependencia")
+    if banderas_motor.sobreconfianza_inicial(db, usuario_id):
+        codigos.append("sobreconfianza")
+    return codigos
+
+
+@dataclass(frozen=True)
+class EstadoAyuda:
+    """Lo que la decisión de ayuda necesita saber de la sesión en curso."""
+
+    previas: list  # SolicitudAyuda de la sesión, en orden
+    tipos_previos: list[str]
+    intentos: list  # Intento de la sesión, en orden
+    fallos: int
+    desde_ultima: int  # fallos posteriores a la última ayuda entregada
+
+
+def estado_ayuda(db: Session, sesion: SesionDesafio) -> EstadoAyuda:
+    previas = list(
+        db.scalars(select(SolicitudAyuda).where(SolicitudAyuda.sesion_id == sesion.id).order_by(SolicitudAyuda.id))
+    )
+    intentos = list(db.scalars(select(Intento).where(Intento.sesion_id == sesion.id).order_by(Intento.numero)))
+    momento_ultima = previas[-1].momento if previas else None
+    return EstadoAyuda(
+        previas=previas,
+        tipos_previos=[s.tipo_ayuda for s in previas],
+        intentos=intentos,
+        fallos=sum(1 for i in intentos if not i.correcto),
+        desde_ultima=sum(1 for i in intentos if not i.correcto and (momento_ultima is None or i.creado_en > momento_ultima)),
+    )
+
+
+def dependencia_de(db: Session, usuario_id: int, concepto_id: int) -> EstadoDependencia | None:
+    """R9 para este concepto; si falla el cálculo se sigue sin ella (la ayuda nunca se rompe por una bandera)."""
+    try:
+        return estado_dependencia(db, usuario_id, concepto_id)
+    except Exception:  # noqa: BLE001
+        db.rollback()
+        log.exception("No se pudo evaluar R9 (usuario %s, concepto %s)", usuario_id, concepto_id)
+        return None
+
+
+def solicitar_ayuda(
+    db: Session, usuario: Usuario, desafio_id: int, mensaje_estudiante: str | None, proveedor: LLMProvider,
+    mostrada_sola: bool = False,
+) -> dict:
     d = _desafio_activo(db, desafio_id)
     sesion = _sesion_en_curso(db, usuario.id, d.id)
     if sesion is None:
         raise ErrorApp(MSG_SIN_SESION, 409)
 
-    previas = list(
-        db.scalars(select(SolicitudAyuda).where(SolicitudAyuda.sesion_id == sesion.id).order_by(SolicitudAyuda.id))
-    )
-    tipos_previos = [s.tipo_ayuda for s in previas]
-    intentos = list(db.scalars(select(Intento).where(Intento.sesion_id == sesion.id).order_by(Intento.numero)))
-    fallos = sum(1 for i in intentos if not i.correcto)
-    momento_ultima = previas[-1].momento if previas else None
-    desde_ultima = sum(1 for i in intentos if not i.correcto and (momento_ultima is None or i.creado_en > momento_ultima))
+    est = estado_ayuda(db, sesion)
+    previas, tipos_previos, intentos, fallos = est.previas, est.tipos_previos, est.intentos, est.fallos
 
     ns = NivelSoporteService(db).obtener(usuario.id, d.concepto_id)
-    decision = decidir_ayuda(ns, fallos, tipos_previos, desde_ultima)
+    dep = dependencia_de(db, usuario.id, d.concepto_id)  # R9: +1 al mínimo de fallos de AY3 y AY4
+    en_dependencia = bool(dep and dep.activa)
+    decision = decidir_ayuda(ns, fallos, tipos_previos, est.desde_ultima, dependencia=en_dependencia)
     mensajes_fijos = cargar_mensajes_fijos()["mensajes"]
     if decision.ya_vio_ay4:  # solo se le recuerda; no se llama al LLM
         return {"aviso": mensajes_fijos["solucion_ya_mostrada"]["texto"], "desafio_marcado_nr": True}
@@ -131,7 +179,7 @@ def solicitar_ayuda(db: Session, usuario: Usuario, desafio_id: int, mensaje_estu
         mensaje_estudiante=mensaje_estudiante or "",
         solucion_referencia=d.solucion_referencia,
         tono=tono_guardado(db, usuario.id),
-        banderas=[],  # fuera del MVP
+        banderas=_banderas_prompt(db, usuario.id, en_dependencia),
     )
     prompt = construir_prompt(datos)
     solicitud = SolicitudLLM(tipo, prompt.prompt_sistema, prompt.mensaje_usuario, _ayuda_respaldo(d, tipo))
@@ -156,8 +204,13 @@ def solicitar_ayuda(db: Session, usuario: Usuario, desafio_id: int, mensaje_estu
         texto_entregado=cuerpo["mensaje"],
         codigo_sql=cuerpo["codigo_sql"],
         incidente_validacion="; ".join(incidentes) or None,
+        mostrada_sola=mostrada_sola,
+        tipo_solicitado=decision.solicitado,
+        intentos_previos=len(intentos),
     )
     db.add(registro)
+    if mostrada_sola:
+        sesion.ayuda_mostrada_sola = True  # no cuenta para UA ni para R9 (marca de la solicitud y de la sesión)
     if tipo == "AY4":
         sesion.resultado_cierre = "NR"  # NR de inmediato; la sesión sigue en curso
     try:
@@ -166,6 +219,12 @@ def solicitar_ayuda(db: Session, usuario: Usuario, desafio_id: int, mensaje_estu
         db.rollback()
         log.exception("No se pudo registrar la solicitud de ayuda")
         raise ErrorApp(MSG_ERROR_GUARDADO, 503)
+    if en_dependencia and not mostrada_sola and not banderas_motor.ya_registrada(db, usuario.id, sesion.id, "R9"):
+        banderas_motor.registrar_activacion(  # R9: una vez por desafío en que modifica la ayuda
+            db, usuario.id, d.concepto_id, sesion.id, "R9",
+            f"R9 dependencia ({dep.origen}): mínimos de AY3 y AY4 con +1; bandera «dependencia» hacia el prompt",
+            dep.como_dict(), ns,
+        )
     return {
         "solicitud_id": registro.id,
         "tipo_ayuda": tipo,

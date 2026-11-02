@@ -3,6 +3,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.modules.asistencia.schemas import AyudaOut
+
 MAX_CODIGO = 4000
 Dificultad = Literal["D1", "D2", "D3"]
 EstadoUsuario = Literal["sin_iniciar", "en_curso", "resuelto"]
@@ -70,7 +72,7 @@ class IntentoIn(BaseModel):
 
 class MensajeMotorOut(BaseModel):
     clave: str
-    tipo: str  # retiro | refuerzo | verificacion | sugerencia | estancamiento | recaida | cambio_dificultad | reenganche | retiro_aviso | retiro_pregunta
+    tipo: str  # retiro | refuerzo | verificacion | sugerencia | estancamiento | recaida | cambio_dificultad | reenganche | retiro_aviso | retiro_pregunta | reflexion (R10) | sobreconfianza (R11)
     texto: str
     enlace: str | None = None  # ruta del frontend, p. ej. /desafios?concepto=join (R6)
     ajuste_id: int | None = None  # R13: retiro pendiente al que responde el estudiante (POST /ajustes/{id}/responder)
@@ -94,6 +96,18 @@ class IniciarOut(BaseModel):
     mensajes: list[MensajeMotorOut] = []
 
 
+class OfertaAyudaOut(BaseModel):
+    """Oferta de ayuda tras un envío fallido (Tabla 11 y preferencia 3.3). Nunca se ofrece con NS 0 ni con `a_solicitud`."""
+
+    modo: Literal["ofrecer", "mostrar_sola"]
+    motivo: Literal["fallos", "tiempo"]  # ≥ 2 fallos o TR del desafío en curso ≥ 1.5
+    tipo_ayuda: Literal["AY1", "AY2", "AY3", "AY4"]  # la ayuda que se ofrece o que se mostró sola
+    texto: str  # mensaje fijo: «¿Quieres una pista?» o el aviso de la ayuda mostrada sola
+    boton: str | None = None
+    boton_rechazo: str | None = None
+    ayuda: AyudaOut | None = None  # solo con `mostrar_sola`: la ayuda ya entregada (marcada ayuda_mostrada_sola)
+
+
 class IntentoOut(BaseModel):
     numero: int
     correcto: bool
@@ -111,7 +125,9 @@ class IntentoOut(BaseModel):
     tiempo_activo_seg: int | None = None
     creado_en: datetime
     ajuste_nivel: AjusteNivelOut | None = None  # solo si al resolver cambió el nivel de ayuda del concepto
-    mensajes: list[MensajeMotorOut] = []  # avisos del motor (p. ej. R6 estancamiento, que no cambia el NS)
+    mensajes: list[MensajeMotorOut] = []  # avisos del motor (p. ej. R6 estancamiento, R11 tras un acierto)
+    reflexion: MensajeMotorOut | None = None  # R10: 3 envíos fallidos seguidos con menos de 30 s entre ellos
+    oferta_ayuda: OfertaAyudaOut | None = None  # solo tras un envío fallido, con NS ≥ 1 y según la preferencia 3.3
 
 
 class AbandonarOut(BaseModel):

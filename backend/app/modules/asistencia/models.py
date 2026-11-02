@@ -23,6 +23,12 @@ class SolicitudAyuda(Base):
     texto_entregado: Mapped[str] = mapped_column(Text)
     codigo_sql: Mapped[str | None] = mapped_column(Text, nullable=True)
     incidente_validacion: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Entrega 8 (R9 y preferencia 3.3). `mostrada_sola`: la plataforma la mostró sin pedirla (no cuenta para UA ni R9).
+    # `tipo_solicitado`: tipo que correspondía antes de aplicar los mínimos de fallos (AY3 pedida con 0 fallos entrega AY1,
+    # pero aquí queda AY3). `intentos_previos`: envíos de la sesión hechos antes de la solicitud.
+    mostrada_sola: Mapped[bool] = mapped_column(Boolean, default=False)
+    tipo_solicitado: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    intentos_previos: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
 class ValoracionAyuda(Base):

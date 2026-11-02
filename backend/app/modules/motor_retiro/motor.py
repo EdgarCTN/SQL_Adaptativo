@@ -1,5 +1,6 @@
 """Motor de reglas (R6, R8, R7, R5, R2, R1, R4; completo desde la entrega 5; R3 como condicionante desde la 6; la
-preferencia 3.4 (R13) decide desde la 7 si un retiro se aplica, espera al estudiante o se omite). Se invoca
+preferencia 3.4 (R13) decide desde la 7 si un retiro se aplica, espera al estudiante o se omite; R11 (sobreconfianza)
+condiciona a R1 desde la 8). Se invoca
 al cerrar un desafío (resuelto, abandonado u omitido). Entrega 6: `iniciar_desafio` (R12, al iniciar un desafío) y
 `evaluar_inactividad` (R14, al iniciar sesión).
 
@@ -27,6 +28,7 @@ from app.modules.motor_retiro.mensajes import MensajeEstudiante
 from app.modules.motor_retiro.models import EventoMotor, HistorialNivel
 from app.modules.motor_retiro.niveles import NS_POR_DEFECTO, NivelSoporteService
 from app.modules.motor_retiro.reglas.base import ACCION_ESTANCAMIENTO, ACCION_SUGERIR, ACCION_VERIFICACION
+from app.modules.motor_retiro.reglas.r1_retiro_estandar import R1RetiroEstandar
 from app.modules.motor_retiro.verificacion import VerificacionAsignada
 
 log = logging.getLogger("app.motor")
@@ -137,6 +139,8 @@ def _procesar(db: Session, sesion: SesionDesafio, reglas: dict | None, omision_m
         concepto = db.get(Concepto, desafio.concepto_id)
         ctx = construir_contexto(db, sesion, desafio, concepto, reglas, omision_motivo)
         ev = evaluar(ctx)
+        # R11: R1 se habría aplicado de no ser por la sobreconfianza (quedó R4); se deja constancia más abajo.
+        r11_bloqueo = omision_motivo is None and ev.regla == "R4" and R1RetiroEstandar.bloqueada_por_r11(ctx)
 
         ns_antes, ns_nuevo = ctx.ns_actual, ev.ns_nuevo
         cambio = ns_nuevo != ns_antes
@@ -187,6 +191,17 @@ def _procesar(db: Session, sesion: SesionDesafio, reglas: dict | None, omision_m
                 "ajuste_id": diferido.ajuste.id if diferido.ajuste is not None else None,
                 "mensaje": diferido.clave_mensaje,
             }
+        if r11_bloqueo:
+            n_sa = int(reglas["r11_sobreconfianza"]["desafios_sa_exigidos_para_retiro"])
+            indicadores["r11"] = {"retiro_bloqueado": True, "desafios_sa_exigidos": n_sa}
+            db.add(
+                EventoMotor(
+                    usuario_id=usuario_id, concepto_id=concepto.id, sesion_id=sesion_id, regla="R11", ns_antes=ns_antes,
+                    ns_despues=ns_antes, resultado="mantiene", creado_en=ahora,
+                    indicadores={"ultimos": [c.resultado for c in ctx.cierres_recientes[-n_sa:]], "desafios_sa_exigidos": n_sa},
+                    detalle=f"R11 sobreconfianza: el criterio de R1 se cumple, pero se exigen los últimos {n_sa} desafíos en SA",
+                )
+            )
         if omision_motivo is not None:
             indicadores.update(
                 omision=omision_motivo, omisiones_muy_facil=ctx.omisiones_muy_facil,

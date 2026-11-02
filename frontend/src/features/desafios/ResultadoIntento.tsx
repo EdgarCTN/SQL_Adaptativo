@@ -28,6 +28,7 @@ export default function ResultadoIntento({ intento }: { intento: Resultado }) {
   // Correcta pero con la solución completa a la vista (AY4): el desafío queda como no resuelto.
   const correctaNR = intento.desafio_resuelto && intento.resultado_cierre === "NR";
   const estancamiento = mensajeEstancamiento(intento.mensajes);
+  const sobreconfianza = intento.mensajes.find((m) => m.tipo === "sobreconfianza"); // R11
   return (
     <section
       className={`rounded-xl border p-4 ${correctaNR ? "border-amber-300 bg-amber-50 text-amber-900" : (ESTILOS[tipo] ?? ESTILOS.error_sql)}`}
@@ -47,6 +48,17 @@ export default function ResultadoIntento({ intento }: { intento: Resultado }) {
         <p className="mt-2 text-sm font-medium">
           Resolviste el desafío en {intento.numero} {intento.numero === 1 ? "intento" : "intentos"}
           {intento.tiempo_activo_seg !== null && <> y {formatearDuracion(intento.tiempo_activo_seg)}</>}.
+        </p>
+      )}
+
+      {sobreconfianza && (
+        <p role="status" className="mt-2 rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-sm font-medium text-indigo-900">
+          {sobreconfianza.texto}
+        </p>
+      )}
+      {intento.reflexion && (
+        <p role="status" className="mt-2 rounded-lg border border-indigo-200 bg-white p-3 text-sm font-medium text-indigo-900">
+          {intento.reflexion.texto}
         </p>
       )}
 

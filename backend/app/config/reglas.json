@@ -56,13 +56,15 @@
   "oferta_tr_minimo": 1.5,
   "minimo_fallos_ay3": 2,
   "minimo_fallos_ay4": 3,
-  "incremento_minimos_por_dependencia": 1
+  "incremento_minimos_por_dependencia": 1,
+  "oferta_ns_minimo": 1
  },
  "r9_dependencia": {
   "pct_desafios_con_ayuda_min": 0.8,
   "pct_pedidos_ay3_ay4_con_pocos_intentos_min": 0.5,
   "intentos_previos_max_para_pedido_directo": 1,
-  "senales_linea_base_minimas": 2
+  "senales_linea_base_minimas": 2,
+  "desafios_minimos_para_reevaluar": 3
  },
  "r10_ensayo_error": {
   "envios_fallidos_seguidos": 3,
@@ -75,6 +77,11 @@
    5
   ],
   "desafios_sa_exigidos_para_retiro": 2
+ },
+ "r13_preferencia_ayuda": {
+  "por_defecto": "ofrecer",
+  "provisional": true,
+  "nota": "PROVISIONAL: preferencia 3.3 (a_solicitud | ofrecer | mostrar_sola) que se usa si el estudiante no la respondió. Tabla 11 describe el comportamiento por defecto como «ofrecer»."
  },
  "r14_inactividad": {
   "dias": 14

@@ -14,7 +14,8 @@ DECIMALES = 6
 def sesiones_con_uso_ayuda(ayudas: pd.DataFrame) -> set[int]:
     """Sesiones con al menos una ayuda pedida o aceptada. Columnas: sesion_id y (opcional) mostrada_sola.
 
-    PROVISIONAL: `mostrada_sola` es la marca de la sesión (sesiones_desafio.ayuda_mostrada_sola); aún no hay origen por solicitud.
+    `mostrada_sola` es la marca de cada solicitud (solicitudes_ayuda.mostrada_sola, entrega 8): una sesión con una ayuda
+    mostrada sola y otra pedida cuenta como uso de ayuda por la pedida.
     """
     if ayudas is None or ayudas.empty:
         return set()
@@ -56,6 +57,19 @@ def calcular_ua(v: pd.DataFrame) -> float | None:
     if "uso_ayuda" not in v.columns:
         return 0.0
     return _redondear(v["uso_ayuda"].fillna(False).astype(bool).astype(float).mean())
+
+
+def proporcion_pedidos_directos(pedidos: pd.DataFrame, tipos: tuple[str, ...], intentos_max: int) -> float | None:
+    """R9: proporción de pedidos de ayuda que son de alguno de `tipos` (AY3 o AY4) con `intentos_max` envíos o menos
+    antes. Se usa el tipo SOLICITADO (el que correspondía antes de aplicar los mínimos de fallos), porque con los mínimos
+    la ayuda entregada nunca sería AY3 o AY4 con tan pocos intentos. Columnas: tipo_solicitado (o tipo_ayuda si falta),
+    intentos_previos. None si no hubo pedidos (las ayudas mostradas solas no deben venir aquí)."""
+    if pedidos is None or pedidos.empty:
+        return None
+    tipo = pedidos["tipo_solicitado"].where(pedidos["tipo_solicitado"].notna(), pedidos["tipo_ayuda"])
+    previos = pd.to_numeric(pedidos["intentos_previos"], errors="coerce")
+    directo = tipo.isin(tipos) & previos.notna() & (previos <= int(intentos_max))
+    return _redondear(directo.astype(float).mean())
 
 
 def calcular_indicadores_df(v: pd.DataFrame) -> dict:

@@ -60,6 +60,26 @@
    ],
    "texto": "Tu solución es correcta. ¿Puedes explicar por qué funciona o encontrar una forma más simple?"
   },
+  "oferta_ayuda": {
+   "regla": [
+    "Tabla 11",
+    "R13"
+   ],
+   "texto": "¿Quieres una pista?",
+   "boton": "Ver la ayuda",
+   "boton_rechazo": "Ahora no",
+   "provisional": true,
+   "nota": "Tarjeta de la preferencia 3.3 = ofrecer. Un solo texto para todos los tipos de ayuda (PROVISIONAL)."
+  },
+  "ayuda_mostrada_sola": {
+   "regla": [
+    "Tabla 11",
+    "R13"
+   ],
+   "texto": "Parece que te estás atascando, así que te mostramos una ayuda. Tú decides si la usas.",
+   "provisional": true,
+   "nota": "Aviso de la preferencia 3.3 = mostrar_sola. La ayuda mostrada sola no cuenta para UA ni para R9."
+  },
   "verificacion": {
    "regla": [
     "R7"

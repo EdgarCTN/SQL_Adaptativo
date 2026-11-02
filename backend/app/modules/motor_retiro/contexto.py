@@ -8,6 +8,7 @@ from app.modules.analitica.extractores import cierres_del_concepto
 from app.modules.analitica.indicadores import ventana
 from app.modules.desafios.models import Concepto, Desafio, SesionDesafio
 from app.modules.linea_base.models import NivelSoporte
+from app.modules.motor_retiro.banderas import sobreconfianza_inicial
 from app.modules.motor_retiro.indicadores import CierreReciente, Indicadores, calcular_indicadores
 from app.modules.motor_retiro.models import HistorialNivel
 from app.modules.motor_retiro.niveles import NS_MAXIMO, NS_POR_DEFECTO, NivelSoporteService
@@ -40,6 +41,7 @@ class ContextoRegla:
     # R3 y pausas (R3, R12). ns_previo_retiro solo viene con valor si el último cambio de NS del concepto fue un retiro.
     ns_previo_retiro: int | None = None
     pausa_retiros: int = 0  # desafíos que faltan con R1 y R2 pausados (0 = sin pausa)
+    sobreconfianza: bool = False  # R11: bandera inicial de la línea base; R1 exige además los últimos SA
     indicadores: Indicadores = field(init=False)
 
     def __post_init__(self) -> None:
@@ -125,5 +127,6 @@ def construir_contexto(
         ),
         ns_previo_retiro=_ns_previo_retiro(db, fila, concepto.id, reglas),
         pausa_retiros=int(fila.pausa_retiros_restante or 0) if fila is not None else 0,
+        sobreconfianza=sobreconfianza_inicial(db, sesion.usuario_id),
         **(_datos_r6(db, sesion.usuario_id, concepto, reglas) if ns_actual >= NS_MAXIMO else {}),
     )

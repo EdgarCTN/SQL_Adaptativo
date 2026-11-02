@@ -93,7 +93,19 @@ export interface ResultadoIntento {
   tiempo_activo_seg: number | null;
   creado_en: string;
   ajuste_nivel: AjusteNivel | null;
-  mensajes: MensajeMotor[]; // avisos del motor que no cambian el nivel (R6 estancamiento)
+  mensajes: MensajeMotor[]; // avisos del motor que no cambian el nivel (R6 estancamiento, R11 tras un acierto)
+  reflexion: MensajeMotor | null; // R10: no bloquea la ayuda
+  oferta_ayuda: OfertaAyuda | null; // tras un envío fallido, con NS ≥ 1 y según la preferencia 3.3
+}
+
+export interface OfertaAyuda {
+  modo: "ofrecer" | "mostrar_sola";
+  motivo: "fallos" | "tiempo";
+  tipo_ayuda: "AY1" | "AY2" | "AY3" | "AY4";
+  texto: string; // «¿Quieres una pista?» o el aviso de la ayuda mostrada sola
+  boton: string | null;
+  boton_rechazo: string | null;
+  ayuda: RespuestaAyuda | null; // solo con mostrar_sola: ya entregada
 }
 
 export interface ResultadoAbandono {
@@ -133,7 +145,9 @@ export interface MensajeMotor {
     | "cambio_dificultad"
     | "reenganche"
     | "retiro_aviso" // R13: aviso previo, el retiro se aplica en el siguiente desafío salvo que mantengas la ayuda
-    | "retiro_pregunta"; // R13: el retiro solo se aplica si aceptas
+    | "retiro_pregunta" // R13: el retiro solo se aplica si aceptas
+    | "reflexion" // R10: pregunta de reflexión tras 3 envíos fallidos seguidos y rápidos
+    | "sobreconfianza"; // R11: explicar o simplificar tras un acierto
   texto: string;
   enlace?: string | null; // ruta del frontend; R6 la usa para llevar a los desafíos del concepto previo
   ajuste_id?: number | null; // R13: retiro pendiente al que se responde en POST /ajustes/{id}/responder
@@ -180,4 +194,5 @@ export interface AyudaRecibida {
   sugerencia: string | null;
   aviso: string | null;
   valoracion: 1 | -1 | null;
+  mostrada_sola?: boolean; // la plataforma la mostró sin pedirla (preferencia 3.3)
 }

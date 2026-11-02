@@ -39,6 +39,9 @@ function TarjetaAyuda({
         <h3 className="text-sm font-bold text-slate-900">
           Ayuda {numero} · {ayuda.tipo_ayuda} · {NOMBRE_TIPO[ayuda.tipo_ayuda]}
         </h3>
+        {ayuda.mostrada_sola && (
+          <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-900">Mostrada automáticamente</span>
+        )}
         {ayuda.etiquetas.map((e, i) => (
           <span
             key={i}

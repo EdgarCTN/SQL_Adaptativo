@@ -1,6 +1,7 @@
 """Decisión del tipo de ayuda (función pura). Los mínimos y la primera ayuda por NS salen de reglas.json.
 
-Fuera del MVP: banderas, ajuste +1 de los mínimos por dependencia (R9) y oferta automática.
+R9 (entrega 8): con la bandera de dependencia los mínimos de fallos de AY3 y AY4 suben
+`ayuda_en_desafio.incremento_minimos_por_dependencia`.
 """
 from dataclasses import dataclass
 
@@ -15,11 +16,13 @@ class DecisionAyuda:
     reformulada: bool = False  # repite el mismo tipo de la última ayuda (se le pide al LLM otra redacción)
     degradada: bool = False  # se bajó de tipo por no cumplir el mínimo de fallos
     ya_vio_ay4: bool = False
+    solicitado: str | None = None  # tipo que correspondía antes de aplicar los mínimos de fallos (lo usa R9)
 
 
-def _minimos(reglas: dict) -> dict[str, int]:
+def _minimos(reglas: dict, dependencia: bool = False) -> dict[str, int]:
     cfg = reglas["ayuda_en_desafio"]
-    return {"AY3": int(cfg["minimo_fallos_ay3"]), "AY4": int(cfg["minimo_fallos_ay4"])}
+    extra = int(cfg.get("incremento_minimos_por_dependencia", 0)) if dependencia else 0
+    return {"AY3": int(cfg["minimo_fallos_ay3"]) + extra, "AY4": int(cfg["minimo_fallos_ay4"]) + extra}
 
 
 def primera_ayuda(ns: int, reglas: dict | None = None) -> str:
@@ -40,15 +43,17 @@ def decidir_ayuda(
     ayudas_previas: list[str],
     fallos_desde_ultima_ayuda: int = 0,
     reglas: dict | None = None,
+    dependencia: bool = False,
 ) -> DecisionAyuda:
     """
     ns: NS vigente del concepto. fallos: envíos fallidos del desafío. ayudas_previas: tipos entregados, en orden.
     fallos_desde_ultima_ayuda: envíos fallidos posteriores a la última ayuda entregada.
+    dependencia: bandera R9 activa (los mínimos de AY3 y AY4 suben).
     """
     reglas = reglas or cargar_reglas()
     if "AY4" in ayudas_previas:
         return DecisionAyuda(None, ya_vio_ay4=True)
-    minimos = _minimos(reglas)
+    minimos = _minimos(reglas, dependencia)
     if not ayudas_previas:
         candidato = primera_ayuda(ns, reglas)
         if candidato == "AY4":  # AY4 nunca es la primera ayuda
@@ -62,4 +67,5 @@ def decidir_ayuda(
         tipo=final,
         reformulada=bool(ayudas_previas) and final == ayudas_previas[-1],
         degradada=final != candidato,
+        solicitado=candidato,
     )

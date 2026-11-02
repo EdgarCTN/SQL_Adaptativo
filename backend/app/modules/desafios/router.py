@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.modules.asistencia.llm.base import LLMProvider
+from app.modules.asistencia.router import get_proveedor
 from app.modules.auth.deps import requiere_rol
 from app.modules.auth.models import Rol, Usuario
 from app.modules.desafios import service
@@ -42,9 +44,13 @@ def iniciar(desafio_id: int, usuario: Usuario = Depends(_estudiante), db: Sessio
 
 @router.post("/{desafio_id}/intentos", response_model=IntentoOut)
 def intento(
-    desafio_id: int, datos: IntentoIn, usuario: Usuario = Depends(_estudiante), db: Session = Depends(get_db)
+    desafio_id: int,
+    datos: IntentoIn,
+    usuario: Usuario = Depends(_estudiante),
+    db: Session = Depends(get_db),
+    proveedor: LLMProvider = Depends(get_proveedor),  # solo lo usa la preferencia 3.3 = mostrar_sola
 ):
-    return service.registrar_intento(db, usuario, desafio_id, datos.codigo)
+    return service.registrar_intento(db, usuario, desafio_id, datos.codigo, proveedor)
 
 
 @router.post("/{desafio_id}/latido", response_model=LatidoOut)

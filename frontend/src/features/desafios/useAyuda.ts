@@ -124,6 +124,28 @@ export function useAyuda({ desafioId, sesionId, usuarioId, alNoDisponible, alRec
     }
   };
 
+  /** Añade una ayuda que el servidor ya entregó (preferencia 3.3 = mostrar_sola). Idempotente por solicitud. */
+  const incorporar = (r: RespuestaAyuda, sola = true): boolean => {
+    if (!clave || !ayudaUtilizable(r)) return false;
+    if (actuales.current.some((a) => a.solicitud_id === r.solicitud_id)) return true;
+    fijar([
+      ...actuales.current,
+      {
+        solicitud_id: r.solicitud_id as number,
+        tipo_ayuda: r.tipo_ayuda as TipoAyuda,
+        mensaje: (r.mensaje as string).trim(),
+        codigo_sql: r.codigo_sql ?? null,
+        etiquetas: Array.isArray(r.etiquetas) ? r.etiquetas : [],
+        reformulada: !!r.reformulada,
+        sugerencia: r.sugerencia ?? null,
+        aviso: r.aviso ?? null,
+        valoracion: null,
+        mostrada_sola: sola,
+      },
+    ]);
+    return true;
+  };
+
   const valorar = async (solicitudId: number, valor: 1 | -1) => {
     if (valorando !== null) return;
     setValorando(solicitudId);
@@ -147,5 +169,5 @@ export function useAyuda({ desafioId, sesionId, usuarioId, alNoDisponible, alRec
     }
   };
 
-  return { ayudas, pidiendo, errorAyuda, avisoSolo, valorando, pedir, valorar, descartar };
+  return { ayudas, pidiendo, errorAyuda, avisoSolo, valorando, pedir, incorporar, valorar, descartar };
 }

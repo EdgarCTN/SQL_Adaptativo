@@ -2,7 +2,8 @@
 
 La entrega de notificaciones (entrega 10) solo tiene que enganchar aquí: las reglas no construyen textos.
 Tipos de mensaje: retiro, refuerzo, verificacion, sugerencia, estancamiento, recaida, cambio_dificultad, reenganche,
-retiro_aviso y retiro_pregunta (R13: retiro que espera al estudiante; el mensaje lleva `ajuste_id`).
+retiro_aviso y retiro_pregunta (R13: retiro que espera al estudiante; el mensaje lleva `ajuste_id`),
+reflexion (R10, dentro del desafío) y sobreconfianza (R11, tras un acierto).
 """
 from dataclasses import dataclass
 
@@ -18,6 +19,8 @@ TIPO_CAMBIO_DIFICULTAD = "cambio_dificultad"  # R12
 TIPO_REENGANCHE = "reenganche"  # R14
 TIPO_RETIRO_AVISO = "retiro_aviso"  # R13, preferencia 3.4 = aviso_previo
 TIPO_RETIRO_PREGUNTA = "retiro_pregunta"  # R13, preferencia 3.4 = preguntar
+TIPO_REFLEXION = "reflexion"  # R10, ensayo y error
+TIPO_SOBRECONFIANZA = "sobreconfianza"  # R11, tras un acierto
 
 _TIPO_POR_CLAVE = {
     "retiro_automatico": TIPO_RETIRO,
@@ -32,6 +35,8 @@ _TIPO_POR_CLAVE = {
     "retiro_aviso_previo": TIPO_RETIRO_AVISO,
     "retiro_preguntar": TIPO_RETIRO_PREGUNTA,
     "retiro_mantener_nivel": TIPO_RETIRO,
+    "ensayo_error": TIPO_REFLEXION,
+    "sobreconfianza_acierto": TIPO_SOBRECONFIANZA,
 }
 
 

@@ -48,7 +48,7 @@ cd frontend && npm run dev
 
 - Usuario demo: `estudiante@demo.edu` / `Demo12345!` (definido en `.env.example`; se crea si `SEED_USUARIO_DEMO=true`).
 - Puedes registrar tu propia cuenta. El primer ingreso lleva al consentimiento y al diagnóstico.
-- `python scripts/reset_db.py` borra y recrea la BD (detén antes el servidor). Hazlo después de actualizar el código si la entrega cambió tablas o columnas (no hay migraciones; la entrega 6 añadió dos columnas a `niveles_soporte`; la 7 solo añadió la tabla `ajustes_pendientes`, que se crea sola al arrancar).
+- `python scripts/reset_db.py` borra y recrea la BD (detén antes el servidor). Hazlo después de actualizar el código si la entrega cambió tablas o columnas (no hay migraciones; la entrega 6 añadió dos columnas a `niveles_soporte`; la 7 solo añadió la tabla `ajustes_pendientes`, que se crea sola al arrancar; la 8 añadió tres columnas a `solicitudes_ayuda`: `mostrada_sola`, `tipo_solicitado` e `intentos_previos`).
 
 ## Pruebas
 

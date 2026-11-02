@@ -73,3 +73,9 @@ Proporción de conceptos que llegan a NS0 sin recaída (R3) · nº de desafíos 
 
 ## 11. Valor de dominio m (Tabla 15)
 Confianza 5/4/3/2/1 → acierta 0.975/0.875/0.725/0.600/0.500 · se equivoca 0.025/0.125/0.275/0.400/0.500 · «No sé» = 0.250 (error, cualquier confianza) · omisión «Muy fácil» = 0.975 · «Muy difícil» = 0.025. Conceptos: P1,P4 filtrado; P2 ordenamiento; P3 conteo/agregación; P5 JOIN; P6 GROUP BY; P7 HAVING; P8 LEFT JOIN; P9 subconsulta; P10 JOIN+agregación; P11 funciones de ventana. (Ya implementado en el MVP.) Usos de otras preguntas: 1.1–1.4 contexto; 1.5 se compara con m (no cambia nada); 1.6, 3.2, 3.6 → R9; 3.1 → R0; 3.3, 3.4 → R13; 3.5 → tono.
+
+## Notas de implementación de la entrega 8 (no son parte de la Matriz)
+- R9: la bandera inicial rige con menos de 3 desafíos en la ventana; con 3 o más manda la ventana (PROVISIONAL). Los pedidos directos se miden con el tipo de ayuda *solicitado*, no el entregado.
+- R10: se evalúa al registrar cada envío fallido; no se repite hasta 3 envíos nuevos (PROVISIONAL).
+- R11: se comprueba dentro de R1; el mensaje tras un acierto sale en todo desafío resuelto (PROVISIONAL).
+- Oferta de ayuda: sin oferta en verificación, nunca de AY4; con `mostrar_sola` solo la primera ayuda del desafío sale sola; preferencia 3.3 sin respuesta = «ofrecer» (PROVISIONAL). Ver `DECISIONES.md`.

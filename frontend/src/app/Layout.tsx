@@ -3,12 +3,15 @@ import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 
 import type { Rol } from "../api/tipos";
 import ErrorBoundary from "../components/ErrorBoundary";
+import CampanaNotificaciones from "../features/notificaciones/CampanaNotificaciones";
+import { NotificacionesProvider } from "../features/notificaciones/NotificacionesContext";
 import { useAuth } from "./AuthContext";
 
 // Solo rutas que existan y funcionen.
 const ENLACES: { a: string; etiqueta: string; roles?: Rol[] }[] = [
   { a: "/desafios", etiqueta: "Desafíos", roles: ["estudiante"] },
   { a: "/progreso", etiqueta: "Progreso", roles: ["estudiante"] },
+  { a: "/notificaciones", etiqueta: "Notificaciones", roles: ["estudiante"] },
   { a: "/perfil", etiqueta: "Perfil" },
 ];
 
@@ -31,6 +34,7 @@ export default function Layout() {
     }`;
 
   return (
+    <NotificacionesProvider activo={usuario?.rol === "estudiante"}>
     <div className="min-h-screen md:flex">
       <aside
         className={`${menuAbierto ? "block" : "hidden"} border-b border-slate-200 bg-white p-4 md:block md:w-56 md:shrink-0 md:border-b-0 md:border-r`}
@@ -57,6 +61,7 @@ export default function Layout() {
           </button>
           <p className="text-lg font-bold text-indigo-700 md:hidden">Desafíos SQL</p>
           <div className="ml-auto flex items-center gap-3">
+            {usuario?.rol === "estudiante" && <CampanaNotificaciones />}
             <span className="max-w-[10rem] truncate text-sm text-slate-700 sm:max-w-xs">{usuario?.nombre}</span>
             <button
               type="button"
@@ -91,5 +96,6 @@ export default function Layout() {
         </main>
       </div>
     </div>
+    </NotificacionesProvider>
   );
 }

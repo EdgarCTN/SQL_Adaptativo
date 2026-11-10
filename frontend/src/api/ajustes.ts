@@ -1,4 +1,5 @@
 import { cliente } from "./cliente";
+import { avisarNotificacionesActualizadas } from "./notificaciones";
 import type { AjusteNivel, ConceptoResumen } from "./tiposDesafios";
 
 export interface AjustePendiente {
@@ -19,4 +20,7 @@ export const listarAjustesPendientes = () =>
   cliente.get<{ ajustes: AjustePendiente[] }>("/ajustes/pendientes").then((r) => r.data.ajustes);
 
 export const responderAjuste = (id: number, accion: "aceptar" | "mantener") =>
-  cliente.post<RespuestaAjuste>(`/ajustes/${id}/responder`, { accion }).then((r) => r.data);
+  cliente.post<RespuestaAjuste>(`/ajustes/${id}/responder`, { accion }).then((r) => {
+    avisarNotificacionesActualizadas();
+    return r.data;
+  });

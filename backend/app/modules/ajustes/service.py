@@ -37,6 +37,17 @@ MSG_ERROR_GUARDADO = "No pudimos guardar tu respuesta. Inténtalo de nuevo en un
 MSG_RETIRO_APLICADO = "Tu nivel de ayuda en {concepto} bajó de {antes} a {despues}. Siempre puedes pedir ayuda."
 
 
+def _marcar_aviso_leido(db: Session, usuario_id: int, ajuste_id: int) -> None:
+    try:
+        from app.modules.notificaciones.service import marcar_ajuste_leido
+
+        marcar_ajuste_leido(db, usuario_id, ajuste_id)
+        db.commit()
+    except Exception:  # noqa: BLE001 (un fallo del aviso no debe impedir responder al retiro)
+        db.rollback()
+        log.exception("No se pudo marcar como leído el aviso del ajuste %s", ajuste_id)
+
+
 def _texto_pendiente(ajuste: AjustePendiente, concepto: str) -> str:
     clave = CLAVE_AVISO_PREVIO if ajuste.modo == MODO_AVISO_PREVIO else CLAVE_PREGUNTAR
     return mensajes.texto_fijo(clave, concepto=concepto) or f"Vas muy bien con {concepto}. ¿Quieres que te ofrezca menos ayuda?"
@@ -54,12 +65,12 @@ def listar_pendientes(db: Session, usuario: Usuario) -> dict:
         .where(AjustePendiente.usuario_id == usuario.id, AjustePendiente.estado == "pendiente")
         .order_by(AjustePendiente.id)
     ).all()
-    salida, ahora, caducados = [], ahora_utc(), False
+    salida, ahora, ids_caducados = [], ahora_utc(), []
     for ajuste, concepto in filas:
         _, ns, pausa = ns_y_pausa(db, usuario.id, ajuste.concepto_id)
         if not sigue_vigente(ajuste, ns, pausa):
             _caducar(ajuste, ahora)
-            caducados = True
+            ids_caducados.append(ajuste.id)
             continue
         salida.append(
             {
@@ -70,12 +81,15 @@ def listar_pendientes(db: Session, usuario: Usuario) -> dict:
                 "creado_en": ajuste.creado_en,
             }
         )
-    if caducados:
+    if ids_caducados:
         try:
             db.commit()
         except SQLAlchemyError:
             db.rollback()
             log.exception("No se pudieron marcar los ajustes caducados")
+        else:
+            for ajuste_id in ids_caducados:
+                _marcar_aviso_leido(db, usuario.id, ajuste_id)
     return {"ajustes": salida}
 
 
@@ -114,6 +128,7 @@ def responder(db: Session, usuario: Usuario, ajuste_id: int, accion: str) -> dic
         if not sigue_vigente(ajuste, ns, pausa):
             _caducar(ajuste, ahora)
             db.commit()
+            _marcar_aviso_leido(db, usuario.id, ajuste.id)
             return {"estado": "caducado", "mensaje": MSG_CADUCADO, "ajuste_nivel": None}
         if accion == "mantener":
             ajuste.estado, ajuste.resuelto_en = "mantenido", ahora
@@ -125,9 +140,11 @@ def responder(db: Session, usuario: Usuario, ajuste_id: int, accion: str) -> dic
                 )
             )
             db.commit()
+            _marcar_aviso_leido(db, usuario.id, ajuste.id)
             return {"estado": "mantenido", "mensaje": MSG_MANTENIDO.format(concepto=concepto.nombre), "ajuste_nivel": None}
         nivel = _aplicar(db, ajuste, ahora, None, "el estudiante aceptó el retiro")
         db.commit()
+        _marcar_aviso_leido(db, usuario.id, ajuste.id)
         return {"estado": "aplicado", "mensaje": nivel.motivo, "ajuste_nivel": asdict(nivel)}
     except SQLAlchemyError:
         db.rollback()
@@ -148,10 +165,12 @@ def aplicar_al_iniciar(db: Session, sesion: SesionDesafio) -> tuple[MensajeEstud
         if not sigue_vigente(ajuste, ns, pausa):
             _caducar(ajuste, ahora)
             db.commit()
+            _marcar_aviso_leido(db, sesion.usuario_id, ajuste.id)
             return ()
         nivel = _aplicar(db, ajuste, ahora, sesion.id, "aviso previo sin respuesta: se aplica al iniciar el siguiente desafío")
         db.commit()
-        m = mensajes.mensaje("retiro_automatico", concepto=nivel.concepto)
+        _marcar_aviso_leido(db, sesion.usuario_id, ajuste.id)
+        m = mensajes.mensaje("retiro_automatico", regla=f"{ajuste.regla}/R13", concepto=nivel.concepto)
         return (m,) if m else ()
     except Exception as e:  # noqa: BLE001  (iniciar un desafío nunca se rompe)
         log.exception("Falló la aplicación del retiro pendiente (sesión %s): no se cambia nada", sesion.id)

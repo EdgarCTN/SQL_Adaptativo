@@ -71,6 +71,7 @@ def cargar_modelos() -> None:
     from app.modules.desafios import models as _desafios  # noqa: F401
     from app.modules.linea_base import models as _linea_base  # noqa: F401
     from app.modules.motor_retiro import models as _motor_retiro  # noqa: F401
+    from app.modules.notificaciones import models as _notificaciones  # noqa: F401
 
 
 def init_db() -> None:

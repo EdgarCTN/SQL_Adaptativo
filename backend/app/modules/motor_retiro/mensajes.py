@@ -47,6 +47,7 @@ class MensajeEstudiante:
     texto: str
     enlace: str | None = None  # ruta del frontend (p. ej. /desafios?concepto=join) cuando el mensaje la ofrece
     ajuste_id: int | None = None  # R13: ajuste pendiente al que responde el estudiante (POST /ajustes/{id}/responder)
+    regla: str | None = None  # regla concreta que originó el mensaje; se usa también en notificaciones
 
 
 def texto_fijo(clave: str | None, **marcadores: str) -> str | None:
@@ -83,8 +84,24 @@ def unir_nombres(nombres: list[str], maximo: int = 3) -> str:
     return ", ".join(nombres[:maximo]) + f" y {len(nombres) - maximo} más"
 
 
-def mensaje(clave: str, enlace: str | None = None, ajuste_id: int | None = None, **marcadores: str) -> MensajeEstudiante | None:
+def regla_de(clave: str | None) -> str | None:
+    """Reglas documentadas para la clave; el motor puede reemplazarlas por la regla concreta del evento."""
+    if not clave:
+        return None
+    try:
+        reglas = cargar_mensajes_fijos()["mensajes"][clave].get("regla", [])
+    except (KeyError, OSError, ValueError, TypeError):
+        return None
+    if isinstance(reglas, str):
+        return reglas
+    return "/".join(str(regla) for regla in reglas) or None
+
+
+def mensaje(
+    clave: str, enlace: str | None = None, ajuste_id: int | None = None, regla: str | None = None,
+    **marcadores: str,
+) -> MensajeEstudiante | None:
     texto = texto_fijo(clave, **marcadores)
     if texto is None:
         return None
-    return MensajeEstudiante(clave, _TIPO_POR_CLAVE.get(clave, TIPO_REFUERZO), texto, enlace, ajuste_id)
+    return MensajeEstudiante(clave, _TIPO_POR_CLAVE.get(clave, TIPO_REFUERZO), texto, enlace, ajuste_id, regla or regla_de(clave))

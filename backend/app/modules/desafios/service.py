@@ -177,7 +177,22 @@ def _notificar_inicio(db: Session, sesion: SesionDesafio) -> ResultadoMotor:
         log.exception("Falló al_iniciar_desafio (sesión %s); la sesión se conserva", sesion.id)
         db.rollback()
         return ResultadoMotor()
-    return r if isinstance(r, ResultadoMotor) else ResultadoMotor()
+    resultado = r if isinstance(r, ResultadoMotor) else ResultadoMotor()
+    _guardar_notificaciones(db, sesion, "inicio", resultado.mensajes)
+    return resultado
+
+
+def _guardar_notificaciones(db: Session, sesion: SesionDesafio, origen: str, mensajes) -> None:
+    if not mensajes:
+        return
+    try:
+        from app.modules.notificaciones.service import registrar_mensajes
+
+        desafio = db.get(Desafio, sesion.desafio_id)
+        registrar_mensajes(db, sesion.usuario_id, f"sesion:{sesion.id}:{origen}", mensajes, desafio.concepto_id)
+    except Exception:  # noqa: BLE001 (el aviso persistente nunca debe romper el desafío)
+        db.rollback()
+        log.exception("No se pudieron persistir los avisos de la sesión %s", sesion.id)
 
 
 def iniciar(db: Session, usuario: Usuario, desafio_id: int) -> dict:
@@ -257,8 +272,11 @@ def _notificar_cierre(db: Session, sesion: SesionDesafio) -> ResultadoMotor:
         db.rollback()
         return ResultadoMotor()
     if isinstance(r, AjusteNivel):  # hook con la firma de las entregas anteriores
-        return ResultadoMotor(ajuste=r)
-    return r if isinstance(r, ResultadoMotor) else ResultadoMotor()
+        resultado = ResultadoMotor(ajuste=r)
+    else:
+        resultado = r if isinstance(r, ResultadoMotor) else ResultadoMotor()
+    _guardar_notificaciones(db, sesion, "cierre", resultado.mensajes)
+    return resultado
 
 
 def _mensaje_sobreconfianza(db: Session, usuario: Usuario, desafio: Desafio, sesion: SesionDesafio) -> MensajeEstudiante | None:
@@ -267,7 +285,7 @@ def _mensaje_sobreconfianza(db: Session, usuario: Usuario, desafio: Desafio, ses
     try:
         if not banderas.sobreconfianza_inicial(db, usuario.id):
             return None
-        mensaje = mensajes_motor.mensaje("sobreconfianza_acierto")
+        mensaje = mensajes_motor.mensaje("sobreconfianza_acierto", regla="R11")
         if mensaje is not None:
             banderas.registrar_activacion(
                 db, usuario.id, desafio.concepto_id, sesion.id, "R11",
@@ -342,9 +360,12 @@ def registrar_intento(db: Session, usuario: Usuario, desafio_id: int, codigo: st
         m11 = _mensaje_sobreconfianza(db, usuario, d, sesion)  # R11
         if m11 is not None:
             lista.append(asdict(m11))
+            _guardar_notificaciones(db, sesion, f"intento:{intento.id}:R11", (m11,))
     else:
         r10 = ensayo_error.evaluar_r10(db, sesion, d)  # R10: dentro del desafío, no bloquea la ayuda
         reflexion = asdict(r10) if r10 is not None else None
+        if r10 is not None:
+            _guardar_notificaciones(db, sesion, f"intento:{intento.id}:R10", (r10,))
         oferta = _oferta_ayuda(db, usuario, d, sesion, proveedor)  # Tabla 11 + preferencia 3.3
     return {
         "numero": intento.numero,
@@ -399,7 +420,9 @@ def _notificar_omision(db: Session, sesion: SesionDesafio) -> ResultadoMotor:
         log.exception("Falló al_omitir_desafio (sesión %s); la omisión se conserva", sesion.id)
         db.rollback()
         return ResultadoMotor()
-    return resultado if isinstance(resultado, ResultadoMotor) else ResultadoMotor()
+    salida = resultado if isinstance(resultado, ResultadoMotor) else ResultadoMotor()
+    _guardar_notificaciones(db, sesion, "omision", salida.mensajes)
+    return salida
 
 
 def omitir(db: Session, usuario: Usuario, desafio_id: int, motivo: str) -> dict:

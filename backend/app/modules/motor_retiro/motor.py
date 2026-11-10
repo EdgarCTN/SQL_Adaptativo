@@ -226,23 +226,26 @@ def _procesar(db: Session, sesion: SesionDesafio, reglas: dict | None, omision_m
             texto = mensajes.texto_cambio_ns(ev.clave_mensaje, concepto.nombre, ns_antes, ns_nuevo)
             ajuste = AjusteNivel(concepto.nombre, ns_antes, ns_nuevo, texto)
             tipo = mensajes.tipo_de(ev.clave_mensaje, mensajes.TIPO_REFUERZO if ns_nuevo > ns_antes else mensajes.TIPO_RETIRO)
-            lista.append(MensajeEstudiante(ev.clave_mensaje or "cambio_ns", tipo, texto))
+            lista.append(MensajeEstudiante(ev.clave_mensaje or "cambio_ns", tipo, texto, regla=ev.regla))
         if diferido is not None and diferido.nuevo and diferido.clave_mensaje:  # R13: aviso previo o pregunta
-            m = mensajes.mensaje(diferido.clave_mensaje, ajuste_id=diferido.ajuste.id, concepto=concepto.nombre)
+            m = mensajes.mensaje(
+                diferido.clave_mensaje, ajuste_id=diferido.ajuste.id, regla=f"{ev.regla}/R13", concepto=concepto.nombre
+            )
             if m:
                 lista.append(m)
         if sugerido is not None:
-            m = mensajes.mensaje("sugerencia_mas_basico", concepto=concepto.nombre, desafio=sugerido.titulo)
+            m = mensajes.mensaje("sugerencia_mas_basico", regla=ev.regla, concepto=concepto.nombre, desafio=sugerido.titulo)
             if m:
                 lista.append(m)
         if asignada is not None:
-            m = mensajes.mensaje(ev.clave_mensaje or "verificacion", concepto=concepto.nombre)
+            m = mensajes.mensaje(ev.clave_mensaje or "verificacion", regla=ev.regla, concepto=concepto.nombre)
             if m:
                 lista.append(m)
         if ev.accion == ACCION_ESTANCAMIENTO:  # R6: el NS no cambia; deriva o manda a practicar el concepto previo
             previo = ev.clave_mensaje == "estancamiento_previo_sin_dominar" and ctx.prerrequisito_codigo is not None
             m = mensajes.mensaje(
                 ev.clave_mensaje,
+                regla=ev.regla,
                 enlace=f"/desafios?concepto={quote(ctx.prerrequisito_codigo, safe='')}" if previo else None,
                 concepto=concepto.nombre,
                 concepto_previo=ctx.prerrequisito_nombre or "",
@@ -333,7 +336,7 @@ def iniciar_desafio(db: Session, sesion: SesionDesafio, reglas: dict | None = No
         texto = mensajes.texto_cambio_ns("cambio_dificultad", concepto.nombre, ns_antes, decision.ns_nuevo)
         ajuste = AjusteNivel(concepto.nombre, ns_antes, decision.ns_nuevo, texto)
         tipo = mensajes.tipo_de("cambio_dificultad", mensajes.TIPO_REFUERZO)
-        return ResultadoMotor(ajuste, mensajes=(MensajeEstudiante("cambio_dificultad", tipo, texto),))
+        return ResultadoMotor(ajuste, mensajes=(MensajeEstudiante("cambio_dificultad", tipo, texto, regla="R12"),))
     except Exception as e:  # noqa: BLE001  (iniciar un desafío nunca se rompe)
         log.exception("Falló R12 (sesión %s): no se cambia nada", sesion_id)
         db.rollback()
@@ -391,4 +394,4 @@ def evaluar_inactividad(
             )
         )
     db.commit()
-    return mensajes.mensaje("reenganche", concepto=mensajes.unir_nombres(cambiados)) if cambiados else None
+    return mensajes.mensaje("reenganche", regla="R14", concepto=mensajes.unir_nombres(cambiados)) if cambiados else None

@@ -70,7 +70,23 @@ def mensaje_de_reenganche(db: Session, usuario: Usuario) -> str | None:
         from app.modules.motor_retiro.motor import evaluar_inactividad  # importación tardía: evita ciclos y fallos de carga
 
         m = evaluar_inactividad(db, usuario.id)
-        return m.texto if m else None
+        if m is None:
+            return None
+        try:
+            from app.modules.motor_retiro.models import EventoMotor
+            from app.modules.notificaciones.service import registrar_reenganche
+
+            evento_id = db.scalar(
+                select(EventoMotor.id)
+                .where(EventoMotor.usuario_id == usuario.id, EventoMotor.regla == "R14")
+                .order_by(EventoMotor.id.desc())
+                .limit(1)
+            )
+            registrar_reenganche(db, usuario, m.texto, evento_id)
+        except Exception:  # noqa: BLE001 (la persistencia no debe quitar el aviso de login)
+            log.exception("No se pudo persistir el reenganche del usuario %s", usuario.id)
+            db.rollback()
+        return m.texto
     except Exception:  # noqa: BLE001
         log.exception("Falló R14 al iniciar sesión (usuario %s); el login continúa", usuario.id)
         db.rollback()

@@ -459,6 +459,9 @@ function DetalleDesafio({ inicial, alRecargar }: PropsDetalle) {
 
       {sesion && (
         <PanelAyuda
+          cargandoAyudas={ayuda.cargandoAyudas}
+          errorHistorial={ayuda.errorHistorial}
+          onReintentarHistorial={ayuda.recargarAyudas}
           ayudas={ayuda.ayudas}
           activo={!resuelto}
           pidiendo={ayuda.pidiendo}

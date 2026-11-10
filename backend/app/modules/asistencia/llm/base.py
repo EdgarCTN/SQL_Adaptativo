@@ -12,6 +12,7 @@ class SolicitudLLM:
     prompt_sistema: str
     mensaje_usuario: str
     ayuda_respaldo: dict | None = None  # {"mensaje", "codigo_sql"} del desafío; solo lo usa el mock/respaldo
+    tiempo_limite_seg: float | None = None  # presupuesto restante de CU03 (incluye el reintento)
 
 
 @dataclass(frozen=True)

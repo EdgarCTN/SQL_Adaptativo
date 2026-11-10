@@ -170,7 +170,7 @@ INSERT INTO clases VALUES
                 "Un ejemplo en otro contexto: para listar ciudades de la más poblada a la menos poblada, y "
                 "desempatar por nombre, se escriben ambos criterios en el ORDER BY separados por coma, cada "
                 "uno con su propio sentido.",
-                "SELECT nombre, poblacion\nFROM ciudades\nORDER BY poblacion DESC, nombre ASC;",
+                "SELECT ciudad_etiqueta, poblacion\nFROM ciudades\nORDER BY poblacion DESC, ciudad_etiqueta ASC;",
             ),
             "AY3": _ay(
                 "Completa los espacios en blanco (___) con las columnas y los sentidos de orden.",
@@ -271,7 +271,7 @@ INSERT INTO prestamos VALUES
                 "Un ejemplo en otro contexto: en un colegio, para mostrar el nombre del estudiante y el curso "
                 "de cada matrícula activa, la tabla de matrículas se une con estudiantes y con cursos, cada "
                 "unión con su propio ON, y luego se filtra.",
-                "SELECT e.nombre, c.titulo\nFROM matriculas m\nJOIN estudiantes e ON e.id_estudiante = m.id_estudiante\n"
+                "SELECT e.codigo_alumno, c.nombre_curso\nFROM matriculas m\nJOIN estudiantes e ON e.id_estudiante = m.id_estudiante\n"
                 "JOIN cursos c ON c.id_curso = m.id_curso\nWHERE m.baja IS NULL;",
             ),
             "AY3": _ay(
@@ -363,7 +363,7 @@ INSERT INTO sesiones_clase VALUES
                 "Un ejemplo en otro contexto: en un restaurante, para ver qué meseros acumularon más de 100 "
                 "en propinas durante el mes de marzo, primero se filtra el mes con WHERE, luego se agrupa por "
                 "mesero y por último se filtra el total con HAVING.",
-                "SELECT mesero, SUM(propina) AS total\nFROM cuentas\nWHERE fecha >= '2025-03-01' AND fecha < '2025-04-01'\n"
+                "SELECT mesero, SUM(propina) AS total\nFROM cuentas\nWHERE fecha_cuenta >= '2025-03-01' AND fecha_cuenta < '2025-04-01'\n"
                 "GROUP BY mesero\nHAVING SUM(propina) > 100;",
             ),
             "AY3": _ay(
@@ -709,7 +709,7 @@ INSERT INTO funciones VALUES
                 "cuántos viajes completados hubo y cuántos pasajeros viajaron, primero se filtran los viajes "
                 "completados, luego se agrupa por destino y cada grupo se resume con COUNT y SUM.",
                 "SELECT destino, COUNT(*) AS viajes, SUM(pasajeros) AS total_pasajeros\nFROM viajes\n"
-                "WHERE estado = 'Completado'\nGROUP BY destino\nORDER BY destino;",
+                "WHERE estado_viaje = 'Completado'\nGROUP BY destino\nORDER BY destino;",
             ),
             "AY3": _ay(
                 "Completa los espacios en blanco (___) con la condición del filtro, la columna que forma "
@@ -796,18 +796,16 @@ INSERT INTO excursiones VALUES
         ],
         "ayudas": {
             "AY1": _ay(
-                "La clave está en qué tabla debe conservar todas sus filas aunque no encuentre pareja. "
-                "Pregúntate cuál es esa tabla y en qué posición de la unión debe ir. Luego piensa dónde "
-                "colocar la condición de la fecha: ¿antes de unir, para limitar qué excursiones se emparejan, "
-                "o después, sobre el resultado ya unido? Fíjate qué pasaría con un guía sin excursiones "
-                "en cada caso."
+                "Decide qué tabla debe conservar sus filas si no encuentra pareja y colócala a la izquierda. "
+                "Luego piensa dónde filtrar la fecha: ¿en la condición que empareja excursiones o sobre el "
+                "resultado unido? ¿Qué ocurre con un guía sin excursiones?"
             ),
             "AY2": _ay(
                 "Un ejemplo en otro contexto: en una escuela, para listar todos los profesores con los "
                 "cursos que dictan este año, incluidos los que no dictan ninguno, la tabla de profesores va "
                 "a la izquierda y la condición del año se escribe en el ON de la unión.",
-                "SELECT pr.nombre, c.titulo\nFROM profesores pr\n"
-                "LEFT JOIN cursos c ON c.id_profesor = pr.id_profesor AND c.anio = 2025\nORDER BY pr.nombre;",
+                "SELECT pr.codigo_profesor, c.nombre_curso\nFROM profesores pr\n"
+                "LEFT JOIN cursos c ON c.id_profesor = pr.id_profesor AND c.anio = 2025\nORDER BY pr.codigo_profesor;",
             ),
             "AY3": _ay(
                 "Completa los espacios en blanco (___) con el tipo de unión y con la condición de fecha, que va dentro del ON.",
@@ -914,10 +912,8 @@ INSERT INTO entregas VALUES
         ],
         "ayudas": {
             "AY1": _ay(
-                "Los datos de región y de kilos y precios están en tablas distintas, así que primero hay que "
-                "unirlas; después se resume por región. Piensa en tres cosas: qué columna une las dos tablas, "
-                "qué columna define los grupos y qué debe contar exactamente «productores»: ¿filas unidas o "
-                "personas distintas? Para el total pagado, recuerda que cada entrega tiene su propio precio."
+                "Primero une las tablas por productor y luego agrupa por región. Cuenta productores distintos, "
+                "no filas. Para el total pagado, suma los kilos multiplicados por su precio por kilo."
             ),
             "AY2": _ay(
                 "Un ejemplo en otro contexto: en una escuela, para saber por curso cuántos estudiantes "
@@ -925,7 +921,7 @@ INSERT INTO entregas VALUES
                 "con exámenes, se filtra el mes, se agrupa por curso y se cuentan estudiantes sin repetir.",
                 "SELECT e.curso, COUNT(DISTINCT e.id_estudiante) AS estudiantes, SUM(x.puntos) AS total_puntos\n"
                 "FROM estudiantes e\nJOIN examenes x ON x.id_estudiante = e.id_estudiante\n"
-                "WHERE x.fecha >= '2025-06-01' AND x.fecha < '2025-07-01'\nGROUP BY e.curso\nORDER BY e.curso;",
+                "WHERE x.fecha_examen >= '2025-06-01' AND x.fecha_examen < '2025-07-01'\nGROUP BY e.curso\nORDER BY e.curso;",
             ),
             "AY3": _ay(
                 "Completa los espacios en blanco (___) con la forma de contar productores sin repetirlos y "
@@ -1031,7 +1027,7 @@ INSERT INTO citas VALUES
                 "aprobadas (14 o más) rendidas durante el primer semestre, se agrupa la lista de cursos con "
                 "IN, el rango de fechas con BETWEEN y el resto con AND.",
                 "SELECT alumno, curso, nota\nFROM notas\nWHERE curso IN ('Álgebra', 'Física')\n"
-                "  AND fecha BETWEEN '2025-03-01' AND '2025-07-15'\n  AND nota >= 14;",
+                "  AND fecha_examen BETWEEN '2025-03-01' AND '2025-07-15'\n  AND nota >= 14;",
             ),
             "AY3": _ay(
                 "Completa los espacios en blanco (___) con los valores que faltan en las condiciones.",
@@ -1115,11 +1111,11 @@ INSERT INTO jugadores VALUES
                 "Un ejemplo en otro contexto: en una liga de fútbol, para mostrar los 3 primeros de la tabla se "
                 "ordena por puntos de mayor a menor, luego por diferencia de goles de mayor a menor y, si aún "
                 "empatan, por nombre del equipo; al final se limita a 3 filas.",
-                "SELECT equipo, puntos\nFROM clasificacion\nORDER BY puntos DESC, diferencia_gol DESC, equipo ASC\nLIMIT 3;",
+                "SELECT equipo, puntos_totales\nFROM clasificacion\nORDER BY puntos_totales DESC, diferencia_gol DESC, equipo ASC\nLIMIT 3;",
             ),
             "AY3": _ay(
                 "Completa los espacios en blanco (___) con el sentido de cada criterio y la cantidad de filas.",
-                "SELECT nombre, club, puntos\nFROM jugadores\nORDER BY puntos ___, partidas ___, nombre\nLIMIT ___;",
+                "SELECT nombre, club, puntos\nFROM jugadores\nORDER BY puntos ___, partidas ___, nombre ASC\nLIMIT ___;",
             ),
             "AY4": _ay(
                 "Se ordena por puntos de mayor a menor (DESC); a igualdad de puntos, por partidas de menor a "
@@ -1205,7 +1201,7 @@ INSERT INTO vuelos VALUES
                 "Un ejemplo en otro contexto: en un taller mecánico, para mostrar la placa de cada reparación "
                 "junto al nombre del mecánico que la hizo, se une reparaciones con mecánicos por la columna que "
                 "los relaciona.",
-                "SELECT r.placa, m.nombre\nFROM reparaciones r\nJOIN mecanicos m ON m.id_mecanico = r.id_mecanico;",
+                "SELECT r.placa, m.nombre_mecanico\nFROM reparaciones r\nJOIN mecanicos m ON m.id_mecanico = r.id_mecanico;",
             ),
             "AY3": _ay(
                 "Completa los espacios en blanco (___) con las columnas que relacionan las dos tablas.",

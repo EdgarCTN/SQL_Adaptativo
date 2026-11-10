@@ -33,6 +33,7 @@ class DatosPrompt:
     solucion_referencia: str = ""
     tono: str | None = None
     banderas: list[str] = field(default_factory=list)
+    historial_errores: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -98,7 +99,7 @@ def construir_prompt(datos: DatosPrompt, plantillas: dict | None = None, llm: di
         "intento": str(datos.intento),
         "fallos": str(datos.fallos),
         "tiempo_relativo": "desconocido" if datos.tiempo_relativo is None else f"{datos.tiempo_relativo:.1f}",
-        "ayudas_previas": "; ".join(datos.ayudas_previas) or "ninguna",
+        "ayudas_previas": _neutralizar("; ".join(datos.ayudas_previas) or "ninguna", etiquetas),
         "codigo_estudiante": _neutralizar(codigo, etiquetas),
         "resultado_obtenido": _neutralizar(datos.resultado_obtenido or "", etiquetas),
         "mensaje_estudiante": _neutralizar(mensaje, etiquetas),
@@ -111,4 +112,8 @@ def construir_prompt(datos: DatosPrompt, plantillas: dict | None = None, llm: di
         except KeyError:
             raise ValueError(f"La plantilla usa un marcador desconocido: {{{{{m.group(1)}}}}}") from None
 
-    return PromptLLM(prompt_sistema, _MARCADOR.sub(sustituir, plantilla))
+    mensaje_usuario = _MARCADOR.sub(sustituir, plantilla)
+    if datos.historial_errores:
+        historial = _neutralizar("\n".join(datos.historial_errores)[:6000], etiquetas | {"historial_errores"})
+        mensaje_usuario += f"\n<historial_errores>{historial}</historial_errores>"
+    return PromptLLM(prompt_sistema, mensaje_usuario)

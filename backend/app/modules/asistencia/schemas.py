@@ -1,4 +1,5 @@
 from typing import Literal
+from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -24,6 +25,17 @@ class AyudaOut(BaseModel):
     sugerencia: str | None = None  # al recibir un tipo menor por faltar fallos
     aviso: str | None = None  # mensaje fijo (p. ej. solucion_ya_mostrada)
     desafio_marcado_nr: bool = False
+    mostrada_sola: bool = False
+
+
+class AyudaGuardadaOut(AyudaOut):
+    valoracion: Literal[1, -1] | None = None
+    momento: datetime
+
+
+class HistorialAyudasOut(BaseModel):
+    sesion_id: int | None
+    ayudas: list[AyudaGuardadaOut]
 
 
 class ValoracionIn(BaseModel):

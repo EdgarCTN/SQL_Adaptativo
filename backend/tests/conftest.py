@@ -14,6 +14,11 @@ os.environ.update(
         "DEMO_EMAIL": "estudiante@demo.edu",
         "DEMO_PASSWORD": "Demo12345!",
         "ACCESS_TOKEN_EXPIRE_MINUTES": "60",
+        # Las pruebas nunca deben heredar credenciales reales del .env del desarrollador.
+        "LLM_PROVIDER": "mock",
+        "GROQ_API_KEY": "",
+        "ANTHROPIC_API_KEY": "",
+        "OPENAI_API_KEY": "",
     }
 )
 

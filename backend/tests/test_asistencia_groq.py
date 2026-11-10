@@ -13,7 +13,7 @@ from app.modules.asistencia.llm.fabrica import obtener_proveedor
 from app.modules.asistencia.llm.proveedores_externos import GroqProvider
 
 RESPALDO = {"mensaje": "Piensa en las condiciones.", "codigo_sql": None}
-JSON_OK = '{"tipo_entregado":"AY1","mensaje":"¿Qué filtra tu WHERE?","codigo_sql":null}'
+JSON_OK = '{"tipo_entregado":"AY1","mensaje":"¿Qué condiciones deben cumplir todas las filas que buscas aquí?","codigo_sql":null}'
 
 
 def solicitud(tipo="AY1"):
@@ -53,6 +53,9 @@ def test_envia_prompt_y_parametros_de_llm_json():
     # el razonamiento de gpt-oss gasta tokens: se suma el margen configurado al tope del tipo
     assert kw["max_completion_tokens"] == cfg["max_tokens"]["AY2"] + cfg["razonamiento"]["margen_tokens"]
     assert kw["reasoning_effort"] == cfg["razonamiento"]["esfuerzo"]
+    formato = kw["response_format"]
+    assert formato["type"] == "json_schema" and formato["json_schema"]["strict"] is True
+    assert formato["json_schema"]["schema"]["required"] == ["tipo_entregado", "mensaje", "codigo_sql"]
     assert kw["timeout"] == cfg["tiempo_limite_seg"]
     assert "Piensa" not in json.dumps(kw)  # el respaldo del desafío no se envía al LLM
 

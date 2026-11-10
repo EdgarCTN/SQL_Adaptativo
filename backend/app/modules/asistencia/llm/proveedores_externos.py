@@ -3,7 +3,7 @@ import logging
 import httpx
 
 from app.modules.asistencia.config_llm import cargar_llm
-from app.modules.asistencia.llm.base import LLMProvider, NoConfigurado, RespuestaLLM, SolicitudLLM
+from app.modules.asistencia.llm.base import LLMProvider, RespuestaLLM, SolicitudLLM
 from app.modules.asistencia.llm.mock import MockLLMProvider
 
 log = logging.getLogger("app.llm")
@@ -51,7 +51,7 @@ class AnthropicProvider(LLMProvider):
             }
             cliente = self._cliente or httpx.Client()
             try:
-                r = cliente.post(URL_ANTHROPIC, headers=cabeceras, json=cuerpo, timeout=cfg["tiempo_limite_seg"])
+                r = cliente.post(URL_ANTHROPIC, headers=cabeceras, json=cuerpo, timeout=solicitud.tiempo_limite_seg or cfg["tiempo_limite_seg"])
             finally:
                 if self._cliente is None:
                     cliente.close()
@@ -98,7 +98,18 @@ class GroqProvider(LLMProvider):
         try:
             cfg = cargar_llm()
             razon = cfg.get("razonamiento", {})
-            respuesta = self._obtener_cliente(cfg["tiempo_limite_seg"]).chat.completions.create(
+            limite = solicitud.tiempo_limite_seg or cfg["tiempo_limite_seg"]
+            esquema = {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "tipo_entregado": {"type": "string", "enum": [solicitud.tipo_ayuda]},
+                    "mensaje": {"type": "string"},
+                    "codigo_sql": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+                },
+                "required": ["tipo_entregado", "mensaje", "codigo_sql"],
+            }
+            respuesta = self._obtener_cliente(limite).chat.completions.create(
                 model=self._modelo,
                 messages=[
                     {"role": "system", "content": solicitud.prompt_sistema},
@@ -107,8 +118,12 @@ class GroqProvider(LLMProvider):
                 temperature=cfg["temperatura"],
                 max_completion_tokens=cfg["max_tokens"][solicitud.tipo_ayuda] + int(razon.get("margen_tokens", 0)),
                 reasoning_effort=razon.get("esfuerzo", "low"),
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {"name": "ayuda_adaptativa", "strict": True, "schema": esquema},
+                },
                 stream=False,
-                timeout=cfg["tiempo_limite_seg"],
+                timeout=limite,
             )
             eleccion = respuesta.choices[0]
             texto = (eleccion.message.content or "").strip()
@@ -126,9 +141,54 @@ class GroqProvider(LLMProvider):
 
 
 class OpenAIProvider(LLMProvider):
-    """Solo la firma: todavía no está implementado."""
+    """Responses API, salida estructurada y sin almacenamiento remoto de la respuesta."""
 
     nombre = "openai"
 
+    def __init__(self, api_key: str = "", modelo: str = "gpt-6-luna", cliente: httpx.Client | None = None):
+        self._api_key = (api_key or "").strip()
+        self._modelo = modelo
+        self._cliente = cliente
+
     def generar(self, solicitud: SolicitudLLM) -> RespuestaLLM:
-        raise NoConfigurado("El proveedor OpenAI no está configurado.")
+        if not self._api_key:
+            return MockLLMProvider().generar(solicitud)
+        cfg = cargar_llm()
+        esquema = {
+            "type": "object", "additionalProperties": False,
+            "properties": {
+                "tipo_entregado": {"type": "string", "enum": [solicitud.tipo_ayuda]},
+                "mensaje": {"type": "string"}, "codigo_sql": {"type": ["string", "null"]},
+            }, "required": ["tipo_entregado", "mensaje", "codigo_sql"],
+        }
+        cliente = self._cliente or httpx.Client()
+        try:
+            r = cliente.post(
+                "https://api.openai.com/v1/responses",
+                headers={"Authorization": f"Bearer {self._api_key}"},
+                json={
+                    "model": self._modelo, "instructions": solicitud.prompt_sistema,
+                    "input": solicitud.mensaje_usuario, "store": False,
+                    "reasoning": {"effort": "none"},
+                    "max_output_tokens": cfg["max_tokens"][solicitud.tipo_ayuda],
+                    "text": {"format": {"type": "json_schema", "name": "ayuda_sql", "strict": True, "schema": esquema}},
+                },
+                timeout=solicitud.tiempo_limite_seg or cfg["tiempo_limite_seg"],
+            )
+            r.raise_for_status()
+            datos = r.json()
+            if datos.get("status") != "completed":
+                raise ValueError("respuesta incompleta")
+            texto = "".join(
+                contenido.get("text", "") for salida in datos.get("output", []) if salida.get("type") == "message"
+                for contenido in salida.get("content", []) if contenido.get("type") == "output_text"
+            ).strip()
+            if not texto:
+                raise ValueError("respuesta vacía o rechazada")
+            return RespuestaLLM(texto, self.nombre, False, (cfg["etiqueta_ia"],))
+        except Exception as exc:
+            log.warning("Falló OpenAI (%s): se usa el respaldo.", type(exc).__name__)
+            return MockLLMProvider().generar(solicitud)
+        finally:
+            if self._cliente is None:
+                cliente.close()

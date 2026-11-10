@@ -81,9 +81,11 @@ async function reintentarConexion(): Promise<void> {
 
 cliente.interceptors.response.use(
   (r) => r,
-  (error: AxiosError<{ mensaje?: string; detalles?: { campo: string; mensaje: string }[] }>) => {
-    const url = error.config?.url ?? "";
-    if (!error.response) {
+  (error: unknown) => {
+    if (axios.isCancel(error)) return Promise.reject(error);
+    const fallo = error as AxiosError<{ mensaje?: string; detalles?: { campo: string; mensaje: string }[] }>;
+    const url = fallo.config?.url ?? "";
+    if (!fallo.response) {
       if (!RUTAS_SILENCIOSAS.some((r) => url.includes(r))) {
         mostrarToast({
           id: "red",
@@ -95,7 +97,7 @@ cliente.interceptors.response.use(
       return Promise.reject(new ErrorApi(MSG_RED, null, {}, true));
     }
 
-    const status = error.response.status;
+    const status = fallo.response.status;
 
     if (status === 401 && !RUTAS_SIN_EXPIRACION.some((r) => url.includes(r))) {
       borrarToken();
@@ -103,7 +105,7 @@ cliente.interceptors.response.use(
       return Promise.reject(new ErrorApi(MSG_SESION_EXPIRADA, 401));
     }
 
-    const datos = error.response.data;
+    const datos = fallo.response.data;
     const detalles: Record<string, string> = {};
     if (datos && Array.isArray(datos.detalles)) {
       for (const d of datos.detalles) if (d.campo && !detalles[d.campo]) detalles[d.campo] = d.mensaje;

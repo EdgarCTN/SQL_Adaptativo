@@ -176,6 +176,7 @@ export interface RespuestaAyuda {
   sugerencia: string | null;
   aviso: string | null;
   desafio_marcado_nr: boolean;
+  mostrada_sola?: boolean;
 }
 
 export interface RespuestaValoracion {
@@ -183,7 +184,7 @@ export interface RespuestaValoracion {
   valor: number;
 }
 
-/** Ayuda ya entregada, tal como se muestra en el panel (y se guarda en sessionStorage durante la sesión). */
+/** Ayuda ya entregada, recuperable desde el servidor. */
 export interface AyudaRecibida {
   solicitud_id: number;
   tipo_ayuda: TipoAyuda;

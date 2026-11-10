@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.core.config import Settings
 from app.modules.asistencia.config_llm import cargar_llm
-from app.modules.asistencia.llm.base import LLMProvider, NoConfigurado, SolicitudLLM
+from app.modules.asistencia.llm.base import LLMProvider, SolicitudLLM
 from app.modules.asistencia.llm.fabrica import obtener_proveedor
 from app.modules.asistencia.llm.mock import TEXTO_GENERICO, MockLLMProvider
 from app.modules.asistencia.llm.proveedores_externos import AnthropicProvider, OpenAIProvider
@@ -97,9 +97,51 @@ def test_la_clave_no_se_escribe_en_los_registros(caplog):
     assert "SECRETO-123" not in caplog.text
 
 
-def test_openai_solo_tiene_la_firma():
-    with pytest.raises(NoConfigurado):
-        OpenAIProvider().generar(solicitud())
+def test_openai_sin_clave_usa_modo_demostracion():
+    r = OpenAIProvider().generar(solicitud())
+    assert r.proveedor == "mock" and r.es_respaldo is True
+    assert json.loads(r.texto)["tipo_entregado"] == "AY1"
+
+
+def test_openai_envia_salida_json_estricta_y_respeta_el_plazo():
+    observado = {}
+
+    def manejar(req: httpx.Request) -> httpx.Response:
+        observado["cabeceras"] = req.headers
+        observado["cuerpo"] = json.loads(req.content)
+        observado["timeout"] = req.extensions["timeout"]
+        return httpx.Response(200, json={
+            "status": "completed",
+            "output": [{"type": "message", "content": [{
+                "type": "output_text",
+                "text": '{"tipo_entregado":"AY1","mensaje":"Piensa en las condiciones.","codigo_sql":null}',
+            }]}],
+        })
+
+    cliente = httpx.Client(transport=httpx.MockTransport(manejar))
+    try:
+        r = OpenAIProvider("clave-falsa", "modelo-prueba", cliente=cliente).generar(
+            SolicitudLLM("AY1", "INSTRUCCIONES", "CONTEXTO", RESPALDO, tiempo_limite_seg=3.5)
+        )
+    finally:
+        cliente.close()
+    assert r.proveedor == "openai" and r.es_respaldo is False
+    assert observado["cabeceras"]["authorization"] == "Bearer clave-falsa"
+    assert observado["cuerpo"]["model"] == "modelo-prueba"
+    assert observado["cuerpo"]["store"] is False and observado["cuerpo"]["reasoning"] == {"effort": "none"}
+    assert observado["cuerpo"]["instructions"] == "INSTRUCCIONES" and observado["cuerpo"]["input"] == "CONTEXTO"
+    assert observado["cuerpo"]["text"]["format"]["strict"] is True
+    assert observado["timeout"]["read"] == 3.5
+
+
+def test_openai_con_error_http_cae_al_mock_sin_exponer_detalles():
+    cliente = httpx.Client(transport=httpx.MockTransport(lambda req: httpx.Response(401, json={"error": "secreto"})))
+    try:
+        r = OpenAIProvider("clave-falsa", "modelo-prueba", cliente=cliente).generar(solicitud())
+    finally:
+        cliente.close()
+    assert r.proveedor == "mock" and r.es_respaldo is True
+    assert "secreto" not in r.texto
 
 
 def test_fabrica_elige_el_proveedor_por_ajuste():

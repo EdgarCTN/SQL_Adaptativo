@@ -17,7 +17,7 @@ def obtener_proveedor(cfg: Settings | None = None) -> LLMProvider:
     if nombre == "groq":
         return GroqProvider(cfg.groq_api_key, cfg.groq_model)
     if nombre == "openai":
-        return OpenAIProvider()
+        return OpenAIProvider(cfg.openai_api_key, cfg.openai_model)
     if nombre != "mock":
         log.warning("LLM_PROVIDER=%r no es válido: se usa «mock».", cfg.llm_provider)
     return MockLLMProvider()

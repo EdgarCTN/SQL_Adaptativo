@@ -36,7 +36,20 @@ class Falso(LLMProvider):
         if self.respuestas:
             texto = self.respuestas.pop(0)
         else:
-            texto = json.dumps({"tipo_entregado": solicitud.tipo_ayuda, "mensaje": f"Ayuda {solicitud.tipo_ayuda}", "codigo_sql": None})
+            ayudas = solicitud.ayuda_respaldo or {}
+            if solicitud.tipo_ayuda == "AY1":
+                cuerpo = {"mensaje": "Piensa en las condiciones que debe cumplir cada fila.", "codigo_sql": None}
+            elif solicitud.tipo_ayuda == "AY2":
+                cuerpo = {
+                    "mensaje": "Este ejemplo usa tablas distintas; observa cómo se relacionan sus columnas.",
+                    "codigo_sql": "SELECT nave_codigo FROM naves WHERE velocidad_maxima > 100;",
+                }
+            else:
+                cuerpo = {
+                    "mensaje": ayudas.get("mensaje") or "Revisa la consulta paso a paso.",
+                    "codigo_sql": ayudas.get("codigo_sql"),
+                }
+            texto = json.dumps({"tipo_entregado": solicitud.tipo_ayuda, **cuerpo}, ensure_ascii=False)
         return RespuestaLLM(texto, self.nombre, False, (CFG["etiqueta_ia"],))
 
 
@@ -93,11 +106,11 @@ def test_primera_ayuda_ay1_se_registra_y_lleva_etiqueta(client, db, falso):
     iniciar(client, h, did)
     r = ayuda(client, h, did, mensaje_estudiante="no sé por dónde empezar")
     j = r.json()
-    assert r.status_code == 200 and j["tipo_ayuda"] == "AY1" and j["mensaje"] == "Ayuda AY1"
+    assert r.status_code == 200 and j["tipo_ayuda"] == "AY1" and "condiciones" in j["mensaje"]
     assert j["etiquetas"] == [CFG["etiqueta_ia"]] and j["fue_respaldo"] is False and j["aviso"] is None
     s = db.scalar(select(SolicitudAyuda))
     assert (s.tipo_ayuda, s.proveedor, s.fue_respaldo, s.incidente_validacion) == ("AY1", "falso", False, None)
-    assert s.momento is not None and s.texto_entregado == "Ayuda AY1" and s.id == j["solicitud_id"]
+    assert s.momento is not None and s.texto_entregado == j["mensaje"] and s.id == j["solicitud_id"]
     # el LLM recibió el mensaje del estudiante y nada de la solución ni de la identidad
     p = falso.llamadas[0]
     assert "no sé por dónde empezar" in p.mensaje_usuario
@@ -301,3 +314,23 @@ def test_valoracion_ajena_o_inexistente_404_y_requiere_sesion(client, db, falso)
     assert client.post(f"{API}/ayudas/9999/valoracion", json={"valor": 1}, headers=h).status_code == 404
     assert client.post(f"{API}/ayudas/{sid}/valoracion", json={"valor": 1}).status_code == 401
     assert db.scalar(select(ValoracionAyuda.id)) is None
+
+
+def test_historial_persistente_recupera_ayudas_y_valoraciones_solo_del_dueno(client, db, falso):
+    h, did = preparar(client, db)
+    iniciar(client, h, did)
+    solicitud_id = ayuda(client, h, did).json()["solicitud_id"]
+    client.post(f"{API}/ayudas/{solicitud_id}/valoracion", json={"valor": 1}, headers=h)
+
+    historial = client.get(f"{API}/desafios/{did}/ayudas", headers=h)
+    assert historial.status_code == 200
+    j = historial.json()
+    assert len(j["ayudas"]) == 1
+    assert j["ayudas"][0]["solicitud_id"] == solicitud_id
+    assert j["ayudas"][0]["valoracion"] == 1 and j["ayudas"][0]["momento"]
+
+    registrar(client, "Luis", "luis@uni.edu", "Clave12345")
+    h2 = cabecera(token_de(client, "luis@uni.edu"))
+    assert client.get(f"{API}/desafios/{did}/ayudas", headers=h2).json() == {"sesion_id": None, "ayudas": []}
+    assert client.get(f"{API}/desafios/{did}/ayudas", params={"sesion_id": j["sesion_id"]}, headers=h2).status_code == 404
+    assert client.get(f"{API}/desafios/{did}/ayudas").status_code == 401

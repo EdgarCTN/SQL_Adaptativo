@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { pedirAyuda, valorarAyuda } from "../../api/ayuda";
+import { obtenerAyudas, pedirAyuda, valorarAyuda } from "../../api/ayuda";
 import { ErrorApi } from "../../api/cliente";
 import type { AyudaRecibida, RespuestaAyuda, TipoAyuda } from "../../api/tiposDesafios";
 import { mostrarToast } from "../../components/Toasts";
@@ -12,38 +12,19 @@ export const MSG_AYUDA_NO_UTILIZABLE = "No fue posible obtener una ayuda válida
 export const MSG_VALORACION = "No pudimos registrar tu valoración. Inténtalo de nuevo.";
 const TIPOS: TipoAyuda[] = ["AY1", "AY2", "AY3", "AY4"];
 
-const claveAyudas = (usuarioId: number, desafioId: number, sesionId: number) =>
-  `desafio:ayudas:${usuarioId}:${desafioId}:${sesionId}`;
-
-function leer(clave: string | null): AyudaRecibida[] {
-  if (!clave) return [];
-  try {
-    const datos = JSON.parse(sessionStorage.getItem(clave) ?? "[]");
-    return Array.isArray(datos) ? datos : [];
-  } catch {
-    return [];
-  }
-}
-
-function escribir(clave: string | null, ayudas: AyudaRecibida[]): void {
-  if (!clave) return;
-  try {
-    sessionStorage.setItem(clave, JSON.stringify(ayudas));
-  } catch {
-    /* sin almacenamiento: las ayudas solo viven en pantalla */
-  }
-}
-
-/** Una respuesta sirve si trae solicitud, tipo conocido y mensaje con texto (EX2: si no, se invita a pedirla de nuevo). */
 export function ayudaUtilizable(r: Partial<RespuestaAyuda> | null | undefined): r is RespuestaAyuda {
-  return (
-    !!r &&
-    typeof r.solicitud_id === "number" &&
-    !!r.tipo_ayuda &&
-    TIPOS.includes(r.tipo_ayuda) &&
-    typeof r.mensaje === "string" &&
-    r.mensaje.trim().length > 0
-  );
+  return !!r && typeof r.solicitud_id === "number" && !!r.tipo_ayuda && TIPOS.includes(r.tipo_ayuda)
+    && typeof r.mensaje === "string" && r.mensaje.trim().length > 0;
+}
+
+function recibida(r: RespuestaAyuda, sola = false): AyudaRecibida {
+  return {
+    solicitud_id: r.solicitud_id as number, tipo_ayuda: r.tipo_ayuda as TipoAyuda,
+    mensaje: (r.mensaje as string).trim(), codigo_sql: r.codigo_sql ?? null,
+    etiquetas: Array.isArray(r.etiquetas) ? r.etiquetas : [], reformulada: !!r.reformulada,
+    sugerencia: r.sugerencia ?? null, aviso: r.aviso ?? null, valoracion: null,
+    mostrada_sola: r.mostrada_sola ?? sola,
+  };
 }
 
 interface Opciones {
@@ -55,94 +36,93 @@ interface Opciones {
 }
 
 export function useAyuda({ desafioId, sesionId, usuarioId, alNoDisponible, alRecargar }: Opciones) {
-  const clave = sesionId ? claveAyudas(usuarioId, desafioId, sesionId) : null;
-  const [ayudas, setAyudas] = useState<AyudaRecibida[]>(() => leer(clave));
-  const actuales = useRef(ayudas);
+  const clave = `${usuarioId}:${desafioId}:${sesionId ?? "ultima"}`;
+  const vigente = useRef(clave);
+  vigente.current = clave;
+  const callbacks = useRef({ alNoDisponible, alRecargar });
+  callbacks.current = { alNoDisponible, alRecargar };
+  const [ayudas, setAyudas] = useState<AyudaRecibida[]>([]);
+  const actuales = useRef<AyudaRecibida[]>([]);
   const [pidiendo, setPidiendo] = useState(false);
+  const peticion = useRef(false);
+  const [cargandoAyudas, setCargandoAyudas] = useState(true);
+  const [errorHistorial, setErrorHistorial] = useState<string | null>(null);
+  const [revision, setRevision] = useState(0);
   const [errorAyuda, setErrorAyuda] = useState<string | null>(null);
   const [avisoSolo, setAvisoSolo] = useState<string | null>(null);
   const [valorando, setValorando] = useState<number | null>(null);
 
-  const fijar = useCallback(
-    (lista: AyudaRecibida[]) => {
-      actuales.current = lista;
-      setAyudas(lista);
-      escribir(clave, lista);
-    },
-    [clave],
-  );
-
-  // Cambió la sesión (nueva, abandonada o recargada): se vuelven a leer sus ayudas.
-  useEffect(() => {
-    const lista = leer(clave);
+  const fijar = useCallback((lista: AyudaRecibida[]) => {
     actuales.current = lista;
     setAyudas(lista);
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fijar([]);
+    peticion.current = false;
+    setPidiendo(false);
+    setValorando(null);
     setErrorAyuda(null);
     setAvisoSolo(null);
-  }, [clave]);
+    setErrorHistorial(null);
+    setCargandoAyudas(true);
+    obtenerAyudas(desafioId, sesionId, controller.signal).then((r) => {
+      if (controller.signal.aborted || vigente.current !== clave) return;
+      // Una oferta automática puede llegar mientras se recupera el historial: no se pierde ni se duplica.
+      const lista = new Map(r.ayudas.map((a) => [a.solicitud_id, a]));
+      for (const a of actuales.current) lista.set(a.solicitud_id, a);
+      fijar([...lista.values()].sort((a, b) => a.solicitud_id - b.solicitud_id));
+    }).catch(() => {
+      if (!controller.signal.aborted && vigente.current === clave)
+        setErrorHistorial("No pudimos recuperar tus ayudas guardadas. Vuelve a intentarlo.");
+    }).finally(() => {
+      if (!controller.signal.aborted && vigente.current === clave) setCargandoAyudas(false);
+    });
+    return () => controller.abort();
+  }, [clave, desafioId, sesionId, revision, fijar]);
 
-  /** Devuelve true si se mostró una respuesta (para limpiar el mensaje opcional). */
+  const recargarAyudas = () => setRevision((n) => n + 1);
+
   const pedir = async (mensaje: string): Promise<boolean> => {
-    if (pidiendo || !clave) return false;
+    if (peticion.current || !sesionId || cargandoAyudas || errorHistorial) return false;
+    peticion.current = true;
     setPidiendo(true);
     setErrorAyuda(null);
     setAvisoSolo(null);
     try {
       const r = await pedirAyuda(desafioId, mensaje.trim().slice(0, MAX_MENSAJE_AYUDA) || undefined);
+      if (vigente.current !== clave) return false;
       if (r && r.tipo_ayuda === null && r.desafio_marcado_nr && r.aviso) {
-        setAvisoSolo(r.aviso); // ya vio la solución: solo se le recuerda
+        setAvisoSolo(r.aviso);
         return true;
       }
       if (!ayudaUtilizable(r)) {
         setErrorAyuda(MSG_AYUDA_NO_UTILIZABLE);
         return false;
       }
-      fijar([
-        ...actuales.current,
-        {
-          solicitud_id: r.solicitud_id as number,
-          tipo_ayuda: r.tipo_ayuda as TipoAyuda,
-          mensaje: (r.mensaje as string).trim(),
-          codigo_sql: r.codigo_sql ?? null,
-          etiquetas: Array.isArray(r.etiquetas) ? r.etiquetas : [],
-          reformulada: !!r.reformulada,
-          sugerencia: r.sugerencia ?? null,
-          aviso: r.aviso ?? null,
-          valoracion: null,
-        },
-      ]);
+      fijar([...actuales.current.filter((a) => a.solicitud_id !== r.solicitud_id), recibida(r)]);
       return true;
     } catch (e) {
-      if (e instanceof ErrorApi && e.status === 404) alNoDisponible(e.mensaje);
+      if (vigente.current !== clave) return false;
+      if (e instanceof ErrorApi && e.status === 404) callbacks.current.alNoDisponible(e.mensaje);
       else if (e instanceof ErrorApi && e.status === 409) {
         mostrarToast({ tipo: "info", mensaje: e.mensaje });
-        alRecargar();
-      } else setErrorAyuda(MSG_AYUDA_NO_DISPONIBLE); // nunca un error técnico
+        callbacks.current.alRecargar();
+      } else setErrorAyuda(MSG_AYUDA_NO_DISPONIBLE);
       return false;
     } finally {
-      setPidiendo(false);
+      if (vigente.current === clave) {
+        peticion.current = false;
+        setPidiendo(false);
+      }
     }
   };
 
-  /** Añade una ayuda que el servidor ya entregó (preferencia 3.3 = mostrar_sola). Idempotente por solicitud. */
   const incorporar = (r: RespuestaAyuda, sola = true): boolean => {
-    if (!clave || !ayudaUtilizable(r)) return false;
+    if (!sesionId || !ayudaUtilizable(r)) return false;
     if (actuales.current.some((a) => a.solicitud_id === r.solicitud_id)) return true;
-    fijar([
-      ...actuales.current,
-      {
-        solicitud_id: r.solicitud_id as number,
-        tipo_ayuda: r.tipo_ayuda as TipoAyuda,
-        mensaje: (r.mensaje as string).trim(),
-        codigo_sql: r.codigo_sql ?? null,
-        etiquetas: Array.isArray(r.etiquetas) ? r.etiquetas : [],
-        reformulada: !!r.reformulada,
-        sugerencia: r.sugerencia ?? null,
-        aviso: r.aviso ?? null,
-        valoracion: null,
-        mostrada_sola: sola,
-      },
-    ]);
+    fijar([...actuales.current, recibida(r, sola)]);
     return true;
   };
 
@@ -151,23 +131,16 @@ export function useAyuda({ desafioId, sesionId, usuarioId, alNoDisponible, alRec
     setValorando(solicitudId);
     try {
       await valorarAyuda(solicitudId, valor);
-      fijar(actuales.current.map((a) => (a.solicitud_id === solicitudId ? { ...a, valoracion: valor } : a)));
+      if (vigente.current === clave)
+        fijar(actuales.current.map((a) => a.solicitud_id === solicitudId ? { ...a, valoracion: valor } : a));
     } catch {
-      mostrarToast({ tipo: "error", mensaje: MSG_VALORACION });
+      if (vigente.current === clave) mostrarToast({ tipo: "error", mensaje: MSG_VALORACION });
     } finally {
-      setValorando(null);
+      if (vigente.current === clave) setValorando(null);
     }
   };
 
-  const descartar = () => {
-    if (clave) {
-      try {
-        sessionStorage.removeItem(clave);
-      } catch {
-        /* nada que borrar */
-      }
-    }
-  };
-
-  return { ayudas, pidiendo, errorAyuda, avisoSolo, valorando, pedir, incorporar, valorar, descartar };
+  const descartar = () => fijar([]); // El historial permanece en el servidor.
+  return { ayudas, pidiendo, errorAyuda, avisoSolo, valorando, pedir, incorporar, valorar, descartar,
+    cargandoAyudas, errorHistorial, recargarAyudas };
 }

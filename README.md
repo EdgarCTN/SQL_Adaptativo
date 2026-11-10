@@ -48,7 +48,8 @@ cd frontend && npm run dev
 
 - Usuario demo: `estudiante@demo.edu` / `Demo12345!` (definido en `.env.example`; se crea si `SEED_USUARIO_DEMO=true`).
 - Puedes registrar tu propia cuenta. El primer ingreso lleva al consentimiento y al diagnóstico.
-- `python scripts/reset_db.py` borra y recrea la BD (detén antes el servidor). Hazlo después de actualizar el código si la entrega cambió tablas o columnas (no hay migraciones; la entrega 6 añadió dos columnas a `niveles_soporte`; la 7 solo añadió la tabla `ajustes_pendientes`, que se crea sola al arrancar; la 8 añadió tres columnas a `solicitudes_ayuda`: `mostrada_sola`, `tipo_solicitado` e `intentos_previos`).
+- Si conservas una base anterior a las entregas 6 u 8, ejecuta `python scripts/actualizar_db.py` desde la raíz con el entorno virtual activo. Crea un respaldo SQLite y añade únicamente las cinco columnas faltantes, sin borrar cuentas, diagnósticos ni intentos. Se puede repetir sin duplicar cambios. Reinicia el servidor después.
+- `python scripts/reset_db.py` borra y recrea la BD (detén antes el servidor). Úsalo solo si quieres eliminar los datos de desarrollo. Las tablas nuevas, como `ajustes_pendientes` de la entrega 7, se crean al arrancar; `create_all` no añade columnas a tablas existentes.
 
 ## Pruebas
 
@@ -70,7 +71,7 @@ GROQ_MODEL=openai/gpt-oss-120b
 GROQ_API_KEY=
 ```
 
-(`GROQ_API_KEY` también se puede definir como variable de entorno.) Instala la dependencia con `pip install -r backend/requirements.txt` y reinicia el servidor. Si falta la clave, el paquete `groq`, la llamada falla o la respuesta no es válida, el estudiante recibe la ayuda de respaldo sin ver errores técnicos (el motivo queda en el log del servidor, sin la clave). También sigue disponible `LLM_PROVIDER=anthropic` (con `ANTHROPIC_API_KEY` y `LLM_MODEL`); `openai` no está implementado. Temperatura, tokens, margen de razonamiento y tiempos están en `backend/app/config/llm.json`.
+(`GROQ_API_KEY` también se puede definir como variable de entorno.) Instala las dependencias con `pip install -r backend/requirements.txt` y reinicia el servidor. Si falta la clave, el paquete, la llamada falla o la respuesta no es válida, el estudiante recibe la ayuda de respaldo sin ver errores técnicos (el motivo queda en el log del servidor, sin la clave). También están disponibles `LLM_PROVIDER=anthropic` (con `ANTHROPIC_API_KEY` y `LLM_MODEL`) y `LLM_PROVIDER=openai` (con `OPENAI_API_KEY` y `OPENAI_MODEL`). Las respuestas pasan validaciones antes de mostrarse; las ayudas y valoraciones se recuperan desde el servidor después de recargar. Sin clave configurada se usa el modo de demostración. Temperatura, tokens, margen de razonamiento y tiempos están en `backend/app/config/llm.json`.
 
 ## Variables de `.env`
 

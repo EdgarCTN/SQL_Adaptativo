@@ -20,6 +20,9 @@ interface Props {
   valorando: number | null;
   onPedir: (mensaje: string) => Promise<boolean>;
   onValorar: (solicitudId: number, valor: 1 | -1) => void;
+  cargandoAyudas: boolean;
+  errorHistorial: string | null;
+  onReintentarHistorial: () => void;
 }
 
 function TarjetaAyuda({
@@ -97,6 +100,9 @@ export default function PanelAyuda({
   valorando,
   onPedir,
   onValorar,
+  cargandoAyudas,
+  errorHistorial,
+  onReintentarHistorial,
 }: Props) {
   const [mensaje, setMensaje] = useState("");
   const idMensaje = useId();
@@ -131,7 +137,7 @@ export default function PanelAyuda({
           <button
             type="button"
             onClick={() => void pedir()}
-            disabled={pidiendo || deshabilitado}
+            disabled={pidiendo || deshabilitado || cargandoAyudas || !!errorHistorial}
             className="mt-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
           >
             {pidiendo ? "Buscando ayuda…" : "Pedir ayuda"}
@@ -140,6 +146,10 @@ export default function PanelAyuda({
       )}
 
       <div aria-live="polite" className="mt-2 space-y-2">
+        {cargandoAyudas && <p role="status" className="text-sm text-slate-600">Recuperando tus ayudas guardadas…</p>}
+        {errorHistorial && <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          {errorHistorial} <button type="button" onClick={onReintentarHistorial} className="font-semibold underline">Reintentar</button>
+        </div>}
         {errorAyuda && (
           <p role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
             {errorAyuda}
@@ -150,7 +160,7 @@ export default function PanelAyuda({
         )}
       </div>
 
-      {ayudas.length === 0 ? (
+      {ayudas.length === 0 && !cargandoAyudas && !errorHistorial ? (
         <p className="mt-2 text-sm text-slate-500">Todavía no has pedido ayuda en esta sesión.</p>
       ) : (
         <div className="mt-3 space-y-3">

@@ -504,7 +504,7 @@ def test_oferta_mostrar_sola_pide_la_ayuda_y_la_marca(client, db, falso):
     h, did = _hasta_dos_fallos(client, db, {"3.3": "mostrar_sola"})
     assert enviar(client, h, did)["oferta_ayuda"] is None
     o = enviar(client, h, did)["oferta_ayuda"]
-    assert o["modo"] == "mostrar_sola" and o["ayuda"]["tipo_ayuda"] == "AY1" and o["ayuda"]["mensaje"] == "Ayuda AY1"
+    assert o["modo"] == "mostrar_sola" and o["ayuda"]["tipo_ayuda"] == "AY1" and "condiciones" in o["ayuda"]["mensaje"]
     assert o["texto"] == MENSAJES["ayuda_mostrada_sola"]["texto"] and o["boton"] is None
     s = db.scalar(select(SolicitudAyuda))
     assert s.mostrada_sola is True and s.id == o["ayuda"]["solicitud_id"] and s.intentos_previos == 2

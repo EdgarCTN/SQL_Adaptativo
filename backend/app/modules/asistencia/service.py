@@ -1,5 +1,8 @@
 import logging
-from dataclasses import dataclass
+import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as TiempoAgotado
+from dataclasses import dataclass, replace
+from threading import BoundedSemaphore
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
@@ -14,6 +17,7 @@ from app.modules.asistencia.llm.base import LLMProvider, SolicitudLLM
 from app.modules.asistencia.llm.mock import TEXTO_GENERICO
 from app.modules.asistencia.models import SolicitudAyuda, ValoracionAyuda
 from app.modules.asistencia.preferencias import tono_guardado
+from app.modules.asistencia.privacidad import anonimizar
 from app.modules.asistencia.prompt_builder import DatosPrompt, construir_prompt, descripciones_errores
 from app.modules.auth.models import Usuario
 from app.modules.desafios.models import Concepto, Intento, SesionDesafio
@@ -23,6 +27,8 @@ from app.modules.motor_retiro.dependencia import EstadoDependencia, estado_depen
 from app.modules.motor_retiro.niveles import NivelSoporteService
 
 log = logging.getLogger("app.ayuda")
+_EJECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="ayuda-llm")
+_CUPOS = BoundedSemaphore(4)
 
 MSG_SIN_SESION = "Para pedir ayuda, primero inicia el desafío."
 MSG_ERROR_GUARDADO = "No pudimos registrar tu ayuda. Inténtalo de nuevo en unos segundos."
@@ -66,22 +72,55 @@ def _respaldo(desafio, tipo: str) -> dict:
     return {"mensaje": ay.get("mensaje") or TEXTO_GENERICO, "codigo_sql": ay.get("codigo_sql")}
 
 
-def _pedir_al_llm(proveedor: LLMProvider, solicitud: SolicitudLLM) -> tuple[object | None, validador.ResultadoValidacion | None, list[str]]:
-    """Llama al LLM y valida. Un reintento agregando el motivo. Devuelve (respuesta, validación ok, incidentes)."""
+def _pedir_al_llm(proveedor: LLMProvider, solicitud: SolicitudLLM, contexto: dict | None = None) -> tuple[object | None, validador.ResultadoValidacion | None, list[str]]:
+    """Generación y validación comparten un plazo total; V9 nunca provoca otro intento.
+
+    Los trabajadores no acceden a la sesión SQLAlchemy. Un resultado tardío se descarta y no se guarda.
+    La concurrencia está acotada para que una dependencia lenta no cree una cola ilimitada.
+    """
     incidentes: list[str] = []
     actual = solicitud
-    for intento in range(1 + int(cargar_llm()["reintentos"])):
+    inicio = time.monotonic()
+    limite = float(cargar_llm()["tiempo_limite_seg"])
+
+    def generar_y_validar(pedido):
         try:
-            respuesta = proveedor.generar(actual)
-            res = validador.validar(respuesta.texto, solicitud.tipo_ayuda)
+            respuesta = proveedor.generar(pedido)
+            validacion = validador.validar(
+                respuesta.texto, solicitud.tipo_ayuda, **(contexto or {}),
+                segundos=time.monotonic() - inicio, limite_seg=limite,
+            )
+            return respuesta, validacion
+        finally:
+            _CUPOS.release()
+
+    for intento in range(1 + int(cargar_llm()["reintentos"])):
+        restante = limite - (time.monotonic() - inicio)
+        if restante <= 0 or not _CUPOS.acquire(blocking=False):
+            incidentes.append("V9: tiempo límite o capacidad de ayuda agotados")
+            break
+        futuro = _EJECUTOR.submit(generar_y_validar, replace(actual, tiempo_limite_seg=restante))
+        try:
+            respuesta, res = futuro.result(timeout=restante)
+        except TiempoAgotado:
+            if futuro.cancel():
+                _CUPOS.release()
+            incidentes.append("V9: tiempo límite de ayuda agotado")
+            break
         except Exception as e:  # noqa: BLE001  (el estudiante nunca ve un error técnico)
             log.warning("Falló el LLM o el validador (%s)", type(e).__name__)
             incidentes.append(f"error: {type(e).__name__}")
             res, respuesta = None, None
         else:
+            if time.monotonic() - inicio > limite:
+                incidentes.append("V9: tiempo límite de ayuda agotado")
+                break
             if res.ok:
                 return respuesta, res, incidentes
             incidentes.append(res.motivo or "validación fallida")
+            log.warning("Respuesta del LLM rechazada en %s: %s", solicitud.tipo_ayuda, res.motivo)
+            if (res.motivo or "").startswith("V9"):
+                break
             actual = SolicitudLLM(
                 solicitud.tipo_ayuda,
                 solicitud.prompt_sistema,
@@ -117,13 +156,22 @@ def estado_ayuda(db: Session, sesion: SesionDesafio) -> EstadoAyuda:
         db.scalars(select(SolicitudAyuda).where(SolicitudAyuda.sesion_id == sesion.id).order_by(SolicitudAyuda.id))
     )
     intentos = list(db.scalars(select(Intento).where(Intento.sesion_id == sesion.id).order_by(Intento.numero)))
-    momento_ultima = previas[-1].momento if previas else None
+    ultima = previas[-1] if previas else None
+    # Los IDs/números de intento son un corte estable; los datetimes SQLite pueden
+    # empatar si un intento y una ayuda ocurren en el mismo tick del reloj.
+    corte_intentos = ultima.intentos_previos if ultima and ultima.intentos_previos is not None else None
+    momento_ultima = ultima.momento if ultima else None
     return EstadoAyuda(
         previas=previas,
         tipos_previos=[s.tipo_ayuda for s in previas],
         intentos=intentos,
         fallos=sum(1 for i in intentos if not i.correcto),
-        desde_ultima=sum(1 for i in intentos if not i.correcto and (momento_ultima is None or i.creado_en > momento_ultima)),
+        desde_ultima=sum(
+            1 for i in intentos if not i.correcto and (
+                i.numero > corte_intentos if corte_intentos is not None
+                else momento_ultima is None or i.creado_en > momento_ultima
+            )
+        ),
     )
 
 
@@ -158,9 +206,13 @@ def solicitar_ayuda(
         return {"aviso": mensajes_fijos["solucion_ya_mostrada"]["texto"], "desafio_marcado_nr": True}
 
     tipo = decision.tipo
-    previas_texto = list(tipos_previos)
+    personales = tuple({usuario.nombre, usuario.correo, *(p for p in usuario.nombre.split() if len(p) > 2)})
+    previas_texto = [
+        anonimizar(f"{s.tipo_ayuda}: {s.texto_entregado[:400]}; código: {(s.codigo_sql or '')[:400]}", personales)
+        for s in previas[-5:]
+    ]
     if decision.reformulada and previas:
-        previas_texto[-1] = f"{tipos_previos[-1]} (ya entregada; redáctala distinto: {' '.join(previas[-1].texto_entregado.split())[:400]})"
+        previas_texto[-1] += " (ya entregada; redáctala distinto)"
     ultimo = intentos[-1] if intentos else None
     concepto = db.get(Concepto, d.concepto_id)
     datos = DatosPrompt(
@@ -174,9 +226,12 @@ def solicitar_ayuda(
         fallos=fallos,
         tiempo_relativo=max(0.0, (ahora_utc() - sesion.inicio).total_seconds()) / d.tiempo_referencia_seg,
         ayudas_previas=previas_texto,
-        codigo_estudiante=ultimo.codigo if ultimo else "",
-        resultado_obtenido=_resumir_resultado(ultimo.resultado_obtenido) if ultimo else "",
-        mensaje_estudiante=mensaje_estudiante or "",
+        historial_errores=[anonimizar(
+            f"Intento {i.numero}: {i.codigo[:400]} — {_resumir_resultado(i.resultado_obtenido)[:600]}", personales
+        ) for i in intentos[-5:] if not i.correcto],
+        codigo_estudiante=anonimizar(ultimo.codigo if ultimo else "", personales),
+        resultado_obtenido=anonimizar(_resumir_resultado(ultimo.resultado_obtenido) if ultimo else "", personales),
+        mensaje_estudiante=anonimizar(mensaje_estudiante or "", personales),
         solucion_referencia=d.solucion_referencia,
         tono=tono_guardado(db, usuario.id),
         banderas=_banderas_prompt(db, usuario.id, en_dependencia),
@@ -184,7 +239,10 @@ def solicitar_ayuda(
     prompt = construir_prompt(datos)
     solicitud = SolicitudLLM(tipo, prompt.prompt_sistema, prompt.mensaje_usuario, _ayuda_respaldo(d, tipo))
 
-    respuesta, valida, incidentes = _pedir_al_llm(proveedor, solicitud)
+    respuesta, valida, incidentes = _pedir_al_llm(proveedor, solicitud, {
+        "solucion": d.solucion_referencia, "esquema": d.esquema_sql,
+        "setup": d.sandbox_setup_sql, "personales": personales,
+    })
     if valida is not None:
         cuerpo = {"mensaje": valida.datos["mensaje"].strip(), "codigo_sql": valida.datos["codigo_sql"]}
         etiquetas = tuple(respuesta.etiquetas) or (cargar_llm()["etiqueta_ia"],)
@@ -236,7 +294,35 @@ def solicitar_ayuda(
         "sugerencia": SUGERENCIA_REINTENTAR if decision.degradada else None,
         "aviso": mensajes_fijos["solucion_ya_mostrada"]["texto"] if tipo == "AY4" else None,
         "desafio_marcado_nr": tipo == "AY4",
+        "mostrada_sola": mostrada_sola,
     }
+
+
+def listar_ayudas(db: Session, usuario: Usuario, desafio_id: int, sesion_id: int | None = None) -> dict:
+    """Solo el historial propio: sesión indicada, actual o última, sin revelar registros ajenos."""
+    _desafio_activo(db, desafio_id)
+    consulta = select(SesionDesafio).where(
+        SesionDesafio.usuario_id == usuario.id, SesionDesafio.desafio_id == desafio_id,
+    )
+    if sesion_id is not None:
+        consulta = consulta.where(SesionDesafio.id == sesion_id)
+    sesion = db.scalar(consulta.order_by((SesionDesafio.estado == "en_curso").desc(), SesionDesafio.id.desc()).limit(1))
+    if sesion is None:
+        if sesion_id is not None:
+            raise ErrorApp(MSG_AYUDA_NO_ENCONTRADA, 404)
+        return {"sesion_id": None, "ayudas": []}
+    filas = db.execute(select(SolicitudAyuda, ValoracionAyuda.valor).outerjoin(
+        ValoracionAyuda, (ValoracionAyuda.solicitud_id == SolicitudAyuda.id) & (ValoracionAyuda.usuario_id == usuario.id),
+    ).where(SolicitudAyuda.sesion_id == sesion.id).order_by(SolicitudAyuda.id)).all()
+    cfg = cargar_llm()
+    return {"sesion_id": sesion.id, "ayudas": [{
+        "solicitud_id": s.id, "tipo_ayuda": s.tipo_ayuda, "mensaje": s.texto_entregado,
+        "codigo_sql": s.codigo_sql, "fue_respaldo": s.fue_respaldo, "mostrada_sola": s.mostrada_sola,
+        "etiquetas": list(_etiquetas_respaldo()) if s.fue_respaldo else [cfg["etiqueta_ia"]],
+        "valoracion": valor, "momento": s.momento,
+        "aviso": cargar_mensajes_fijos()["mensajes"]["solucion_ya_mostrada"]["texto"] if s.tipo_ayuda == "AY4" else None,
+        "desafio_marcado_nr": s.tipo_ayuda == "AY4",
+    } for s, valor in filas]}
 
 
 def valorar(db: Session, usuario: Usuario, solicitud_id: int, valor: int) -> dict:

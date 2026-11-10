@@ -1,5 +1,10 @@
 import { cliente } from "./cliente";
-import type { RespuestaAyuda, RespuestaValoracion } from "./tiposDesafios";
+import type { AyudaRecibida, RespuestaAyuda, RespuestaValoracion } from "./tiposDesafios";
+
+export const obtenerAyudas = (desafioId: number, sesionId: number | null, signal?: AbortSignal) =>
+  cliente.get<{ sesion_id: number | null; ayudas: AyudaRecibida[] }>(`/desafios/${desafioId}/ayudas`, {
+    params: sesionId ? { sesion_id: sesionId } : {}, signal,
+  }).then((r) => r.data);
 
 export const pedirAyuda = (desafioId: number, mensajeEstudiante?: string) =>
   cliente

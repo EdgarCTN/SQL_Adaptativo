@@ -1,4 +1,4 @@
-# DECISIONES DEL MVP
+# DECISIONES DEL PROYECTO
 
 Marcadas **PROVISIONAL** las que conviene validar con la profesora o con el piloto.
 
@@ -30,12 +30,12 @@ Marcadas **PROVISIONAL** las que conviene validar con la profesora o con el pilo
 
 ## Ayuda con IA
 - El motor decide el tipo de ayuda; el LLM solo redacta. Al LLM nunca se envían nombre, correo, NS ni indicadores de ventana.
-- `MockLLMProvider` por defecto (ayuda de respaldo rotulada como demostración). `AnthropicProvider` **no se ha probado contra la API real**, solo con un cliente simulado; si falla, cae al respaldo.
+- `MockLLMProvider` por defecto (ayuda de respaldo rotulada como demostración). `AnthropicProvider` y `OpenAIProvider` **no se han probado contra la API real**, solo con clientes simulados; si fallan, caen al respaldo.
 - `GroqProvider` (LLM_PROVIDER=groq, modelo `openai/gpt-oss-120b`, SDK oficial `groq`): sin streaming (el backend devuelve JSON completo). Los tokens de razonamiento de gpt-oss cuentan dentro de `max_completion_tokens`, por eso se suma `razonamiento.margen_tokens` (1500, `llm.json`) al tope de cada tipo; el largo de la respuesta lo siguen limitando las plantillas. `reasoning_effort=low`, temperatura 0.2 y tiempo límite 8 s salen de `llm.json`. Solo se usa `message.content`. Se probó con un cliente simulado; **la primera llamada real a Groq debe verificarse en la máquina del equipo**. Cualquier fallo cae al mock. La clave vive solo en `.env` (ignorado por git).
 - Decisión del tipo: sube un tipo solo si hubo al menos un fallo posterior a la última ayuda; si no, repite el tipo reformulado. Si no se cumple el mínimo de fallos (AY3=2, AY4=3), baja de uno en uno. AY4 nunca es la primera ayuda. En NS0 la solicitud del estudiante da AY1. La sugerencia al bajar de tipo es un texto provisional del backend.
-- Validador: solo V1 y V2, con un reintento y luego respaldo (incidente guardado). V3–V9 pendientes. El texto «CORRECCIÓN…» del reintento es provisional.
+- Validador V1–V9 (entrega 9): con un reintento (el texto «CORRECCIÓN…» es provisional), plazo total de 8 s y, si falla o se agota, ayuda de respaldo del desafío con incidente guardado. Detalle en `docs/referencia/prompt_resumen.md`.
 - AY4 marca el desafío NR de inmediato; si luego lo resuelve sigue NR y no cuenta como resuelto. `tiempo_relativo` = tiempo transcurrido / tiempo de referencia (definición propia). Valoraciones 👍/👎: solo se registran.
-- No hay endpoint para listar las ayudas de una sesión: el frontend las guarda en `sessionStorage` y se pierden al cerrar la pestaña (la marca NR sí queda en el servidor). Llega con la entrega 9 (ahí también `mostrada_sola` debe volver en el listado).
+- Las ayudas y valoraciones de la sesión se recuperan del servidor con `GET /desafios/{id}/ayudas` (incluye `mostrada_sola`) y se guardan o actualizan con `POST /ayudas/{id}/valoracion`; sobreviven a cerrar la pestaña (entrega 9).
 
 ## Motor de retiro (simplificado)
 - Reglas activas: **R6 → R8 → R7 → R5 → R2 → R1 → R4** (orden de `reglas.json`, completo desde la entrega 5). R3, R12 y R14 desde la entrega 6; R13 con la pregunta 3.4 desde la 7 y la 3.3 desde la 8; R9, R10 y R11 desde la 8 (ver su sección).
@@ -96,13 +96,19 @@ Marcadas **PROVISIONAL** las que conviene validar con la profesora o con el pilo
 
 ## Capa analítica (entrega 2)
 - Los indicadores TA, NI, TR y UA se calculan con pandas en `modules/analitica/indicadores.py` (funciones puras); la ventana (últimos 5 cierres desde el último cambio de NS) tiene una sola definición, `extractores.cierres_del_concepto`, usada por el motor y por `servicio.indicadores_ventana`. `calcular_indicadores` del motor conserva su firma y sus resultados (prueba de equivalencia con la implementación anterior).
-- **PROVISIONAL (UA):** una sesión cuenta como uso de ayuda si tiene alguna solicitud y la sesión no está marcada `ayuda_mostrada_sola`. Aún no hay origen por solicitud: si el estudiante pidió ayuda además de recibir una mostrada sola, no se cuenta. Se afina en la entrega 8.
+- **UA (afinada en la entrega 8):** una sesión cuenta como uso de ayuda si tiene al menos una solicitud pedida o aceptada; la marca `mostrada_sola` es de cada solicitud (`solicitudes_ayuda.mostrada_sola`), así que una sesión con una ayuda mostrada sola y otra pedida cuenta por la pedida.
 - **PROVISIONAL (sal de seudónimos):** `id_pseudonimo` = HMAC-SHA256 del `usuario_id` con `ANON_SALT`, 16 caracteres hexadecimales. Sin `ANON_SALT` se usa una sal temporal con aviso en el log y los seudónimos cambian al reiniciar; definirla antes del piloto.
 - `indicadores_historicos` guarda una fila por cierre con los indicadores que usó el motor (ventana incluyendo el cierre) y el NS resultante. Si el motor falla no se escribe fila; si falla el guardado, el cierre y el ajuste de NS no se afectan.
 - `agregados` toma el estado más reciente de cada estudiante-concepto de `indicadores_historicos`; no recalcula desde las sesiones. Solo devuelve seudónimos.
 - Dependencia nueva: `pandas>=2.2.3,<4` (verificado con 2.2.3 y 3.0).
 
-## Progreso (entrega 10)
+## Notificaciones (entrega 10)
+- Tabla `notificaciones` (tipo, texto, regla, concepto, leída, fecha y `ajuste_id` opcional). Se crean desde los mensajes del motor (`motor_retiro/mensajes.py`) con `clave_evento` única, por lo que un mismo evento no genera duplicados aunque se reintente. Solo las ve su dueño; otro estudiante recibe 404.
+- Tipos que se guardan: retiro, refuerzo, verificación, sugerencia, estancamiento, recaída (R3), cambio de dificultad (R12), reenganche (R14), aviso y pregunta de retiro (R13), reflexión (R10) y sobreconfianza (R11). Los textos salen de `mensajes_fijos.json`.
+- Las de R13 son accionables (aceptar o mantener); cuando el ajuste se aplica, se responde o caduca, el aviso se marca como leído.
+- Frontend: campana con contador, panel de recientes y página `/notificaciones`; se actualiza al cerrar un desafío y cada 60 s con la pestaña visible. Sin correo ni push.
+
+## Progreso: resumen del estudiante
 - `GET /progreso/resumen` (solo estudiante): desafíos distintos resueltos (sin contar los NR), abandonos, NS actual por concepto (1 si no hay registro), ayudas por tipo y los 10 últimos cambios de `historial_niveles`, con el texto de `mensajes_fijos.json`.
 - Sin actividad (sin sesiones, ayudas ni cambios) → valores iniciales y una sugerencia de resolver un desafío. Error de base → 503 con mensaje amable; la página ofrece «Reintentar».
 
@@ -113,5 +119,5 @@ Marcadas **PROVISIONAL** las que conviene validar con la profesora o con el pilo
 - **Gráficos:** recharts 3.10.1 fijo (la rama 2.x ya no tiene mantenimiento). El gráfico es decorativo para lectores de pantalla (`aria-hidden`, sin capa de accesibilidad de recharts); su equivalente es un texto alternativo visible bajo cada gráfico más una tabla de datos. El NS se dibuja como escalón: «Inicio» es el NS anterior al primer cambio del rango. TR lleva una línea de referencia en 1×.
 
 ## Limitaciones conocidas
-- Verificado en Linux con Python 3.12 y Node 22; **no probado en Git Bash/Windows; en un navegador real (Chromium) solo se revisó `/progreso`**. Sin pruebas automáticas del frontend.
+- Desarrollado en Linux con Python 3.12 y Node 22 y verificado en Windows con Git Bash (`verificar.py`: 800 pruebas y compilación del frontend, entrega 11). En un navegador real (Chromium) solo se revisó `/progreso`. Sin pruebas automáticas del frontend.
 - El `node_modules` del zip no sirve en otro sistema operativo: ejecutar `npm install` en cada máquina.

@@ -25,12 +25,12 @@ Estado de cada requisito de `docs/referencia/requisitos.md`. Se actualiza al ter
 | RF-19 | Ajuste del nivel de ayuda (R0 a R14) | Cumplido en lo esencial: las 15 reglas existen (R0 a R14); R9, R10 y R11 desde la entrega 8 y R13 completa (3.3 y 3.4). PROVISIONAL: R9 (la ventana reemplaza a la bandera inicial con ≥ 3 desafíos; criterio de pedidos directos con el tipo solicitado), R10 (no se repite hasta 3 envíos nuevos), R11 (mensaje en todo acierto), la oferta de ayuda (ver DECISIONES), R6 (lista de refuerzo previo y mapa de prerrequisitos), R2 (TR de los 3 últimos), R12 (cuándo «pasa» a una dificultad mayor), omitir y verificación (R7) en la elección del desafío, y R13 (3.4) en el «siguiente desafío» del aviso previo, el respeto permanente de `mantener` y la reproposición | 4 a 8 | tests/test_motor_reglas.py, tests/test_omitir.py, tests/test_motor_recaida_dificultad_inactividad.py, tests/test_retiro_preferencias.py, tests/test_entrega8_banderas_oferta.py |
 | RF-20 | Estado de sesión en Redis | Fuera de alcance actual: el nivel vive en la base de datos | — | niveles_soporte |
 | RF-21 | Notificaciones | Cumplido: avisos persistentes por evento del motor, campana, contador, lectura individual/total y acciones para retiros R13 | 10 | tests/test_notificaciones.py, tests/test_motor_integracion.py, tests/test_retiro_preferencias.py |
-| RF-22 | Progreso del estudiante | Cumplido | — | tests/test_progreso.py |
+| RF-22 | Progreso del estudiante | Cumplido: resumen con desafíos resueltos, nivel de ayuda por concepto, ayudas por tipo y últimos cambios de nivel | — | tests/test_progreso.py |
 | RF-23 | Gráficos de evolución | Cumplido: `GET /progreso/evolucion` (TA, NI, TR, UA y línea de tiempo del NS) y gráficos con recharts, cada uno con texto alternativo y tabla de datos | 2, 11 | tests/test_progreso_historial.py, tests/test_analitica_historico.py |
 | RF-24 | Filtro de historial de intentos | Cumplido: `GET /progreso/intentos` con filtro por desafío y rango de fechas, paginado | 11 | tests/test_progreso_historial.py |
 | RF-25 | Almacenamiento en PostgreSQL | Fuera de alcance actual: SQLite con tipos portables | — | DECISIONES.md |
 | RF-26 | Análisis con pandas | Cumplido | 2 | tests/test_analitica_indicadores.py |
-| RF-27 | Exposición de indicadores | Cumplido: interfaz interna `analitica.servicio` (sin endpoint HTTP; si se requiere, llega con la entrega 11) | 2 | tests/test_analitica_historico.py |
+| RF-27 | Exposición de indicadores | Cumplido: interfaz interna `analitica.servicio`, que usan el motor y el progreso del estudiante (`/progreso/evolucion`, entrega 11); los agregados para docente llegan con la 13B | 2 | tests/test_analitica_historico.py |
 | RF-28 | CRUD del banco de desafíos | Pendiente | 12 | — |
 | RF-29 | Clasificación por dificultad y tema | Parcial: el modelo lo tiene; falta gestionarlo | 12 | — |
 | RF-30 | Reportes del docente | Pendiente | 13B | — |

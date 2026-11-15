@@ -7,7 +7,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.reglas import cargar_reglas
-from app.modules.analitica.extractores import cierres_del_concepto, indicadores_historicos_df
+from app.modules.analitica.extractores import (
+    cierres_del_concepto,
+    historial_niveles_df,
+    indicadores_historicos_df,
+)
 from app.modules.analitica.indicadores import calcular_indicadores_df, ventana
 from app.modules.analitica.models import IndicadorHistorico
 from app.modules.analitica.seudonimizar import seudonimizar_df
@@ -52,10 +56,22 @@ def _registros(df: pd.DataFrame) -> list[dict]:
     return [{k: _valor(v) for k, v in fila.items()} for fila in df.to_dict("records")]
 
 
-def serie_historica(db: Session, usuario_id: int, concepto_id: int | None = None) -> list[dict]:
+def serie_historica(
+    db: Session, usuario_id: int, concepto_id: int | None = None,
+    desde: datetime | None = None, hasta: datetime | None = None,
+) -> list[dict]:
     """Indicadores y NS tras cada cierre, del más antiguo al más reciente (para los gráficos de evolución)."""
-    df = indicadores_historicos_df(db, usuario_id=usuario_id, concepto_id=concepto_id)
+    df = indicadores_historicos_df(db, usuario_id=usuario_id, concepto_id=concepto_id, desde=desde, hasta=hasta)
     return _registros(df[["sesion_id", "concepto_id", "concepto_codigo", "ta", "ni", "tr", "ua", "n_ventana", "ns", "creado_en"]])
+
+
+def cambios_de_nivel(
+    db: Session, usuario_id: int, concepto_id: int | None = None,
+    desde: datetime | None = None, hasta: datetime | None = None,
+) -> list[dict]:
+    """Cambios de NS (del más antiguo al más reciente) para la línea de tiempo del nivel de ayuda."""
+    df = historial_niveles_df(db, usuario_id=usuario_id, concepto_id=concepto_id, desde=desde, hasta=hasta)
+    return _registros(df[["concepto_id", "ns_anterior", "ns_nuevo", "regla", "creado_en"]])
 
 
 def agregados(db: Session, concepto_id: int | None = None, desde: datetime | None = None, hasta: datetime | None = None) -> dict:

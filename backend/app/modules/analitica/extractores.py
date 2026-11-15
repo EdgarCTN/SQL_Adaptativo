@@ -98,7 +98,10 @@ def pedidos_df(db: Session, sesion_ids: list[int]) -> pd.DataFrame:
     return _df(filas, ["sesion_id", "tipo_ayuda", "tipo_solicitado", "intentos_previos"], ("intentos_previos",))
 
 
-def historial_niveles_df(db: Session, usuario_id: int | None = None, concepto_id: int | None = None) -> pd.DataFrame:
+def historial_niveles_df(
+    db: Session, usuario_id: int | None = None, concepto_id: int | None = None,
+    desde: datetime | None = None, hasta: datetime | None = None,
+) -> pd.DataFrame:
     consulta = select(
         HistorialNivel.usuario_id, HistorialNivel.concepto_id, HistorialNivel.ns_anterior, HistorialNivel.ns_nuevo,
         HistorialNivel.regla, HistorialNivel.creado_en,
@@ -107,6 +110,10 @@ def historial_niveles_df(db: Session, usuario_id: int | None = None, concepto_id
         consulta = consulta.where(HistorialNivel.usuario_id == usuario_id)
     if concepto_id is not None:
         consulta = consulta.where(HistorialNivel.concepto_id == concepto_id)
+    if desde is not None:
+        consulta = consulta.where(HistorialNivel.creado_en >= desde)
+    if hasta is not None:
+        consulta = consulta.where(HistorialNivel.creado_en <= hasta)
     return _df(db.execute(consulta).all(), ["usuario_id", "concepto_id", "ns_anterior", "ns_nuevo", "regla", "creado_en"])
 
 

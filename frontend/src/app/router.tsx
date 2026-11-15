@@ -9,7 +9,6 @@ import Pagina404 from "../features/errores/Pagina404";
 import LoginPage from "../features/auth/LoginPage";
 import RegistroPage from "../features/auth/RegistroPage";
 import PerfilPage from "../features/perfil/PerfilPage";
-import ProgresoPage from "../features/progreso/ProgresoPage";
 import NotificacionesPage from "../features/notificaciones/NotificacionesPage";
 import Inicio from "./Inicio";
 import Layout from "./Layout";
@@ -41,7 +40,8 @@ export const router = createBrowserRouter([
                 children: [
                   { path: "/desafios", element: <DesafiosPage /> },
                   { path: "/desafios/:id", element: <DesafioPage /> },
-                  { path: "/progreso", element: <ProgresoPage /> },
+                  // Carga diferida: recharts solo se descarga al abrir /progreso.
+                  { path: "/progreso", lazy: async () => ({ Component: (await import("../features/progreso/ProgresoPage")).default }) },
                   { path: "/notificaciones", element: <NotificacionesPage /> },
                 ],
               },

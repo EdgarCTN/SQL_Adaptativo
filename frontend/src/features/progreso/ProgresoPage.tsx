@@ -4,6 +4,8 @@ import { obtenerResumenProgreso } from "../../api/progreso";
 import type { ResumenProgreso } from "../../api/tiposProgreso";
 import { useCarga } from "../../api/useCarga";
 import EstadoContenedor from "../../components/EstadoContenedor";
+import EvolucionProgreso from "./EvolucionProgreso";
+import HistorialIntentos from "./HistorialIntentos";
 
 const TIPOS_AYUDA: { tipo: "AY1" | "AY2" | "AY3" | "AY4"; descripcion: string }[] = [
   { tipo: "AY1", descripcion: "Pista sin código" },
@@ -154,11 +156,16 @@ export default function ProgresoPage() {
   return (
     <div className="mx-auto max-w-4xl">
       <h1 className="text-2xl font-bold text-slate-900">Mi progreso</h1>
-      <p className="mt-1 text-sm text-slate-600">Un vistazo a lo que has resuelto y a cómo se ajusta tu nivel de ayuda.</p>
+      <p className="mt-1 text-sm text-slate-600">Un vistazo a lo que has resuelto, a cómo evolucionan tus indicadores y a cómo se ajusta tu nivel de ayuda.</p>
       <div className="mt-4" aria-busy={cargando}>
         <EstadoContenedor cargando={cargando && !datos} error={error} onReintentar={() => void recargar()}>
           {datos && <Contenido datos={datos} />}
         </EstadoContenedor>
+      </div>
+      {/* Cada sección carga lo suyo y resuelve sus propios estados (cargando, error, vacío, con datos). */}
+      <div className="mt-10 space-y-10">
+        <EvolucionProgreso />
+        <HistorialIntentos />
       </div>
     </div>
   );

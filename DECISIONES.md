@@ -106,6 +106,12 @@ Marcadas **PROVISIONAL** las que conviene validar con la profesora o con el pilo
 - `GET /progreso/resumen` (solo estudiante): desafíos distintos resueltos (sin contar los NR), abandonos, NS actual por concepto (1 si no hay registro), ayudas por tipo y los 10 últimos cambios de `historial_niveles`, con el texto de `mensajes_fijos.json`.
 - Sin actividad (sin sesiones, ayudas ni cambios) → valores iniciales y una sugerencia de resolver un desafío. Error de base → 503 con mensaje amable; la página ofrece «Reintentar».
 
+## Progreso avanzado (entrega 11)
+- **Fechas:** `desde`/`hasta` aceptan `AAAA-MM-DD` o fecha y hora ISO; sin zona se toma UTC y un día sin hora vale de 00:00 a 23:59:59.999999 (el último día queda completo). El frontend envía el día del calendario del estudiante convertido a instantes ISO de su zona horaria. Rango invertido o fecha inválida → 422 con mensaje amable y `detalles[campo]`.
+- **Historial de intentos:** solo envíos del propio estudiante, más recientes primero, sin el código enviado ni `detalle_tecnico`; el resultado se muestra con texto legible. Una página fuera de rango devuelve lista vacía, no error. Las opciones del selector de desafío salen de los desafíos con intentos del estudiante, sin importar los filtros (así un desafío desactivado sigue apareciendo en su historial).
+- **Evolución:** las series salen de `indicadores_historicos` (un punto por cierre) y la línea de tiempo del NS de `historial_niveles`; el texto de cada cambio es el del estudiante, no el motivo técnico. Sin `concepto` se devuelven todos; el frontend muestra un concepto a la vez (el de actividad más reciente por defecto) para no mezclar ventanas de conceptos distintos en una línea. Concepto inexistente → 404.
+- **Gráficos:** recharts 3.10.1 fijo (la rama 2.x ya no tiene mantenimiento). El gráfico es decorativo para lectores de pantalla (`aria-hidden`, sin capa de accesibilidad de recharts); su equivalente es un texto alternativo visible bajo cada gráfico más una tabla de datos. El NS se dibuja como escalón: «Inicio» es el NS anterior al primer cambio del rango. TR lleva una línea de referencia en 1×.
+
 ## Limitaciones conocidas
-- Verificado en Linux con Python 3.12 y Node 22; **no probado en Git Bash/Windows ni en un navegador real**. Sin pruebas automáticas del frontend.
+- Verificado en Linux con Python 3.12 y Node 22; **no probado en Git Bash/Windows; en un navegador real (Chromium) solo se revisó `/progreso`**. Sin pruebas automáticas del frontend.
 - El `node_modules` del zip no sirve en otro sistema operativo: ejecutar `npm install` en cada máquina.

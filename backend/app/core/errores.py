@@ -27,6 +27,9 @@ _ETIQUETAS = {
     "valor": "Valoración",
     "mensaje_estudiante": "Mensaje",
     "motivo": "Motivo",
+    "pagina": "Página",
+    "tam": "Tamaño de página",
+    "desafio_id": "Desafío",
 }
 
 

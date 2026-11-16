@@ -227,6 +227,8 @@ Orden: primero lo que hace funcionar el motor y la ayuda (entregas 1 a 9), despu
 
 ## ENTREGA 12: Rol docente, banco de desafíos
 
+**Estado: hecha** (no requirió `reset_db.py`; notas en `HOJA_DE_RUTA.md`, decisiones PROVISIONAL en `DECISIONES.md`).
+
 **Revisa en el proyecto:** `python scripts/contexto.py desafios auth` · **Cubre:** RF-28, RF-29, RNF-08.
 
 **Tarea**
@@ -243,11 +245,11 @@ Orden: primero lo que hace funcionar el motor y la ayuda (entregas 1 a 9), despu
 
 ## ENTREGA 13A: Administración de roles
 
-**Revisa en el proyecto:** `python scripts/contexto.py auth` · **Cubre:** RF-04, RNF-08.
+**Revisa en el proyecto:** `python scripts/contexto.py auth docente` · **Cubre:** RF-04, RNF-08.
 
 **Tarea**
 1. `GET /admin/usuarios` (paginado, con búsqueda), `PUT /admin/usuarios/{id}/rol` y activar o desactivar, solo para el administrador. No se puede quitar el último administrador ni el propio rol. El primer administrador se crea con `ADMIN_EMAIL` y `ADMIN_PASSWORD` del `.env` (vacíos = no se crea).
-2. Tabla `auditoria` (usuario_id, accion, objeto, detalle, creado_en) con los cambios de rol y las acciones del docente sobre el banco (hazlo con una función simple que se pueda llamar desde la entrega 12).
+2. Tabla `auditoria` (usuario_id, accion, objeto, detalle, creado_en) con los cambios de rol y las acciones del docente sobre el banco (hazlo con una función simple y llámala desde `docente/service.py`, que ya existe desde la entrega 12, en `crear`, `actualizar`, `cambiar_activo` y `eliminar`).
 3. Frontend: página «Usuarios» solo para el administrador.
 
 **Pruebas:** matriz de permisos (estudiante y docente reciben 403); reglas del último administrador; la auditoría registra el cambio de rol. Ampliar `test_recorrido_rutas.py` para que recorra las rutas de admin sin 5xx.

@@ -31,8 +31,8 @@ Estado de cada requisito de `docs/referencia/requisitos.md`. Se actualiza al ter
 | RF-25 | Almacenamiento en PostgreSQL | Fuera de alcance actual: SQLite con tipos portables | — | DECISIONES.md |
 | RF-26 | Análisis con pandas | Cumplido | 2 | tests/test_analitica_indicadores.py |
 | RF-27 | Exposición de indicadores | Cumplido: interfaz interna `analitica.servicio`, que usan el motor y el progreso del estudiante (`/progreso/evolucion`, entrega 11); los agregados para docente llegan con la 13B | 2 | tests/test_analitica_historico.py |
-| RF-28 | CRUD del banco de desafíos | Pendiente | 12 | — |
-| RF-29 | Clasificación por dificultad y tema | Parcial: el modelo lo tiene; falta gestionarlo | 12 | — |
+| RF-28 | CRUD del banco de desafíos | Cumplido: crear, editar, desactivar y eliminar (solo sin historial) con validación automática en el sandbox. La auditoría de las acciones del docente llega con la 13A | 12 | tests/test_docente_desafios.py |
+| RF-29 | Clasificación por dificultad y tema | Cumplido: dificultad D1 a D3 y concepto al crear o editar, y filtros por ambos en el banco | 12 | tests/test_docente_desafios.py |
 | RF-30 | Reportes del docente | Pendiente | 13B | — |
 | RNF-01 | Tiempo de respuesta de la API | Fuera de alcance actual: sin medición | — | — |
 | RNF-02 | Latencia de la ayuda con LLM | Cumplido en la aplicación: plazo total de 8 s, concurrencia acotada y respaldo directo al vencer; la latencia real depende del proveedor y falta medirla con una clave | 9 | config/llm.json, tests/test_asistencia_api.py |
@@ -41,7 +41,7 @@ Estado de cada requisito de `docs/referencia/requisitos.md`. Se actualiza al ter
 | RNF-05 | Autenticación con JWT | Cumplido | — | tests/test_auth.py |
 | RNF-06 | Contraseñas con hash seguro | Cumplido (argon2) | — | tests/test_auth.py |
 | RNF-07 | Comunicaciones cifradas | Fuera de alcance actual: depende del despliegue | — | — |
-| RNF-08 | Acceso por rol | Parcial: solo rutas de estudiante | 12, 13A | tests/test_recorrido_rutas.py |
+| RNF-08 | Acceso por rol | Parcial: rutas de estudiante y del docente (banco de desafíos, 403 al estudiante); faltan las del administrador (13A) y los reportes (13B) | 12, 13A | tests/test_recorrido_rutas.py, tests/test_docente_desafios.py |
 | RNF-09 | Disponibilidad | Fuera de alcance actual: depende del despliegue | — | — |
 | RNF-10 | Persistencia ante recarga | Cumplido para nivel, ayudas y valoraciones almacenadas en la base | 9 | tests/test_asistencia_api.py, niveles_soporte |
 | RNF-11 | Tolerancia a fallos del LLM | Cumplido (ayuda de respaldo) | 9 | tests/test_asistencia_api.py |

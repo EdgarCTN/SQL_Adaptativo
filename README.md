@@ -2,7 +2,7 @@
 
 Plataforma web (proyecto de tesis) donde el estudiante se registra, acepta el consentimiento, responde un diagnóstico, resuelve desafíos de SQL en un sandbox, pide ayuda cuando la necesita y ve cómo el sistema ajusta su **nivel de soporte (NS 0 a 3)** por concepto. Hay notificaciones con campana y una pantalla de progreso con resumen, gráficos de evolución de los indicadores y del nivel de ayuda, e historial de intentos con filtros. El motor de reglas (retiro con la preferencia del estudiante, refuerzo, estancamiento, recaída, cambio de dificultad e inactividad) decide el nivel y el tipo de ayuda; el LLM solo redacta. Sin API key funciona en **modo demostración**.
 
-No incluye (aún): funciones del rol docente y del administrador (banco de desafíos, gestión de roles, reportes), Redis ni Docker.
+El docente (y el administrador) gestiona un banco de desafíos con validación automática en el sandbox. No incluye (aún): gestión de roles y reportes del administrador, Redis ni Docker.
 
 ## Requisitos
 
@@ -47,6 +47,7 @@ cd frontend && npm run dev
 ```
 
 - Usuario demo: `estudiante@demo.edu` / `Demo12345!` (definido en `.env.example`; se crea si `SEED_USUARIO_DEMO=true`).
+- Docente de pruebas (opcional): define `DOCENTE_EMAIL` y `DOCENTE_PASSWORD` en `.env` y reinicia el servidor; vacíos = no se crea. Entra al «Banco de desafíos».
 - Puedes registrar tu propia cuenta. El primer ingreso lleva al consentimiento y al diagnóstico.
 - No hay migraciones (sin Alembic): `create_all` crea las tablas nuevas al arrancar, pero no añade columnas a tablas existentes. Si una entrega indica un cambio de esquema (por ejemplo las 1, 4, 6 y 8), ejecuta `python scripts/reset_db.py`, que borra los datos de desarrollo.
 - `python scripts/reset_db.py` borra y recrea la BD (detén antes el servidor). Úsalo cuando una entrega lo pida o si quieres eliminar los datos de desarrollo.
@@ -59,7 +60,7 @@ Con el entorno virtual activo, desde la raíz:
 python scripts/verificar.py
 ```
 
-Ejecuta `pytest` del backend (más de 800 pruebas; tarda varios minutos) y `npm run build` del frontend (requiere `npm install` previo) e imprime OK o FALLÓ por paso. Solo el backend: `cd backend && python -m pytest`.
+Ejecuta `pytest` del backend (más de 840 pruebas; tarda varios minutos) y `npm run build` del frontend (requiere `npm install` previo) e imprime OK o FALLÓ por paso. Solo el backend: `cd backend && python -m pytest`.
 
 ## Activar el LLM real
 
@@ -75,13 +76,13 @@ GROQ_API_KEY=
 
 ## Variables de `.env`
 
-`DATABASE_URL`, `SECRET_KEY` (vacía = clave temporal; las sesiones se pierden al reiniciar), `ACCESS_TOKEN_EXPIRE_MINUTES`, `CORS_ORIGINS`, `DOMINIO_INSTITUCIONAL`, `SEED_USUARIO_DEMO`, `DEMO_EMAIL`, `DEMO_PASSWORD`, `SANDBOX_TIEMPO_MAX_SEG`, `SANDBOX_MAX_FILAS`, `LLM_PROVIDER`, `LLM_MODEL`, `ANTHROPIC_API_KEY`, `GROQ_API_KEY`, `GROQ_MODEL`, `OPENAI_API_KEY`, `OPENAI_MODEL` y `ANON_SALT` (sal de los seudónimos; opcional). Cada una está comentada en `.env.example`. El frontend usa `VITE_API_URL` (por defecto `http://localhost:8000/api/v1`; ver `frontend/.env.example`).
+`DATABASE_URL`, `SECRET_KEY` (vacía = clave temporal; las sesiones se pierden al reiniciar), `ACCESS_TOKEN_EXPIRE_MINUTES`, `CORS_ORIGINS`, `DOMINIO_INSTITUCIONAL`, `SEED_USUARIO_DEMO`, `DEMO_EMAIL`, `DEMO_PASSWORD`, `DOCENTE_EMAIL`, `DOCENTE_PASSWORD`, `SANDBOX_TIEMPO_MAX_SEG`, `SANDBOX_MAX_FILAS`, `LLM_PROVIDER`, `LLM_MODEL`, `ANTHROPIC_API_KEY`, `GROQ_API_KEY`, `GROQ_MODEL`, `OPENAI_API_KEY`, `OPENAI_MODEL` y `ANON_SALT` (sal de los seudónimos; opcional). Cada una está comentada en `.env.example`. El frontend usa `VITE_API_URL` (por defecto `http://localhost:8000/api/v1`; ver `frontend/.env.example`).
 
 ## Estructura
 
 ```
 backend/app/   core/ (config, db, errores, seguridad) · modules/ (auth, linea_base, desafios,
-               asistencia, motor_retiro, ajustes, analitica, notificaciones, progreso) · seeds/ ·
+               asistencia, motor_retiro, ajustes, analitica, notificaciones, progreso, docente) · seeds/ ·
                config/ (reglas.json y textos del LLM)
 backend/tests/ · frontend/src/ (app, components, features, api) · scripts/
 ```

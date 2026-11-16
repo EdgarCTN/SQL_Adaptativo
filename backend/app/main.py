@@ -12,6 +12,7 @@ from app.modules.asistencia.router import router as asistencia_router
 from app.modules.auth.router import perfil_router
 from app.modules.auth.router import router as auth_router
 from app.modules.desafios.router import router as desafios_router
+from app.modules.docente.router import router as docente_router
 from app.modules.linea_base.router import router as linea_base_router
 from app.modules.notificaciones.router import router as notificaciones_router
 from app.modules.progreso.router import router as progreso_router
@@ -46,4 +47,5 @@ api.include_router(asistencia_router)
 api.include_router(progreso_router)
 api.include_router(ajustes_router)
 api.include_router(notificaciones_router)
+api.include_router(docente_router)
 app.include_router(api)

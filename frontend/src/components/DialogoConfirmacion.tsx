@@ -6,6 +6,7 @@ interface Props {
   etiquetaConfirmar: string;
   etiquetaCancelar: string;
   ocupado?: boolean;
+  etiquetaOcupado?: string;
   onConfirmar: () => void;
   onCancelar: () => void;
 }
@@ -17,6 +18,7 @@ export default function DialogoConfirmacion({
   etiquetaConfirmar,
   etiquetaCancelar,
   ocupado = false,
+  etiquetaOcupado = "Abandonando…",
   onConfirmar,
   onCancelar,
 }: Props) {
@@ -84,7 +86,7 @@ export default function DialogoConfirmacion({
             onClick={onConfirmar}
             className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
           >
-            {ocupado ? "Abandonando…" : etiquetaConfirmar}
+            {ocupado ? etiquetaOcupado : etiquetaConfirmar}
           </button>
         </div>
       </div>

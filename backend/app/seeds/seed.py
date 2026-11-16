@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.seguridad import hashear_password
 from app.modules.auth.models import Rol, Usuario
+from app.modules.auth.service import normalizar_correo
 from app.modules.desafios.models import Concepto
 from app.modules.desafios.seeds import sembrar_desafios
 from app.modules.linea_base.models import LineaBaseCuestionario
@@ -92,8 +93,27 @@ def sembrar_usuario_demo(db: Session) -> None:
     db.commit()
 
 
+def sembrar_docente(db: Session) -> None:
+    """Docente opcional (DOCENTE_EMAIL y DOCENTE_PASSWORD en .env). Vacíos = no se crea; si el correo ya existe, no se toca."""
+    correo = normalizar_correo(settings.docente_email)
+    if not correo or not settings.docente_password:
+        return
+    if db.scalar(select(Usuario.id).where(Usuario.correo == correo)):
+        return
+    db.add(
+        Usuario(
+            nombre="Docente",
+            correo=correo,
+            hash_password=hashear_password(settings.docente_password),
+            rol=Rol.docente.value,
+        )
+    )
+    db.commit()
+
+
 def sembrar_todo(db: Session) -> None:
     sembrar_conceptos(db)
     sembrar_desafios(db)
     sembrar_cuestionario(db)
     sembrar_usuario_demo(db)
+    sembrar_docente(db)

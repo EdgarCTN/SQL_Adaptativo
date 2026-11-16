@@ -12,6 +12,7 @@ const ENLACES: { a: string; etiqueta: string; roles?: Rol[] }[] = [
   { a: "/desafios", etiqueta: "Desafíos", roles: ["estudiante"] },
   { a: "/progreso", etiqueta: "Progreso", roles: ["estudiante"] },
   { a: "/notificaciones", etiqueta: "Notificaciones", roles: ["estudiante"] },
+  { a: "/docente/desafios", etiqueta: "Banco de desafíos", roles: ["docente", "administrador"] },
   { a: "/perfil", etiqueta: "Perfil" },
 ];
 

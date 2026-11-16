@@ -30,6 +30,18 @@ _ETIQUETAS = {
     "pagina": "Página",
     "tam": "Tamaño de página",
     "desafio_id": "Desafío",
+    "titulo": "Título",
+    "enunciado": "Enunciado",
+    "concepto": "Concepto",
+    "dificultad": "Dificultad",
+    "esquema_sql": "Esquema",
+    "sandbox_setup_sql": "Datos de prueba (setup)",
+    "solucion_referencia": "Solución de referencia",
+    "tiempo_referencia_seg": "Tiempo de referencia",
+    "mensaje": "Mensaje",
+    "ejemplo": "Ejemplo",
+    "descripcion": "Descripción",
+    "codigo_sql": "Código SQL",
 }
 
 

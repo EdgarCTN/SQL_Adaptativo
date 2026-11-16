@@ -45,6 +45,15 @@ export const router = createBrowserRouter([
                   { path: "/notificaciones", element: <NotificacionesPage /> },
                 ],
               },
+              {
+                element: <RutaProtegida roles={["docente", "administrador"]} />,
+                children: [
+                  // Carga diferida: el código del docente no se descarga para los estudiantes.
+                  { path: "/docente/desafios", lazy: async () => ({ Component: (await import("../features/docente/DesafiosDocentePage")).default }) },
+                  { path: "/docente/desafios/nuevo", lazy: async () => ({ Component: (await import("../features/docente/FormularioDesafioPage")).default }) },
+                  { path: "/docente/desafios/:id", lazy: async () => ({ Component: (await import("../features/docente/FormularioDesafioPage")).default }) },
+                ],
+              },
             ],
           },
         ],

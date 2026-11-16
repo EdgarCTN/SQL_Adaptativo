@@ -111,9 +111,32 @@ def sembrar_docente(db: Session) -> None:
     db.commit()
 
 
+def sembrar_administrador(db: Session) -> None:
+    """Primer administrador (ADMIN_EMAIL y ADMIN_PASSWORD en .env). Vacíos = no se crea.
+
+    Si el correo ya existe no se toca (ni se asciende una cuenta existente): así nadie obtiene el rol registrándose antes.
+    """
+    correo = normalizar_correo(settings.admin_email)
+    if not correo or not settings.admin_password:
+        return
+    if db.scalar(select(Usuario.id).where(Usuario.correo == correo)):
+        log.info("ADMIN_EMAIL ya existe como cuenta; no se modifica.")
+        return
+    db.add(
+        Usuario(
+            nombre="Administrador",
+            correo=correo,
+            hash_password=hashear_password(settings.admin_password),
+            rol=Rol.administrador.value,
+        )
+    )
+    db.commit()
+
+
 def sembrar_todo(db: Session) -> None:
     sembrar_conceptos(db)
     sembrar_desafios(db)
     sembrar_cuestionario(db)
     sembrar_usuario_demo(db)
     sembrar_docente(db)
+    sembrar_administrador(db)

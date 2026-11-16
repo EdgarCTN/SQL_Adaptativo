@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.db import Base
 from app.core.errores import ErrorApp
 from app.core.reglas import cargar_reglas
+from app.modules.admin.auditoria import registrar_auditoria
 from app.modules.desafios.models import Concepto, Desafio, SesionDesafio
 from app.modules.docente.schemas import DesafioIn
 from app.modules.docente.validacion import N_ERRORES_TIPICOS, TIPOS_AYUDA, problema, validar_contenido
@@ -219,7 +220,7 @@ def validar(db: Session, datos: DesafioIn, desafio_id: int | None) -> dict:
     return {"valido": not problemas, "problemas": problemas}
 
 
-def crear(db: Session, datos: DesafioIn) -> dict:
+def crear(db: Session, datos: DesafioIn, usuario_id: int) -> dict:
     n = _normalizar(datos)
     _lanzar_si_hay_problemas(_problemas(db, n, None))
     d = Desafio(activo=True)
@@ -227,10 +228,14 @@ def crear(db: Session, datos: DesafioIn) -> dict:
     db.add(d)
     _guardar(db)
     db.refresh(d)
+    registrar_auditoria(
+        db, usuario_id, "desafio.crear", f"desafio:{d.id}",
+        {"titulo": d.titulo, "concepto": n["concepto"], "dificultad": d.dificultad},
+    )
     return _detalle(db, d)
 
 
-def actualizar(db: Session, desafio_id: int, datos: DesafioIn) -> dict:
+def actualizar(db: Session, desafio_id: int, datos: DesafioIn, usuario_id: int) -> dict:
     d = _obtener(db, desafio_id)
     n = _normalizar(datos)
     _lanzar_si_hay_problemas(_problemas(db, n, d.id))
@@ -244,18 +249,25 @@ def actualizar(db: Session, desafio_id: int, datos: DesafioIn) -> dict:
     _aplicar(db, d, n)
     _guardar(db)
     db.refresh(d)
+    registrar_auditoria(
+        db, usuario_id, "desafio.actualizar", f"desafio:{d.id}",
+        {"titulo": d.titulo, "cambio_solucion_o_setup": cambiados, "confirmado": bool(usadas)},
+    )
     return _detalle(db, d)
 
 
-def cambiar_activo(db: Session, desafio_id: int, activo: bool) -> dict:
+def cambiar_activo(db: Session, desafio_id: int, activo: bool, usuario_id: int) -> dict:
     d = _obtener(db, desafio_id)
     if bool(d.activo) != activo:
         d.activo = activo
         _guardar(db)
+        registrar_auditoria(
+            db, usuario_id, "desafio.activar" if activo else "desafio.desactivar", f"desafio:{d.id}", {"titulo": d.titulo}
+        )
     return {"ok": True, "mensaje": MSG_ACTIVADO if activo else MSG_DESACTIVADO}
 
 
-def eliminar(db: Session, desafio_id: int) -> dict:
+def eliminar(db: Session, desafio_id: int, usuario_id: int) -> dict:
     d = _obtener(db, desafio_id)
     if _n_dependencias(db, d.id) > 0:
         raise ErrorApp(
@@ -263,6 +275,7 @@ def eliminar(db: Session, desafio_id: int) -> dict:
             "Desactívalo: dejará de verse para los estudiantes y su historial se conserva.",
             409,
         )
+    desafio_borrado, titulo = d.id, d.titulo
     try:
         db.delete(d)
         db.commit()
@@ -270,4 +283,5 @@ def eliminar(db: Session, desafio_id: int) -> dict:
         db.rollback()
         log.exception("No se pudo borrar el desafío")
         raise ErrorApp(MSG_ERROR_GUARDADO, 503)
+    registrar_auditoria(db, usuario_id, "desafio.eliminar", f"desafio:{desafio_borrado}", {"titulo": titulo})
     return {"ok": True, "mensaje": MSG_BORRADO}

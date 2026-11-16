@@ -54,6 +54,13 @@ export const router = createBrowserRouter([
                   { path: "/docente/desafios/:id", lazy: async () => ({ Component: (await import("../features/docente/FormularioDesafioPage")).default }) },
                 ],
               },
+              {
+                element: <RutaProtegida roles={["administrador"]} />,
+                children: [
+                  // Carga diferida: solo el administrador descarga la gestión de usuarios.
+                  { path: "/admin/usuarios", lazy: async () => ({ Component: (await import("../features/admin/UsuariosPage")).default }) },
+                ],
+              },
             ],
           },
         ],

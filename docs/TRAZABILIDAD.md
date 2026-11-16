@@ -7,7 +7,7 @@ Estado de cada requisito de `docs/referencia/requisitos.md`. Se actualiza al ter
 | RF-01 | Registro de usuarios | Cumplido | — | tests/test_auth.py |
 | RF-02 | Inicio de sesión | Cumplido (el login puede devolver `mensaje_motor` de reenganche, R14; nunca falla por el motor) | 6 | tests/test_auth.py, tests/test_motor_recaida_dificultad_inactividad.py |
 | RF-03 | Cierre de sesión | Cumplido (el servidor revoca el jti) | 1 | tests/test_logout.py |
-| RF-04 | Gestión de roles | Parcial: el rol existe y da 403; falta gestionarlo | 13A | — |
+| RF-04 | Gestión de roles | Cumplido: el administrador lista y busca usuarios, cambia su rol y activa o desactiva cuentas; protege al último administrador y registra los cambios en `auditoria` | 13A | tests/test_admin_roles.py |
 | RF-05 | Perfil | Cumplido | — | tests/test_auth.py |
 | RF-06 | Consentimiento informado | Cumplido (texto provisional) | 14 | tests/test_linea_base.py |
 | RF-07 | Diagnóstico (línea base) | Cumplido | — | tests/test_linea_base.py |
@@ -31,7 +31,7 @@ Estado de cada requisito de `docs/referencia/requisitos.md`. Se actualiza al ter
 | RF-25 | Almacenamiento en PostgreSQL | Fuera de alcance actual: SQLite con tipos portables | — | DECISIONES.md |
 | RF-26 | Análisis con pandas | Cumplido | 2 | tests/test_analitica_indicadores.py |
 | RF-27 | Exposición de indicadores | Cumplido: interfaz interna `analitica.servicio`, que usan el motor y el progreso del estudiante (`/progreso/evolucion`, entrega 11); los agregados para docente llegan con la 13B | 2 | tests/test_analitica_historico.py |
-| RF-28 | CRUD del banco de desafíos | Cumplido: crear, editar, desactivar y eliminar (solo sin historial) con validación automática en el sandbox. La auditoría de las acciones del docente llega con la 13A | 12 | tests/test_docente_desafios.py |
+| RF-28 | CRUD del banco de desafíos | Cumplido: crear, editar, desactivar y eliminar (solo sin historial) con validación automática en el sandbox. Las acciones del docente quedan en `auditoria` desde la 13A | 12, 13A | tests/test_admin_roles.py, tests/test_docente_desafios.py |
 | RF-29 | Clasificación por dificultad y tema | Cumplido: dificultad D1 a D3 y concepto al crear o editar, y filtros por ambos en el banco | 12 | tests/test_docente_desafios.py |
 | RF-30 | Reportes del docente | Pendiente | 13B | — |
 | RNF-01 | Tiempo de respuesta de la API | Fuera de alcance actual: sin medición | — | — |
@@ -41,7 +41,7 @@ Estado de cada requisito de `docs/referencia/requisitos.md`. Se actualiza al ter
 | RNF-05 | Autenticación con JWT | Cumplido | — | tests/test_auth.py |
 | RNF-06 | Contraseñas con hash seguro | Cumplido (argon2) | — | tests/test_auth.py |
 | RNF-07 | Comunicaciones cifradas | Fuera de alcance actual: depende del despliegue | — | — |
-| RNF-08 | Acceso por rol | Parcial: rutas de estudiante y del docente (banco de desafíos, 403 al estudiante); faltan las del administrador (13A) y los reportes (13B) | 12, 13A | tests/test_recorrido_rutas.py, tests/test_docente_desafios.py |
+| RNF-08 | Acceso por rol | Parcial: rutas de estudiante, del docente (banco de desafíos) y del administrador (usuarios) con 403 por rol; faltan los reportes (13B) | 12, 13A | tests/test_recorrido_rutas.py, tests/test_docente_desafios.py, tests/test_admin_roles.py |
 | RNF-09 | Disponibilidad | Fuera de alcance actual: depende del despliegue | — | — |
 | RNF-10 | Persistencia ante recarga | Cumplido para nivel, ayudas y valoraciones almacenadas en la base | 9 | tests/test_asistencia_api.py, niveles_soporte |
 | RNF-11 | Tolerancia a fallos del LLM | Cumplido (ayuda de respaldo) | 9 | tests/test_asistencia_api.py |

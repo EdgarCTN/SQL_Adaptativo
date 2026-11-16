@@ -6,7 +6,7 @@ Marcadas **PROVISIONAL** las que conviene validar con la profesora o con el pilo
 - `POST /auth/logout` revoca el `jti` del token en `tokens_revocados` (se purgan los vencidos en cada logout) y `usuario_actual` rechaza tokens revocados con 401. Sin Redis. `SECRET_KEY` vacía genera una clave temporal (las sesiones se pierden al reiniciar). El frontend cierra la sesión local aunque falle la red.
 - Token en `localStorage`. Login con mensaje único ante credenciales inválidas. Tras registrarse se inicia sesión. «Reintentar» solo comprueba `/health`.
 - SQLite en desarrollo, con tipos portables para migrar a PostgreSQL por `DATABASE_URL`. Sin Alembic: `create_all` al iniciar y `scripts/reset_db.py`. Los seeds corren al iniciar.
-- El registro público siempre crea `estudiante`. El docente tiene el banco de desafíos (entrega 12); el administrador, por ahora, solo comparte esas rutas hasta la 13A. Docentes y administradores reciben 403 en las rutas de estudiante, y los estudiantes en las del docente.
+- El registro público siempre crea `estudiante`. El docente tiene el banco de desafíos (entrega 12); el administrador comparte esas rutas y además gestiona usuarios en `/admin/usuarios` (entrega 13A). Docentes y administradores reciben 403 en las rutas de estudiante, y los estudiantes en las del docente.
 - Los valores de la Matriz y de `llm.json` se leen de `backend/app/config/*.json`. `NS_POR_DEFECTO=1`, `NS_MINIMO=0`, `NS_MAXIMO=3` son constantes del código (`motor_retiro/niveles.py`).
 
 ## Diagnóstico (línea base)
@@ -127,8 +127,16 @@ Marcadas **PROVISIONAL** las que conviene validar con la profesora o con el pilo
 - Si se desactiva un desafío mientras un estudiante lo tiene en curso, ese estudiante ya no puede continuar la sesión (responde «no disponible», como cualquier desafío inactivo). Se acepta por simplicidad.
 - Título único sin distinguir mayúsculas; el tiempo de referencia, si se omite, es el de `reglas.json` para la dificultad elegida.
 - Seed opcional `DOCENTE_EMAIL` y `DOCENTE_PASSWORD`: vacíos no se crea; si el correo ya existe no se modifica. La contraseña no pasa por las reglas del registro (solo desarrollo).
-- La auditoría de las acciones del docente no se registra aún: la tabla `auditoria` llega con la 13A, que debe llamarla desde `docente/service.py`.
+- Las acciones del docente sobre el banco se auditan desde la entrega 13A (`desafio.crear`, `actualizar`, `activar`, `desactivar`, `eliminar`).
+
+## Administración de roles y auditoría (entrega 13A)
+- **PROVISIONAL:** un administrador no puede cambiar su propio rol ni desactivar su propia cuenta (409), y siempre debe quedar al menos un administrador activo (409). Un administrador inactivo no cuenta como respaldo. Validar con la profesora si el rol del propio administrador debería poder cambiarse con otra confirmación.
+- `ADMIN_EMAIL` y `ADMIN_PASSWORD` crean solo el primer administrador; vacíos no se crea y, si el correo ya existe, **no se asciende** esa cuenta (así nadie obtiene el rol registrándose antes). La contraseña no pasa por las reglas del registro (solo desarrollo).
+- Desactivar una cuenta no borra nada: el estudiante conserva su historial y puede reactivarse. El acceso se corta en la siguiente solicitud, aunque tenga un token vigente.
+- La auditoría de roles y activación se guarda en la misma transacción que el cambio (o ambos, o ninguno). La de las acciones del docente se guarda justo después de confirmar el cambio y, si fallara, solo se registra en el log para no deshacer ni bloquear la acción. **PROVISIONAL:** conviene confirmar con la profesora si la auditoría del docente debe ser estrictamente atómica.
+- La auditoría registra quién, qué y sobre qué objeto (ids y títulos de desafío, roles anterior y nuevo), nunca correos ni nombres. Aún no hay pantalla para consultarla: queda disponible en la tabla `auditoria`.
+- Un cambio de rol vale desde la siguiente solicitud de la persona (el rol se lee de la base, no del token). Su menú se actualiza al volver a la pestaña o al recargar.
 
 ## Limitaciones conocidas
-- Desarrollado en Linux con Python 3.12 y Node 22 y verificado en Windows con Git Bash (`verificar.py`: 844 pruebas y compilación del frontend, entrega 12). En un navegador real (Chromium) solo se revisó `/progreso`; las pantallas del docente (entrega 12) están verificadas por compilación y pruebas de API, y falta su revisión manual en navegador. Sin pruebas automáticas del frontend.
+- Desarrollado en Linux con Python 3.12 y Node 22 y verificado en Windows con Git Bash (`verificar.py`: 877 pruebas y compilación del frontend, entrega 13A). En un navegador real (Chromium) solo se revisó `/progreso`; las pantallas del docente (entrega 12) y «Usuarios» (13A) están verificadas por compilación y pruebas de API, y falta su revisión manual en navegador. Sin pruebas automáticas del frontend.
 - El `node_modules` del zip no sirve en otro sistema operativo: ejecutar `npm install` en cada máquina.

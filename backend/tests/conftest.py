@@ -15,6 +15,8 @@ os.environ.update(
         "DEMO_PASSWORD": "Demo12345!",
         "DOCENTE_EMAIL": "",
         "DOCENTE_PASSWORD": "",
+        "ADMIN_EMAIL": "",
+        "ADMIN_PASSWORD": "",
         "ACCESS_TOKEN_EXPIRE_MINUTES": "60",
         # Las pruebas nunca deben heredar credenciales reales del .env del desarrollador.
         "LLM_PROVIDER": "mock",

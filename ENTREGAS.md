@@ -245,6 +245,8 @@ Orden: primero lo que hace funcionar el motor y la ayuda (entregas 1 a 9), despu
 
 ## ENTREGA 13A: Administración de roles
 
+**Estado: hecha** (no requirió `reset_db.py`; notas en `HOJA_DE_RUTA.md`, decisiones PROVISIONAL en `DECISIONES.md`).
+
 **Revisa en el proyecto:** `python scripts/contexto.py auth docente` · **Cubre:** RF-04, RNF-08.
 
 **Tarea**

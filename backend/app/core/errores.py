@@ -42,6 +42,8 @@ _ETIQUETAS = {
     "ejemplo": "Ejemplo",
     "descripcion": "Descripción",
     "codigo_sql": "Código SQL",
+    "rol": "Rol",
+    "usuario_id": "Usuario",
 }
 
 

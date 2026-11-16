@@ -37,6 +37,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Si un administrador cambió el rol de esta cuenta, el menú se actualiza al volver a la pestaña.
+  // Una cuenta desactivada recibe 401 y el cliente la devuelve al login.
+  const idUsuario = usuario?.id;
+  useEffect(() => {
+    if (idUsuario === undefined) return;
+    const alVolver = () => {
+      if (document.visibilityState !== "visible") return;
+      obtenerYo()
+        .then((u) =>
+          setUsuario((previo) =>
+            previo && previo.id === u.id && previo.rol === u.rol && previo.nombre === u.nombre && previo.linea_base_completada === u.linea_base_completada
+              ? previo
+              : u
+          )
+        )
+        .catch(() => {
+          /* sin red u otro fallo: se conserva el usuario actual */
+        });
+    };
+    document.addEventListener("visibilitychange", alVolver);
+    return () => document.removeEventListener("visibilitychange", alVolver);
+  }, [idUsuario]);
+
   // El cliente axios avisa cuando el servidor rechaza el token (401).
   useEffect(() => {
     const alExpirar = (e: Event) => {

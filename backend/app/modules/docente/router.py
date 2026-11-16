@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.modules.auth.deps import requiere_rol
-from app.modules.auth.models import Rol
+from app.modules.auth.models import Rol, Usuario
 from app.modules.docente import service
 from app.modules.docente.schemas import (
     DesafioDocenteOut,
@@ -15,10 +15,13 @@ from app.modules.docente.schemas import (
 )
 
 # Todo el router exige docente o administrador: el estudiante recibe 403 con un mensaje claro.
+# La misma dependencia en el router y en las rutas que escriben (para auditar quién actúa): se ejecuta una vez por solicitud.
+docente_o_administrador = requiere_rol(Rol.docente, Rol.administrador)
+
 router = APIRouter(
     prefix="/docente/desafios",
     tags=["Docente"],
-    dependencies=[Depends(requiere_rol(Rol.docente, Rol.administrador))],
+    dependencies=[Depends(docente_o_administrador)],
 )
 
 
@@ -45,8 +48,8 @@ def listar(
 
 
 @router.post("", response_model=DesafioDocenteOut, status_code=201)
-def crear(datos: DesafioIn, db: Session = Depends(get_db)):
-    return service.crear(db, datos)
+def crear(datos: DesafioIn, usuario: Usuario = Depends(docente_o_administrador), db: Session = Depends(get_db)):
+    return service.crear(db, datos, usuario.id)
 
 
 @router.get("/{desafio_id}", response_model=DesafioDocenteOut)
@@ -55,20 +58,22 @@ def ver(desafio_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/{desafio_id}", response_model=DesafioDocenteOut)
-def actualizar(desafio_id: int, datos: DesafioIn, db: Session = Depends(get_db)):
-    return service.actualizar(db, desafio_id, datos)
+def actualizar(
+    desafio_id: int, datos: DesafioIn, usuario: Usuario = Depends(docente_o_administrador), db: Session = Depends(get_db)
+):
+    return service.actualizar(db, desafio_id, datos, usuario.id)
 
 
 @router.post("/{desafio_id}/activar", response_model=MensajeDocenteOut)
-def activar(desafio_id: int, db: Session = Depends(get_db)):
-    return service.cambiar_activo(db, desafio_id, True)
+def activar(desafio_id: int, usuario: Usuario = Depends(docente_o_administrador), db: Session = Depends(get_db)):
+    return service.cambiar_activo(db, desafio_id, True, usuario.id)
 
 
 @router.post("/{desafio_id}/desactivar", response_model=MensajeDocenteOut)
-def desactivar(desafio_id: int, db: Session = Depends(get_db)):
-    return service.cambiar_activo(db, desafio_id, False)
+def desactivar(desafio_id: int, usuario: Usuario = Depends(docente_o_administrador), db: Session = Depends(get_db)):
+    return service.cambiar_activo(db, desafio_id, False, usuario.id)
 
 
 @router.delete("/{desafio_id}", response_model=MensajeDocenteOut)
-def eliminar(desafio_id: int, db: Session = Depends(get_db)):
-    return service.eliminar(db, desafio_id)
+def eliminar(desafio_id: int, usuario: Usuario = Depends(docente_o_administrador), db: Session = Depends(get_db)):
+    return service.eliminar(db, desafio_id, usuario.id)

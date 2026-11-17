@@ -90,6 +90,11 @@
   "hueco_max_seg": 45,
   "provisional": true
  },
+ "reportes": {
+  "n_minimo": 3,
+  "provisional": true,
+  "nota": "PROVISIONAL: un grupo con menos de n_minimo estudiantes no se muestra en los reportes (supresión de celdas pequeñas, RNF-23). Lo valida la profesora o el comité. No aplica a la exportación CSV, que ya va seudonimizada."
+ },
  "valor_dominio_m": {
   "acierta": {
    "5": 0.975,

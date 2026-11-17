@@ -17,6 +17,7 @@ from app.modules.docente.router import router as docente_router
 from app.modules.linea_base.router import router as linea_base_router
 from app.modules.notificaciones.router import router as notificaciones_router
 from app.modules.progreso.router import router as progreso_router
+from app.modules.reportes.router import router as reportes_router
 from app.seeds.seed import sembrar_todo
 
 
@@ -50,4 +51,5 @@ api.include_router(ajustes_router)
 api.include_router(notificaciones_router)
 api.include_router(docente_router)
 api.include_router(admin_router)
+api.include_router(reportes_router)
 app.include_router(api)

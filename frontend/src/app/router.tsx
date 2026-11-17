@@ -52,6 +52,8 @@ export const router = createBrowserRouter([
                   { path: "/docente/desafios", lazy: async () => ({ Component: (await import("../features/docente/DesafiosDocentePage")).default }) },
                   { path: "/docente/desafios/nuevo", lazy: async () => ({ Component: (await import("../features/docente/FormularioDesafioPage")).default }) },
                   { path: "/docente/desafios/:id", lazy: async () => ({ Component: (await import("../features/docente/FormularioDesafioPage")).default }) },
+                  // Carga diferida: los reportes solo los descargan docentes y administradores.
+                  { path: "/reportes", lazy: async () => ({ Component: (await import("../features/reportes/ReportesPage")).default }) },
                 ],
               },
               {

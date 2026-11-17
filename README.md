@@ -61,7 +61,17 @@ Con el entorno virtual activo, desde la raíz:
 python scripts/verificar.py
 ```
 
-Ejecuta `pytest` del backend (más de 840 pruebas; tarda varios minutos) y `npm run build` del frontend (requiere `npm install` previo) e imprime OK o FALLÓ por paso. Solo el backend: `cd backend && python -m pytest`.
+Ejecuta `pytest` del backend (más de 900 pruebas; tarda varios minutos) y `npm run build` del frontend (requiere `npm install` previo) e imprime OK o FALLÓ por paso. Solo el backend: `cd backend && python -m pytest`.
+
+## Reportes y exportación para la tesis
+
+Docentes y administradores ven la página «Reportes» (datos agregados, con seudónimos; los grupos de menos de `reportes.n_minimo` estudiantes, 3 por defecto, salen como «Oculto») y pueden descargar CSV seudonimizados de intentos, ayudas, cambios de NS e indicadores. Desde la terminal:
+
+```bash
+python scripts/exportar_tesis.py --desde 2026-10-01 --hasta 2026-11-30 --salida mis_datos
+```
+
+Define `ANON_SALT` en el `.env` antes de exportar (`python -c "import secrets; print(secrets.token_hex(32))"`); sin ella los seudónimos cambian en cada ejecución.
 
 ## Activar el LLM real
 

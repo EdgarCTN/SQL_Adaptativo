@@ -1,6 +1,7 @@
 """Recorre todas las rutas del OpenAPI: sin token, con token inválido, como estudiante, como docente y como administrador.
 
-Ninguna debe responder 5xx; las protegidas dan 401 (sin sesión) o 403 (rol indebido) con JSON controlado.
+Ninguna debe responder 5xx; las protegidas dan 401 (sin sesión) o 403 (rol indebido) con JSON controlado. Los reportes
+(13B) son de docente y administrador: el estudiante recibe 403 y los otros dos roles reciben 200.
 """
 import re
 
@@ -15,6 +16,7 @@ from conftest import API, cabecera, registrar, token_de
 PUBLICAS = {f"{API}/health", f"{API}/auth/registro", f"{API}/auth/login"}
 SOLO_ESTUDIANTE = ("/desafios", "/ayudas", "/linea-base", "/progreso", "/ajustes")
 SOLO_ADMINISTRADOR = ("/admin",)
+DOCENTE_Y_ADMINISTRADOR = ("/docente", "/reportes")  # el estudiante recibe 403; docente y administrador entran
 METODOS = ("get", "post", "put", "delete", "patch")
 
 
@@ -58,6 +60,7 @@ def test_hay_rutas_que_recorrer():
         ("post", "/ayudas/{solicitud_id}/valoracion"), ("get", "/progreso/resumen"),
         ("get", "/admin/usuarios"), ("put", "/admin/usuarios/{usuario_id}/rol"),
         ("post", "/admin/usuarios/{usuario_id}/activar"), ("post", "/admin/usuarios/{usuario_id}/desactivar"),
+        ("get", "/reportes"), ("get", "/reportes/exportar"),
     }
     assert esperadas <= rutas  # si se añade una ruta nueva, el recorrido la incluye sola
 
@@ -90,7 +93,7 @@ def test_como_estudiante(client, sin_excepciones, valor_id):
         r = _llamar(sin_excepciones, metodo, _con_id(ruta, valor_id), h)
         _verificar_json_controlado(r, f"{metodo.upper()} {ruta} (id={valor_id}) como estudiante")
         assert r.status_code != 401, f"{metodo.upper()} {ruta} rechazó un token válido"
-        if ruta.removeprefix(API).startswith(SOLO_ADMINISTRADOR):
+        if ruta.removeprefix(API).startswith(SOLO_ADMINISTRADOR + DOCENTE_Y_ADMINISTRADOR):
             assert r.status_code == 403, f"{metodo.upper()} {ruta} dio {r.status_code} a un estudiante"
     assert sin_excepciones.post(f"{API}/auth/logout", headers=h).status_code == 200
 
@@ -108,6 +111,8 @@ def test_como_docente(client, db, sin_excepciones):
         _verificar_json_controlado(r, f"{metodo.upper()} {ruta} como docente")
         if ruta.removeprefix(API).startswith(SOLO_ESTUDIANTE + SOLO_ADMINISTRADOR):
             assert r.status_code == 403, f"{metodo.upper()} {ruta} dio {r.status_code} a un docente"
+        if ruta.removeprefix(API).startswith("/reportes"):
+            assert r.status_code == 200, f"{metodo.upper()} {ruta} dio {r.status_code} a un docente"
 
 
 @pytest.mark.parametrize("valor_id", ["1", "99999", "abc"])
@@ -125,6 +130,8 @@ def test_como_administrador(client, db, sin_excepciones, valor_id):
         assert r.status_code != 401, f"{metodo.upper()} {ruta} rechazó un token válido"
         if valor_id == "1" and ruta.removeprefix(API).startswith(SOLO_ESTUDIANTE):
             assert r.status_code == 403, f"{metodo.upper()} {ruta} dio {r.status_code} a un administrador"
+        if ruta.removeprefix(API).startswith("/reportes"):
+            assert r.status_code == 200, f"{metodo.upper()} {ruta} dio {r.status_code} a un administrador"
 
 
 def test_ruta_inexistente_y_metodo_no_permitido(sin_excepciones):

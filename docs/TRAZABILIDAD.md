@@ -45,16 +45,16 @@ Estado de cada requisito de `docs/referencia/requisitos.md`. Se actualiza al ter
 | RNF-09 | Disponibilidad | Fuera de alcance actual: depende del despliegue | — | — |
 | RNF-10 | Persistencia ante recarga | Cumplido para nivel, ayudas y valoraciones almacenadas en la base | 9 | tests/test_asistencia_api.py, niveles_soporte |
 | RNF-11 | Tolerancia a fallos del LLM | Cumplido (ayuda de respaldo) | 9 | tests/test_asistencia_api.py |
-| RNF-12 | Copias de seguridad | Pendiente | 14 | — |
-| RNF-13 | Facilidad de aprendizaje | Pendiente: protocolo de prueba con estudiantes | 14 | — |
-| RNF-14 | Diseño responsivo | Parcial: no verificado en navegador | 14 | — |
-| RNF-15 | Retroalimentación visual | Parcial: revisar cada acción | 14 | — |
+| RNF-12 | Copias de seguridad | Cumplido: `respaldo.py` y `restaurar.py` verificados; falta correr la prueba con la base real (`verificar.py`) y una restauración de ensayo | 14 | tests/test_respaldo.py; docs/manual_administrador.md |
+| RNF-13 | Facilidad de aprendizaje | Protocolo listo; **falta aplicarlo** con unos 5 estudiantes | 14 | docs/PRUEBA_USABILIDAD.md |
+| RNF-14 | Diseño responsivo | Checklist listo; **falta ejecutarlo** en 3 anchos | 14 | docs/PRUEBAS_MANUALES.md (sección 1) |
+| RNF-15 | Retroalimentación visual | Checklist listo; **falta ejecutarlo** | 14 | docs/PRUEBAS_MANUALES.md (sección 3) |
 | RNF-16 | Escalabilidad horizontal | Fuera de alcance actual | — | — |
 | RNF-17 | Documentación de la API | Cumplido (/docs) | — | — |
 | RNF-18 | Arquitectura modular | Cumplido | — | backend/app/modules |
 | RNF-19 | Control de versiones | Cumplido (Git) | — | — |
-| RNF-20 | Compatibilidad de navegadores | Pendiente: checklist manual | 14 | — |
+| RNF-20 | Compatibilidad de navegadores | Checklist listo; **falta ejecutarlo** en Chrome, Edge, Firefox y Safari | 14 | docs/PRUEBAS_MANUALES.md (sección 2) |
 | RNF-21 | Proveedor de LLM intercambiable | Cumplido (mock, Groq, Anthropic y OpenAI) | 9 | tests/test_asistencia_base.py |
-| RNF-22 | Consentimiento y ética | Parcial: texto provisional | 14 | tests/test_linea_base.py |
+| RNF-22 | Consentimiento y ética | Parcial: texto 1.1 corregido, **pendiente de validación** por la profesora o el comité; falta contacto, conservación y retiro de datos, y decidir si se exige el consentimiento para practicar | 14 | tests/test_linea_base.py; docs/PROVISIONALES.md (sección 5) |
 | RNF-23 | Anonimización de datos | Cumplido: reportes y CSV con `id_pseudonimo` (HMAC con `ANON_SALT`), sin nombres ni correos, con supresión de grupos de menos de `reportes.n_minimo` estudiantes (provisional) | 2, 13B | tests/test_analitica_seudonimo.py, tests/test_analitica_historico.py, tests/test_reportes.py |
 | RNF-24 | Minimización de datos al LLM | Cumplido | 9 | tests/test_prompt_builder.py |

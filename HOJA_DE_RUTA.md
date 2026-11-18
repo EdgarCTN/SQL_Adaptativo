@@ -1,6 +1,6 @@
 # HOJA DE RUTA
 
-**Siguiente entrega: 14**
+**Entrega 14 hecha (cierre). Quedan por ejecutar a mano los checklists de `docs/PRUEBAS_MANUALES.md` y `docs/PRUEBA_USABILIDAD.md`, y validar el consentimiento y `docs/PROVISIONALES.md`.**
 
 Este archivo es el tablero del proyecto: dice qué entrega toca, qué módulos debe revisar Claude y qué quedó hecho. Lo actualizas tú al terminar cada entrega; va dentro del zip, así que Claude también lo ve.
 
@@ -62,7 +62,7 @@ Si el mismo error persiste tras dos intentos, abre un chat nuevo con el zip, `CO
 | 12  | Docente: banco de desafíos con validación automática                        | RF-28, 29, RNF-08        | `desafios auth`                             | hecha     |
 | 13A | Administrador: gestión de roles y auditoría                                 | RF-04, RNF-08            | `auth docente`                              | hecha     |
 | 13B | Reportes agregados anonimizados y exportación CSV                           | RF-30, RNF-23            | `analitica` + matriz (sección 10)           | hecha     |
-| 14  | Respaldo, manuales, checklists, consentimiento y cierre                     | RNF-12–15, 20, 22        | ninguno                                     | pendiente |
+| 14  | Respaldo, manuales, checklists, consentimiento y cierre                     | RNF-12–15, 20, 22        | ninguno                                     | hecha |
 
 **Prioridad si el tiempo o la cuota se acaban:** las entregas 1 a 9 completan el motor de reglas y la ayuda, que es el corazón de la tesis; con ellas el sistema ya supera con claridad al MVP. Las 10 y 11 completan la experiencia del estudiante, y las 12, 13A y 13B añaden los roles docente y administrador.
 

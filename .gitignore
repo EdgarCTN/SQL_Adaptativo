@@ -7,3 +7,6 @@ __pycache__/
 .pytest_cache/
 dist/
 *.zip
+# Datos de estudiantes: copias de la base (scripts/respaldo.py) y CSV de la tesis (scripts/exportar_tesis.py)
+respaldos/
+exportacion_tesis/

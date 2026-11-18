@@ -14,7 +14,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 SALIDA = RAIZ / "proyecto_para_claude.zip"
 CARPETAS_EXCLUIDAS = {".git", "node_modules", ".venv", "venv", "__pycache__", ".pytest_cache",
-                      "dist", "build", ".idea", ".vscode", ".mypy_cache"}
+                      "dist", "build", ".idea", ".vscode", ".mypy_cache", "respaldos", "exportacion_tesis"}
 NOMBRES_EXCLUIDOS = {".env"}
 EXTENSIONES_EXCLUIDAS = {".db", ".sqlite", ".sqlite3", ".zip", ".pyc", ".log"}
 PATRONES_SECRETOS = [

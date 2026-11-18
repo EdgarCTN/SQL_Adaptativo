@@ -26,7 +26,7 @@ from app.modules.motor_retiro import verificacion as verificaciones
 
 log = logging.getLogger("app.linea_base")
 
-VERSION_CONSENTIMIENTO = "1.0"  # versión vigente del texto de consentimiento (el texto lo muestra el frontend)
+VERSION_CONSENTIMIENTO = "1.1"  # versión vigente del texto de consentimiento (el texto lo muestra el frontend); PROVISIONAL, ver docs/PROVISIONALES.md
 
 MSG_SIN_CONSENTIMIENTO = "El consentimiento es necesario para completar el diagnóstico inicial."
 MSG_NO_ACEPTADO = "El consentimiento es necesario para completar el diagnóstico inicial. No guardamos nada."

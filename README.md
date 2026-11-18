@@ -1,8 +1,10 @@
-# Desafíos SQL adaptativos (MVP del estudiante)
+# Desafíos SQL adaptativos
 
 Plataforma web (proyecto de tesis) donde el estudiante se registra, acepta el consentimiento, responde un diagnóstico, resuelve desafíos de SQL en un sandbox, pide ayuda cuando la necesita y ve cómo el sistema ajusta su **nivel de soporte (NS 0 a 3)** por concepto. Hay notificaciones con campana y una pantalla de progreso con resumen, gráficos de evolución de los indicadores y del nivel de ayuda, e historial de intentos con filtros. El motor de reglas (retiro con la preferencia del estudiante, refuerzo, estancamiento, recaída, cambio de dificultad e inactividad) decide el nivel y el tipo de ayuda; el LLM solo redacta. Sin API key funciona en **modo demostración**.
 
-El docente (y el administrador) gestiona un banco de desafíos con validación automática en el sandbox. El administrador asigna roles y activa o desactiva cuentas en «Usuarios», con auditoría de los cambios. No incluye (aún): reportes agregados, Redis ni Docker.
+El docente (y el administrador) gestiona un banco de desafíos con validación automática en el sandbox. El administrador asigna roles y activa o desactiva cuentas en «Usuarios», con auditoría de los cambios. Docentes y administradores ven reportes agregados y seudonimizados y pueden descargar los datos para la tesis. No incluye Redis ni Docker.
+
+**Manuales:** [estudiante](docs/manual_estudiante.md) · [docente](docs/manual_docente.md) · [administrador](docs/manual_administrador.md). **Antes del piloto:** [pruebas manuales](docs/PRUEBAS_MANUALES.md), [prueba de usabilidad](docs/PRUEBA_USABILIDAD.md) y [valores provisionales](docs/PROVISIONALES.md).
 
 ## Requisitos
 
@@ -61,17 +63,30 @@ Con el entorno virtual activo, desde la raíz:
 python scripts/verificar.py
 ```
 
-Ejecuta `pytest` del backend (más de 900 pruebas; tarda varios minutos) y `npm run build` del frontend (requiere `npm install` previo) e imprime OK o FALLÓ por paso. Solo el backend: `cd backend && python -m pytest`.
+Ejecuta `pytest` del backend (cientos de pruebas, 910 contadas en la entrega 13B; tarda varios minutos) y `npm run build` del frontend (requiere `npm install` previo) e imprime OK o FALLÓ por paso. Solo el backend: `cd backend && python -m pytest`.
 
 ## Reportes y exportación para la tesis
 
 Docentes y administradores ven la página «Reportes» (datos agregados, con seudónimos; los grupos de menos de `reportes.n_minimo` estudiantes, 3 por defecto, salen como «Oculto») y pueden descargar CSV seudonimizados de intentos, ayudas, cambios de NS e indicadores. Desde la terminal:
 
 ```bash
-python scripts/exportar_tesis.py --desde 2026-10-01 --hasta 2026-11-30 --salida mis_datos
+python scripts/exportar_tesis.py --desde 2026-10-01 --hasta 2026-11-30 --salida exportacion_tesis
 ```
 
-Define `ANON_SALT` en el `.env` antes de exportar (`python -c "import secrets; print(secrets.token_hex(32))"`); sin ella los seudónimos cambian en cada ejecución.
+Define `ANON_SALT` en el `.env` antes de exportar (`python -c "import secrets; print(secrets.token_hex(32))"`); sin ella los seudónimos cambian en cada ejecución. Los CSV están en `.gitignore` (`exportacion_tesis/`): no los subas al repositorio.
+
+## Copias de seguridad
+
+```bash
+python scripts/respaldo.py                       # crea respaldos/desafios_sql_AAAAMMDD_HHMMSS.db (con el servidor encendido)
+python scripts/restaurar.py respaldos/<copia>.db # con el servidor apagado; guarda antes una copia de la base actual
+```
+
+Las copias contienen datos personales: guárdalas fuera del repositorio (`respaldos/` está ignorada). Detalles en el [manual del administrador](docs/manual_administrador.md).
+
+## Antes de usar con estudiantes
+
+Pon `SEED_USUARIO_DEMO=false` (la cuenta demo tiene contraseña conocida), define `SECRET_KEY` y `ANON_SALT`, y confirma que el texto del consentimiento (versión 1.1) lo validó tu profesora o el comité. Nunca subas `.env` ni claves al repositorio.
 
 ## Activar el LLM real
 
@@ -87,15 +102,17 @@ GROQ_API_KEY=
 
 ## Variables de `.env`
 
-`DATABASE_URL`, `SECRET_KEY` (vacía = clave temporal; las sesiones se pierden al reiniciar), `ACCESS_TOKEN_EXPIRE_MINUTES`, `CORS_ORIGINS`, `DOMINIO_INSTITUCIONAL`, `SEED_USUARIO_DEMO`, `DEMO_EMAIL`, `DEMO_PASSWORD`, `DOCENTE_EMAIL`, `DOCENTE_PASSWORD`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `SANDBOX_TIEMPO_MAX_SEG`, `SANDBOX_MAX_FILAS`, `LLM_PROVIDER`, `LLM_MODEL`, `ANTHROPIC_API_KEY`, `GROQ_API_KEY`, `GROQ_MODEL`, `OPENAI_API_KEY`, `OPENAI_MODEL` y `ANON_SALT` (sal de los seudónimos; opcional). Cada una está comentada en `.env.example`. El frontend usa `VITE_API_URL` (por defecto `http://localhost:8000/api/v1`; ver `frontend/.env.example`).
+`DATABASE_URL`, `SECRET_KEY` (vacía = clave temporal; las sesiones se pierden al reiniciar), `ACCESS_TOKEN_EXPIRE_MINUTES`, `CORS_ORIGINS`, `DOMINIO_INSTITUCIONAL`, `SEED_USUARIO_DEMO`, `DEMO_EMAIL`, `DEMO_PASSWORD`, `DOCENTE_EMAIL`, `DOCENTE_PASSWORD`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `SANDBOX_TIEMPO_MAX_SEG`, `SANDBOX_MAX_FILAS`, `LLM_PROVIDER`, `LLM_MODEL`, `ANTHROPIC_API_KEY`, `GROQ_API_KEY`, `GROQ_MODEL`, `OPENAI_API_KEY`, `OPENAI_MODEL` y `ANON_SALT` (sal de los seudónimos; opcional). `APP_NOMBRE` y `API_PREFIX` existen en la configuración pero no se cambian: el frontend asume `/api/v1`. Cada una está comentada en `.env.example`. El frontend usa `VITE_API_URL` (por defecto `http://localhost:8000/api/v1`; ver `frontend/.env.example`).
 
 ## Estructura
 
 ```
 backend/app/   core/ (config, db, errores, seguridad) · modules/ (auth, linea_base, desafios,
-               asistencia, motor_retiro, ajustes, analitica, notificaciones, progreso, docente) · seeds/ ·
+               asistencia, motor_retiro, ajustes, analitica, notificaciones, progreso, docente, admin,
+               reportes) · seeds/ ·
                config/ (reglas.json y textos del LLM)
-backend/tests/ · frontend/src/ (app, components, features, api) · scripts/
+backend/tests/ · frontend/src/ (app, components, features, api) · docs/ · scripts/
+               (reset_db, verificar, empaquetar, exportar_tesis, respaldo, restaurar)
 ```
 
 Los umbrales de la Matriz de reglas están en `backend/app/config/reglas.json` y se calibran con el piloto. Las decisiones y simplificaciones del MVP están en `DECISIONES.md`.

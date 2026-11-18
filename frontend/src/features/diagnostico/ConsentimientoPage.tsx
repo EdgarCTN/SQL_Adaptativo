@@ -76,6 +76,8 @@ export default function ConsentimientoPage() {
               Antes del diagnóstico inicial, te explicamos cómo usaremos tus datos.
             </p>
 
+            {/* PROVISIONAL (RNF-22): texto versión 1.1 pendiente de validación por la profesora o el comité de ética.
+                Si cambia, sube VERSION_CONSENTIMIENTO en backend/app/modules/linea_base/service.py. Ver docs/PROVISIONALES.md. */}
             <div className="mt-4 space-y-4 text-sm text-slate-700">
               <div>
                 <h2 className="font-semibold text-slate-900">¿Qué es esta plataforma?</h2>
@@ -85,24 +87,41 @@ export default function ConsentimientoPage() {
                 </p>
               </div>
               <div>
-                <h2 className="font-semibold text-slate-900">¿Qué datos usaremos?</h2>
+                <h2 className="font-semibold text-slate-900">¿Qué datos guardamos?</h2>
+                <ul className="list-disc space-y-1 pl-5">
+                  <li>Tu nombre y tu correo, para tu cuenta.</li>
+                  <li>Tus respuestas del diagnóstico inicial y tus preferencias de ayuda.</li>
+                  <li>
+                    En los desafíos: cada consulta SQL que envías y lo que devuelve, si resuelves, abandonas u omites,
+                    y cuánto tiempo trabajas (medimos tu actividad en la página).
+                  </li>
+                  <li>Las ayudas que pides o recibes, si te sirvieron, y los cambios de tu nivel de ayuda.</li>
+                </ul>
+              </div>
+              <div>
+                <h2 className="font-semibold text-slate-900">¿Qué se envía a la inteligencia artificial?</h2>
                 <p>
-                  Tus respuestas del diagnóstico inicial, tus intentos y resultados en los desafíos, las ayudas que
-                  pides o recibes, los tiempos de trabajo y tus preferencias de ayuda.
+                  Cuando pides ayuda, o cuando la plataforma te la muestra, se envía a un proveedor externo de
+                  inteligencia artificial el enunciado del desafío, tu consulta, el resultado que obtuviste, tus
+                  errores recientes y el mensaje que escribas. No se envía tu nombre ni tu correo. Si la plataforma
+                  está en modo de demostración, no se envía nada.
                 </p>
               </div>
               <div>
-                <h2 className="font-semibold text-slate-900">¿Para qué los usaremos?</h2>
+                <h2 className="font-semibold text-slate-900">¿Para qué los usaremos y quién los ve?</h2>
                 <p>
                   Para definir tu punto de partida, adaptar los desafíos y la ayuda, y analizar con fines académicos
-                  si este enfoque funciona.
+                  si este enfoque funciona. En el análisis tu identidad se reemplaza por un código (seudónimo): los
+                  informes del docente muestran grupos, no personas, y no incluyen tu nombre, tu correo ni el texto
+                  de tus consultas. Solo el administrador de la plataforma ve tu nombre y tu correo, en la gestión de
+                  cuentas. Los resultados de la investigación se presentarán de forma agregada y sin identificarte.
                 </p>
               </div>
               <div>
                 <h2 className="font-semibold text-slate-900">Tu decisión</h2>
                 <p>
-                  Tu participación es voluntaria. Si no aceptas, no guardaremos ninguna respuesta y no podrás completar
-                  el diagnóstico inicial.
+                  Tu participación es voluntaria. Si no aceptas, no guardaremos ninguna respuesta del diagnóstico y no
+                  podrás completarlo.
                 </p>
               </div>
             </div>

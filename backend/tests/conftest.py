@@ -3,12 +3,21 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
+from urllib.parse import urlparse
 
 _DIR = Path(tempfile.mkdtemp(prefix="desafios_sql_tests_"))
+
+# Por defecto las pruebas usan SQLite temporal. Con TEST_DATABASE_URL (PostgreSQL) corren contra esa base:
+# las fixtures hacen drop_all/create_all, así que SOLO se acepta una base local (nunca Neon/producción).
+_URL_PRUEBAS = os.environ.get("TEST_DATABASE_URL", "").strip()
+if _URL_PRUEBAS:
+    _host = urlparse(_URL_PRUEBAS.replace("postgresql+psycopg://", "postgresql://", 1)).hostname or ""
+    if _host not in ("localhost", "127.0.0.1", "::1", "db", "postgres"):
+        raise RuntimeError(f"TEST_DATABASE_URL apunta a un host no local ({_host}); las pruebas borran las tablas. Abortado.")
 os.environ.update(
     {
         "ENTORNO": "desarrollo",  # nunca heredar ENTORNO=produccion del .env/entorno del desarrollador
-        "DATABASE_URL": f"sqlite:///{(_DIR / 'test.db').as_posix()}",
+        "DATABASE_URL": _URL_PRUEBAS or f"sqlite:///{(_DIR / 'test.db').as_posix()}",
         "SECRET_KEY": "clave-solo-para-pruebas-" + "0" * 32,
         "DOMINIO_INSTITUCIONAL": "",
         "SEED_USUARIO_DEMO": "true",
@@ -72,3 +81,13 @@ def login(client, correo="ana@uni.edu", contrasena="Clave12345"):
 
 def token_de(client, correo="ana@uni.edu", contrasena="Clave12345") -> str:
     return login(client, correo, contrasena).json()["access_token"]
+
+
+def pytest_collection_modifyitems(config, items):
+    """Con TEST_DATABASE_URL (PostgreSQL) se omiten las pruebas marcadas solo_sqlite, indicándolo en el reporte."""
+    if not _URL_PRUEBAS:
+        return
+    omitir = pytest.mark.skip(reason="solo_sqlite: depende de que DATABASE_URL sea un archivo SQLite")
+    for item in items:
+        if "solo_sqlite" in item.keywords:
+            item.add_marker(omitir)

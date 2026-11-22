@@ -16,7 +16,7 @@ SALIDA = RAIZ / "proyecto_para_claude.zip"
 CARPETAS_EXCLUIDAS = {".git", "node_modules", ".venv", "venv", "__pycache__", ".pytest_cache",
                       "dist", "build", ".idea", ".vscode", ".mypy_cache", "respaldos", "exportacion_tesis"}
 NOMBRES_EXCLUIDOS = {".env"}
-EXTENSIONES_EXCLUIDAS = {".db", ".sqlite", ".sqlite3", ".zip", ".pyc", ".log"}
+EXTENSIONES_EXCLUIDAS = {".db", ".sqlite", ".sqlite3", ".dump", ".zip", ".pyc", ".log"}
 PATRONES_SECRETOS = [
     (r"gsk_[A-Za-z0-9]{20,}", "clave de Groq"),
     (r"sk-ant-[A-Za-z0-9_\-]{20,}", "clave de Anthropic"),

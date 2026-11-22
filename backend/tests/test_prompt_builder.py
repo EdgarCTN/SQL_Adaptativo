@@ -132,7 +132,7 @@ def test_el_prompt_armado_no_contiene_nombre_correo_ni_ns():
 
 # ---------- Tono guardado ----------
 def _resultado(db, usuario_id, prefs):
-    cuest = LineaBaseCuestionario(version="t", activo=False, contenido={})
+    cuest = LineaBaseCuestionario(version=9999, activo=False, contenido={})  # version es Integer: PostgreSQL no acepta texto
     db.add(cuest)
     db.commit()
     db.add(LineaBaseResultado(usuario_id=usuario_id, cuestionario_id=cuest.id, preferencias=prefs))

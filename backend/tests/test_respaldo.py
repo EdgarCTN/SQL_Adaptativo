@@ -82,6 +82,7 @@ def _ida_y_vuelta(origen: Path, tmp_path: Path) -> None:
     assert not list(tmp_path.glob("*.restaurando")) and not list((tmp_path / "respaldos").glob("*.parcial"))
 
 
+@pytest.mark.solo_sqlite
 def test_ida_y_vuelta_con_la_base_real(client, tmp_path):
     from app.core.db import engine
     from conftest import registrar
@@ -206,6 +207,7 @@ def test_cli_restaurar_pide_confirmacion(tmp_path, monkeypatch, capsys):
     assert "Restauración completa" in capsys.readouterr().out
 
 
+@pytest.mark.solo_sqlite
 def test_cli_con_la_base_configurada(client, tmp_path):
     """El script sin --bd usa DATABASE_URL, la misma base que la aplicación."""
     from conftest import registrar

@@ -1,10 +1,23 @@
-import logging
+"""Prueba manual del proveedor de IA configurado (Groq u otro) con una ayuda AY1 de ejemplo.
+
+Uso (desde la raíz del proyecto, con el entorno virtual activo y LLM_PROVIDER/GROQ_API_KEY en el .env):
+    python scripts/probar_groq.py
+
+Hace UNA llamada real al proveedor (consume cuota). No imprime la clave. No es parte de las pruebas automáticas.
+"""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
+
+import logging  # noqa: E402
+
 logging.basicConfig(level=logging.WARNING, format="%(name)s: %(message)s")
 
-from app.core.config import settings
-from app.modules.asistencia import validador
-from app.modules.asistencia.llm.fabrica import obtener_proveedor
-from app.modules.asistencia.llm.base import SolicitudLLM
+from app.core.config import settings  # noqa: E402
+from app.modules.asistencia import validador  # noqa: E402
+from app.modules.asistencia.llm.base import SolicitudLLM  # noqa: E402
+from app.modules.asistencia.llm.fabrica import obtener_proveedor  # noqa: E402
 
 print("Proveedor:", settings.llm_provider, "| modelo:", settings.groq_model)
 print("Clave cargada:", bool(settings.groq_api_key.strip()))

@@ -78,4 +78,4 @@ Confianza 5/4/3/2/1 → acierta 0.975/0.875/0.725/0.600/0.500 · se equivoca 0.0
 - R9: la bandera inicial rige con menos de 3 desafíos en la ventana; con 3 o más manda la ventana (PROVISIONAL). Los pedidos directos se miden con el tipo de ayuda *solicitado*, no el entregado.
 - R10: se evalúa al registrar cada envío fallido; no se repite hasta 3 envíos nuevos (PROVISIONAL).
 - R11: se comprueba dentro de R1; el mensaje tras un acierto sale en todo desafío resuelto (PROVISIONAL).
-- Oferta de ayuda: sin oferta en verificación, nunca de AY4; con `mostrar_sola` solo la primera ayuda del desafío sale sola; preferencia 3.3 sin respuesta = «ofrecer» (PROVISIONAL). Ver `DECISIONES.md`.
+- Oferta de ayuda: sin oferta en verificación, nunca de AY4; con `mostrar_sola` solo la primera ayuda del desafío sale sola; preferencia 3.3 sin respuesta = «ofrecer» (PROVISIONAL). Ver `docs/DECISIONES.md`.

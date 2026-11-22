@@ -280,7 +280,7 @@ def precision_ns_inicial(
     historial: pd.DataFrame, cierres: pd.DataFrame, minimo_desafios: int, reglas_retiro: tuple[str, ...],
     reglas_refuerzo: tuple[str, ...], desde: datetime | None, hasta: datetime | None, n_minimo: int,
 ) -> dict:
-    """¿Coincide el NS inicial con el desempeño en los primeros desafíos? (PROVISIONAL, ver DECISIONES.md)
+    """¿Coincide el NS inicial con el desempeño en los primeros desafíos? (PROVISIONAL, ver docs/DECISIONES.md)
 
     Para cada estudiante-concepto: si el motor cambia el NS por desempeño (retiro R1/R2 o refuerzo R5/R8) dentro de los
     primeros `minimo_desafios` cierres, el NS inicial no coincidía (retiro = era más alto de lo necesario; refuerzo = más

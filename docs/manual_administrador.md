@@ -27,7 +27,9 @@ Se puede hacer con el servidor encendido y la copia se verifica sola. Haz una **
 ```bash
 python scripts/restaurar.py respaldos/desafios_sql_20261117_103000.db
 ```
-Pide escribir SI, guarda una copia de la base actual como `antes_de_restaurar_…` y reemplaza la base. Restaura copias del mismo esquema: si una entrega pidió `reset_db.py` después de la copia, la copia es del esquema anterior. Haz una prueba de restauración antes del piloto.
+Pide escribir SI, guarda una copia de la base actual como `antes_de_restaurar_…` y reemplaza la base. Con PostgreSQL pide escribir el **nombre de la base**. Restaura copias del mismo esquema: si una entrega pidió `reset_db.py` después de la copia, la copia es del esquema anterior. Haz una prueba de restauración antes del piloto.
+
+**Con la base en Neon (producción):** los respaldos y restauraciones usan `pg_dump`/`pg_restore` y generan archivos `.dump`. Los clientes de PostgreSQL de tu equipo deben tener la **misma versión mayor** que el servidor de Neon. El procedimiento completo (con la cadena de conexión, suspender la API al restaurar y el ensayo previo) está en [DESPLIEGUE.md](DESPLIEGUE.md#8-respaldos-y-restauración-con-neon).
 
 ## 4. Datos para la tesis
 `python scripts/exportar_tesis.py --desde AAAA-MM-DD --hasta AAAA-MM-DD` escribe CSV seudonimizados en `exportacion_tesis/` (los mismos que descarga **Reportes**). Sin `ANON_SALT` el script avisa porque los seudónimos no serían comparables. Los CSV no llevan nombres, correos ni código SQL, pero con pocos estudiantes un seudónimo puede reidentificarse por contexto: consulta al comité.

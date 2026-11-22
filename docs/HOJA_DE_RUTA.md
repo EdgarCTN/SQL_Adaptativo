@@ -2,16 +2,16 @@
 
 **Entrega 14 hecha (cierre). Quedan por ejecutar a mano los checklists de `docs/PRUEBAS_MANUALES.md` y `docs/PRUEBA_USABILIDAD.md`, y validar el consentimiento y `docs/PROVISIONALES.md`.**
 
-Este archivo es el tablero del proyecto: dice qué entrega toca, qué módulos debe revisar Claude y qué quedó hecho. Lo actualizas tú al terminar cada entrega; va dentro del zip, así que Claude también lo ve.
+Este archivo es el tablero del proyecto (vive en `docs/`, igual que `CONTEXTO_BASE.md`, `ENTREGAS.md` y `DECISIONES.md`; los nombres sueltos de esos archivos en este documento se refieren a esa carpeta): dice qué entrega toca, qué módulos debe revisar Claude y qué quedó hecho. Lo actualizas tú al terminar cada entrega; va dentro del zip, así que Claude también lo ve.
 
 ## Archivos del proyecto
 
 | Archivo                 | Ubicación          | Uso                                                                                                          |
 | ----------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------ |
-| `CONTEXTO_BASE.md`      | raíz               | Se pega al inicio de cada chat                                                                               |
-| `ENTREGAS.md`           | raíz               | Texto de cada entrega; Claude lee solo la sección que toca                                                   |
-| `HOJA_DE_RUTA.md`       | raíz               | Este tablero                                                                                                 |
-| `DECISIONES.md`         | raíz               | Decisiones y valores provisionales a validar con la profesora                                                |
+| `CONTEXTO_BASE.md`      | `docs/`            | Se pega al inicio de cada chat                                                                               |
+| `ENTREGAS.md`           | `docs/`            | Texto de cada entrega; Claude lee solo la sección que toca                                                   |
+| `HOJA_DE_RUTA.md`       | `docs/`            | Este tablero                                                                                                 |
+| `DECISIONES.md`         | `docs/`            | Decisiones y valores provisionales a validar con la profesora                                                |
 | `scripts/empaquetar.py` | `scripts/`         | Crea `proyecto_para_claude.zip` (sin `.env`, `node_modules` ni bases de datos; se niega si encuentra claves) |
 | `scripts/contexto.py`   | `scripts/`         | Resume el código de los módulos que pida la entrega (Claude lo ejecuta; tú solo si usas el método manual)    |
 | `docs/TRAZABILIDAD.md`  | `docs/`            | Estado de cada requisito (RF y RNF) y la prueba que lo demuestra                                             |
@@ -71,7 +71,7 @@ Si el mismo error persiste tras dos intentos, abre un chat nuevo con el zip, `CO
 Quedan fuera a propósito porque necesitan servicios o herramientas que son pesados de construir y verificar en chats gratuitos. Están registrados como brechas en `docs/TRAZABILIDAD.md`.
 
 - **Redis** (RF-20, RNF-03, RNF-10, RNF-16): el nivel de ayuda se guarda en la base de datos, que cumple lo esencial.
-- **PostgreSQL, Docker y escalado horizontal** (RF-25, RNF-09, RNF-16): se usa SQLite; los tipos de datos son portables y bastaría cambiar `DATABASE_URL`.
+- **Escalado horizontal** (RNF-09, RNF-16): fuera de alcance. PostgreSQL (RF-25) ya está soportado: producción usa Neon con Alembic y Render (ver `docs/DESPLIEGUE.md` y `docs/MIGRACIONES.md`); Docker solo existe para un PostgreSQL local de desarrollo (`docker-compose.yml`), no para desplegar.
 - **HTTPS, despliegue y CI** (RNF-07, RNF-09): dependen de dónde se publique. Necesarios si vas a hacer el piloto con estudiantes desde un servidor.
 - **Pruebas de carga y pruebas automáticas de navegador** (RNF-01, 04, 14, 20): se cubren con los checklists manuales de la entrega 14.
 

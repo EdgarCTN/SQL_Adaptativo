@@ -7,6 +7,8 @@ __pycache__/
 .pytest_cache/
 dist/
 *.zip
+# Salida generada por scripts/contexto.py --guardar
+docs/CONTEXTO_SALIDA.md
 # Datos de estudiantes: copias de la base (scripts/respaldo.py) y CSV de la tesis (scripts/exportar_tesis.py)
 respaldos/
 exportacion_tesis/

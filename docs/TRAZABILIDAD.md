@@ -28,7 +28,7 @@ Estado de cada requisito de `docs/referencia/requisitos.md`. Se actualiza al ter
 | RF-22 | Progreso del estudiante | Cumplido: resumen con desafíos resueltos, nivel de ayuda por concepto, ayudas por tipo y últimos cambios de nivel | — | tests/test_progreso.py |
 | RF-23 | Gráficos de evolución | Cumplido: `GET /progreso/evolucion` (TA, NI, TR, UA y línea de tiempo del NS) y gráficos con recharts, cada uno con texto alternativo y tabla de datos | 2, 11 | tests/test_progreso_historial.py, tests/test_analitica_historico.py |
 | RF-24 | Filtro de historial de intentos | Cumplido: `GET /progreso/intentos` con filtro por desafío y rango de fechas, paginado | 11 | tests/test_progreso_historial.py |
-| RF-25 | Almacenamiento en PostgreSQL | Fuera de alcance actual: SQLite con tipos portables | — | DECISIONES.md |
+| RF-25 | Almacenamiento en PostgreSQL | Cumplido en lo esencial: PostgreSQL/Neon soportado (psycopg 3, Alembic, respaldo con `pg_dump`); suite verificada sobre PostgreSQL local. Falta probar contra Neon real | Despliegue | tests/test_migraciones.py, tests/test_respaldo_pg.py; DESPLIEGUE.md, MIGRACIONES.md |
 | RF-26 | Análisis con pandas | Cumplido | 2 | tests/test_analitica_indicadores.py |
 | RF-27 | Exposición de indicadores | Cumplido: interfaz interna `analitica.servicio`, que usan el motor y el progreso del estudiante (`/progreso/evolucion`, entrega 11); los agregados para docente llegan con la 13B | 2 | tests/test_analitica_historico.py |
 | RF-28 | CRUD del banco de desafíos | Cumplido: crear, editar, desactivar y eliminar (solo sin historial) con validación automática en el sandbox. Las acciones del docente quedan en `auditoria` desde la 13A | 12, 13A | tests/test_admin_roles.py, tests/test_docente_desafios.py |
@@ -45,7 +45,7 @@ Estado de cada requisito de `docs/referencia/requisitos.md`. Se actualiza al ter
 | RNF-09 | Disponibilidad | Fuera de alcance actual: depende del despliegue | — | — |
 | RNF-10 | Persistencia ante recarga | Cumplido para nivel, ayudas y valoraciones almacenadas en la base | 9 | tests/test_asistencia_api.py, niveles_soporte |
 | RNF-11 | Tolerancia a fallos del LLM | Cumplido (ayuda de respaldo) | 9 | tests/test_asistencia_api.py |
-| RNF-12 | Copias de seguridad | Cumplido: `respaldo.py` y `restaurar.py` verificados; falta correr la prueba con la base real (`verificar.py`) y una restauración de ensayo | 14 | tests/test_respaldo.py; docs/manual_administrador.md |
+| RNF-12 | Copias de seguridad | Cumplido (SQLite y PostgreSQL/Neon con `pg_dump`/`pg_restore`): `respaldo.py` y `restaurar.py` verificados; falta correr la prueba con la base real (`verificar.py`) y una restauración de ensayo | 14 | tests/test_respaldo.py; docs/manual_administrador.md |
 | RNF-13 | Facilidad de aprendizaje | Protocolo listo; **falta aplicarlo** con unos 5 estudiantes | 14 | docs/PRUEBA_USABILIDAD.md |
 | RNF-14 | Diseño responsivo | Checklist listo; **falta ejecutarlo** en 3 anchos | 14 | docs/PRUEBAS_MANUALES.md (sección 1) |
 | RNF-15 | Retroalimentación visual | Checklist listo; **falta ejecutarlo** | 14 | docs/PRUEBAS_MANUALES.md (sección 3) |

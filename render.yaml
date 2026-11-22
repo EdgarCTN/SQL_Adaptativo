@@ -1,4 +1,4 @@
-# Blueprint de Render (backend). Frontend en Vercel y base de datos en Neon: ver docs/DESPLIEGUE.md (Fase 4).
+# Blueprint de Render (backend). Frontend en Vercel y base de datos en Neon: ver docs/DESPLIEGUE.md.
 services:
   - type: web
     name: sql-adaptativo-api

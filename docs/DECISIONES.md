@@ -5,7 +5,7 @@ Marcadas **PROVISIONAL** las que conviene validar con la profesora o con el pilo
 ## Arquitectura y seguridad
 - `POST /auth/logout` revoca el `jti` del token en `tokens_revocados` (se purgan los vencidos en cada logout) y `usuario_actual` rechaza tokens revocados con 401. Sin Redis. `SECRET_KEY` vacía genera una clave temporal (las sesiones se pierden al reiniciar). El frontend cierra la sesión local aunque falle la red.
 - Token en `localStorage`. Login con mensaje único ante credenciales inválidas. Tras registrarse se inicia sesión. «Reintentar» solo comprueba `/health`.
-- SQLite en desarrollo, con tipos portables para migrar a PostgreSQL por `DATABASE_URL`. Sin Alembic: `create_all` al iniciar y `scripts/reset_db.py`. Los seeds corren al iniciar.
+- SQLite en desarrollo, con tipos portables, y PostgreSQL por `DATABASE_URL`. En desarrollo: `create_all` al iniciar y `scripts/reset_db.py`; en producción el esquema lo crea Alembic (ver «Despliegue gratuito» al final). Los seeds corren al iniciar.
 - El registro público siempre crea `estudiante`. El docente tiene el banco de desafíos (entrega 12); el administrador comparte esas rutas y además gestiona usuarios en `/admin/usuarios` (entrega 13A); ambos ven los reportes en `/reportes` (13B). Docentes y administradores reciben 403 en las rutas de estudiante, y los estudiantes en las del docente.
 - Los valores de la Matriz y de `llm.json` se leen de `backend/app/config/*.json`. `NS_POR_DEFECTO=1`, `NS_MINIMO=0`, `NS_MAXIMO=3` son constantes del código (`motor_retiro/niveles.py`).
 
@@ -154,6 +154,14 @@ Marcadas **PROVISIONAL** las que conviene validar con la profesora o con el pilo
 - El mensaje opcional que el estudiante escribe al pedir ayuda se envía al LLM pero no se guarda.
 - Los valores y textos provisionales, con quién los valida y cómo se calibran, están reunidos en `docs/PROVISIONALES.md`; los manuales, en `docs/manual_*.md`; los checklists, en `docs/PRUEBAS_MANUALES.md` y `docs/PRUEBA_USABILIDAD.md`.
 - README y este archivo se contrastaron con el código: las variables de `Settings` coinciden con `.env.example` y el README; puertos 8000 (API) y 5173 (interfaz); `VITE_API_URL` por defecto `http://localhost:8000/api/v1`; 16 desafíos sembrados; NS de 0 a 3 con NS 1 por defecto; tiempo máximo de prueba del docente 5 s.
+
+## Despliegue gratuito (Neon + Render + Vercel)
+- Producción: base en **Neon** (PostgreSQL), API en **Render** (plan gratuito, sin Docker) y frontend en **Vercel**. Procedimiento en `docs/DESPLIEGUE.md`.
+- `ENTORNO=produccion` exige `SECRET_KEY` (mín. 32 caracteres) y `ANON_SALT`, y rechaza SQLite: es preferible que la app no arranque a que corra con claves temporales. `ANON_SALT` no debe cambiar después de recoger datos (cambiaría todos los seudónimos).
+- El esquema de producción lo crea **Alembic** (`alembic upgrade head` en el build de Render); la app no ejecuta `create_all` y, al arrancar, comprueba la revisión de la BD (`docs/MIGRACIONES.md`). Los seeds idempotentes se mantienen.
+- El sandbox de desafíos y la validación del docente siguen usando SQLite en memoria aunque la base de la app sea PostgreSQL.
+- Copias de PostgreSQL con `pg_dump`/`pg_restore` (formato custom, `.dump`). **Los clientes deben tener la misma versión mayor que el servidor de Neon**; un cliente más nuevo que el servidor hace fallar `pg_restore`.
+- Límites aceptados del plan gratuito: la API se duerme tras ~15 min sin tráfico (arranque en frío de ~1 min) y Neon suspende el cómputo ocioso a los 5 min.
 
 ## Limitaciones conocidas
 - Desarrollado en Linux con Python 3.12 y Node 22 (entrega 13B: 910 pruebas del backend y compilación del frontend en Linux); **falta repetir `verificar.py`, y el recorrido de las entregas 13B y 14, en Windows con Git Bash**. Las pruebas de la entrega 14 no se ejecutaron completas en el entorno de redacción (sin FastAPI instalado): correr `verificar.py`. En un navegador real (Chromium) solo se revisó `/progreso`; las pantallas del docente (entrega 12), «Usuarios» (13A) y «Reportes» (13B) están verificadas por compilación y pruebas de API, y falta su revisión manual en navegador. Sin pruebas automáticas del frontend.

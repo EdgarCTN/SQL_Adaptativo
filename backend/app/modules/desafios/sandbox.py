@@ -1,6 +1,6 @@
 """Sandbox SQL: SQLite en memoria, solo lectura, con tiempo límite y tope de filas.
 
-Reglas de comparación (se anotan también en DECISIONES):
+Reglas de comparación (se anotan también en docs/DECISIONES.md):
 - Se comparan los VALORES del conjunto de resultados; los NOMBRES de columna se ignoran.
 - El orden de las filas se ignora salvo que la solución tenga un ORDER BY de nivel superior.
 - Los decimales se comparan redondeados a 6 cifras.

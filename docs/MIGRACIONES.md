@@ -1,6 +1,6 @@
 # Migraciones de base de datos (Alembic)
 
-Desde la Fase 2 el esquema de producción (Neon/PostgreSQL) lo crea y actualiza **Alembic**. En desarrollo y pruebas sigue funcionando `create_all` al arrancar, como antes.
+El esquema de producción (Neon/PostgreSQL) lo crea y actualiza **Alembic**. En desarrollo y pruebas sigue funcionando `create_all` al arrancar, como antes.
 
 | Entorno | Quién crea las tablas | Variable |
 |---|---|---|
@@ -52,5 +52,5 @@ alembic stamp head
 - Render free no tiene `preDeployCommand`; por eso la migración va en el `buildCommand`. Necesita `DATABASE_URL` disponible en el build (las variables del servicio lo están).
 - Si Neon está suspendido, la primera conexión del build tarda unos segundos en despertarlo.
 - Si la migración falla con el host `-pooler` de Neon, usa la cadena de conexión **directa** (sin `-pooler`) para ese comando.
-- Revertir una migración: `alembic downgrade -1` (haz antes un respaldo; ver Fase 3).
+- Revertir una migración: `alembic downgrade -1` (haz antes un respaldo; ver «Copias de seguridad» en DESPLIEGUE.md).
 - `scripts/reset_db.py` se niega a ejecutarse con `ENTORNO=produccion` o con una BD que no sea local.

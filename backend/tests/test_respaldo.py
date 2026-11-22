@@ -1,5 +1,6 @@
 """Entrega 14: copia de seguridad y restauración de la base SQLite (RNF-12)."""
 import hashlib
+import os
 import shutil
 import sqlite3
 import subprocess
@@ -213,6 +214,7 @@ def test_cli_con_la_base_configurada(client, tmp_path):
     r = subprocess.run(
         [sys.executable, str(RAIZ / "scripts" / "respaldo.py"), "--salida", str(tmp_path / "cli")],
         capture_output=True, text=True, encoding="utf-8",
+        env={**os.environ, "PYTHONUTF8": "1"},  # Windows: sin esto el script imprime en cp1252 y el test no puede decodificarlo
     )
     assert r.returncode == 0, r.stderr
     copias = list((tmp_path / "cli").glob("desafios_sql_*.db"))
@@ -226,6 +228,7 @@ def test_cli_respaldo_informa_los_errores_en_espanol(tmp_path):
         [sys.executable, str(RAIZ / "scripts" / "respaldo.py"), "--bd", str(tmp_path / "no_existe.db"),
          "--salida", str(tmp_path / "r")],
         capture_output=True, text=True, encoding="utf-8",
+        env={**os.environ, "PYTHONUTF8": "1"},  # Windows: sin esto el script imprime en cp1252 y el test no puede decodificarlo
     )
     assert r.returncode == 1 and "No existe" in r.stderr and "Traceback" not in r.stderr
 

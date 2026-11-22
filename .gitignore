@@ -10,3 +10,17 @@ dist/
 # Datos de estudiantes: copias de la base (scripts/respaldo.py) y CSV de la tesis (scripts/exportar_tesis.py)
 respaldos/
 exportacion_tesis/
+# Entornos y secretos (solo se versionan los .env.example)
+.env.*
+!.env.example
+venv/
+.vercel/
+*.tsbuildinfo
+*.log
+.DS_Store
+# SQLite auxiliar
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3

@@ -1,0 +1,30 @@
+# Blueprint de Render (backend). Frontend en Vercel y base de datos en Neon: ver docs/DESPLIEGUE.md (Fase 4).
+services:
+  - type: web
+    name: sql-adaptativo-api
+    runtime: python
+    plan: free
+    region: ohio            # cerca de Neon AWS US East 2 (Ohio); usa la misma región en ambos
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: PYTHON_VERSION   # Render exige versión completa; su valor por defecto actual es 3.14 (no soportada)
+        value: 3.12.8
+      - key: ENTORNO
+        value: produccion
+      - key: SEED_USUARIO_DEMO
+        value: "false"
+      - key: SECRET_KEY       # se genera una vez y se conserva entre despliegues
+        generateValue: true
+      - key: ANON_SALT        # no la cambies luego: cambiaría todos los seudónimos de los reportes
+        generateValue: true
+      - key: DATABASE_URL     # cadena de Neon: postgresql://...neon.tech/...?sslmode=require
+        sync: false
+      - key: CORS_ORIGINS     # URL exacta de Vercel, sin barra final: https://mi-app.vercel.app
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false

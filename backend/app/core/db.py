@@ -39,11 +39,19 @@ class Base(DeclarativeBase):
 
 
 _es_sqlite = settings.database_url.startswith("sqlite")
-engine = create_engine(
-    settings.database_url,
-    connect_args={"check_same_thread": False} if _es_sqlite else {},
-    pool_pre_ping=True,
-)
+if _es_sqlite:
+    _opciones_engine: dict = {"connect_args": {"check_same_thread": False}}
+else:
+    # PostgreSQL (Neon): pool pequeño; reciclar antes de que Neon suspenda el cómputo ocioso (5 min).
+    # prepare_threshold=None desactiva los prepared statements de psycopg 3, que fallan tras PgBouncer (host "-pooler").
+    _opciones_engine = {
+        "connect_args": {"connect_timeout": 15, "prepare_threshold": None},
+        "pool_size": settings.db_pool_size,
+        "max_overflow": settings.db_max_overflow,
+        "pool_recycle": settings.db_pool_recycle,
+        "pool_timeout": 30,
+    }
+engine = create_engine(settings.database_url, pool_pre_ping=True, **_opciones_engine)
 
 if _es_sqlite:
 

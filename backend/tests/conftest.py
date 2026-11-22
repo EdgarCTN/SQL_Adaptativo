@@ -7,6 +7,7 @@ from pathlib import Path
 _DIR = Path(tempfile.mkdtemp(prefix="desafios_sql_tests_"))
 os.environ.update(
     {
+        "ENTORNO": "desarrollo",  # nunca heredar ENTORNO=produccion del .env/entorno del desarrollador
         "DATABASE_URL": f"sqlite:///{(_DIR / 'test.db').as_posix()}",
         "SECRET_KEY": "clave-solo-para-pruebas-" + "0" * 32,
         "DOMINIO_INSTITUCIONAL": "",

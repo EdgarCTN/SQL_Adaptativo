@@ -6,7 +6,7 @@ services:
     plan: free
     region: ohio            # cerca de Neon AWS US East 2 (Ohio); usa la misma región en ambos
     rootDir: backend
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && alembic upgrade head   # migra la BD de Neon en cada despliegue (el plan free no tiene preDeployCommand)
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/v1/health
     envVars:

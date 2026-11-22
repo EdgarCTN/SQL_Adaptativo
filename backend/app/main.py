@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core import health
 from app.core.config import settings
-from app.core.db import SessionLocal, init_db
+from app.core.db import SessionLocal, cargar_modelos, init_db, verificar_esquema
 from app.core.errores import registrar_manejadores
 from app.modules.admin.router import router as admin_router
 from app.modules.ajustes.router import router as ajustes_router
@@ -23,7 +23,11 @@ from app.seeds.seed import sembrar_todo
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    init_db()  # create_all (sin Alembic)
+    if settings.crear_tablas:
+        init_db()  # desarrollo y pruebas: create_all
+    else:
+        cargar_modelos()
+        verificar_esquema()  # producción: el esquema lo crea 'alembic upgrade head' (build de Render)
     with SessionLocal() as db:
         sembrar_todo(db)
     yield

@@ -11,8 +11,18 @@ from app.core.db import Base, SessionLocal, cargar_modelos, engine, init_db  # n
 from app.seeds.seed import sembrar_todo  # noqa: E402
 
 
+HOSTS_LOCALES = {"", "localhost", "127.0.0.1", "::1"}
+
+
 def main() -> int:
     url = make_url(settings.database_url)
+    # Guarda: este script BORRA todo. Nunca contra producción ni contra una BD remota (p. ej. Neon).
+    if settings.es_produccion:
+        print("RECHAZADO: ENTORNO=produccion. reset_db.py borra todos los datos y solo es para desarrollo local.")
+        return 2
+    if (url.host or "").lower() not in HOSTS_LOCALES:
+        print(f"RECHAZADO: la BD está en un host no local ({url.host}). reset_db.py solo opera en SQLite o PostgreSQL local.")
+        return 2
     cargar_modelos()
     engine.dispose()
     if url.drivername.startswith("sqlite") and url.database and url.database != ":memory:":

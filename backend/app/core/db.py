@@ -86,3 +86,25 @@ def cargar_modelos() -> None:
 def init_db() -> None:
     cargar_modelos()
     Base.metadata.create_all(bind=engine)
+
+
+def verificar_esquema(bind=None) -> None:
+    """Producción (sin create_all): exige que la BD esté en la última revisión de Alembic, o falla con un mensaje claro."""
+    from pathlib import Path
+
+    from alembic.config import Config
+    from alembic.runtime.migration import MigrationContext
+    from alembic.script import ScriptDirectory
+
+    cfg = Config()
+    cfg.set_main_option("script_location", str(Path(__file__).resolve().parents[2] / "alembic"))
+    cabezas = ScriptDirectory.from_config(cfg).get_heads()
+    if len(cabezas) != 1:
+        raise RuntimeError(f"Migraciones de Alembic inválidas: se esperaba 1 cabeza y hay {len(cabezas)}. Genera la migración inicial (docs/MIGRACIONES.md).")
+    with (bind or engine).connect() as conn:
+        actual = MigrationContext.configure(conn).get_current_revision()
+    if actual != cabezas[0]:
+        raise RuntimeError(
+            f"La BD está en la revisión {actual!r} y la app espera {cabezas[0]!r}. "
+            "Ejecuta 'alembic upgrade head' (BD nueva) o 'alembic stamp head' (BD que ya tiene las tablas); ver docs/MIGRACIONES.md."
+        )

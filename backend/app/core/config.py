@@ -45,6 +45,14 @@ class Settings(BaseSettings):
     db_pool_size: int = Field(default=5, gt=0)
     db_max_overflow: int = Field(default=5, ge=0)
     db_pool_recycle: int = Field(default=280, gt=0)  # seg.; < 300 porque Neon suspende el cómputo ocioso a los 5 min
+    # Esquema de la BD: None = automático (create_all en desarrollo; en producción lo crea Alembic).
+    # CREAR_TABLAS_AUTO=true/false lo fuerza. Ver docs/MIGRACIONES.md.
+    crear_tablas_auto: bool | None = None
+
+    @field_validator("crear_tablas_auto", mode="before")
+    @classmethod
+    def _crear_tablas_vacio(cls, v):
+        return None if isinstance(v, str) and not v.strip() else v
 
     @field_validator("entorno")
     @classmethod
@@ -96,6 +104,11 @@ class Settings(BaseSettings):
     @property
     def es_produccion(self) -> bool:
         return self.entorno == "produccion"
+
+    @property
+    def crear_tablas(self) -> bool:
+        """True: la app crea las tablas con create_all al arrancar. False: el esquema lo gestiona Alembic."""
+        return (not self.es_produccion) if self.crear_tablas_auto is None else self.crear_tablas_auto
 
     @property
     def cors_lista(self) -> list[str]:

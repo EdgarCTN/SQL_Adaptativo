@@ -1,21 +1,25 @@
-# SOLO para DESARROLLO LOCAL: PostgreSQL 16. No se usa para desplegar (producción = Neon + Render + Vercel).
+# SOLO para DESARROLLO LOCAL: PostgreSQL 18. No se usa para desplegar (producción = Neon + Render + Vercel).
 #
 # Uso (desde la raíz del repo):
-#   docker compose up -d db          # arranca PostgreSQL en localhost:5433
+#   docker compose up -d db          # arranca PostgreSQL en 127.0.0.1:5433
 #   docker compose down              # lo apaga (los datos se conservan en el volumen)
 #   docker compose down -v           # lo apaga y BORRA los datos locales
 #
 # DATABASE_URL para el .env de la raíz (credenciales solo de desarrollo, el puerto escucha solo en tu equipo):
-#   DATABASE_URL=postgresql+psycopg://sqladaptativo:sqladaptativo_dev@localhost:5433/sql_adaptativo
+#   DATABASE_URL=postgresql+psycopg://sqladaptativo:sqladaptativo_dev@127.0.0.1:5433/sql_adaptativo
 # Luego, desde backend/ (el esquema lo crea la app en desarrollo, o Alembic: alembic upgrade head).
 #
 # Pruebas contra PostgreSQL (las pruebas BORRAN las tablas; solo se acepta localhost). Es una variable de
 # entorno, no se lee del .env:
 #   cd backend
-#   TEST_DATABASE_URL=postgresql+psycopg://sqladaptativo:sqladaptativo_dev@localhost:5433/sql_adaptativo_test pytest -m "not solo_sqlite"
+#   TEST_DATABASE_URL=postgresql+psycopg://sqladaptativo:sqladaptativo_dev@127.0.0.1:5433/sql_adaptativo_test pytest -m "not solo_sqlite"
 #
-# Versión de PostgreSQL: 16 por defecto. Para igualarla a tus clientes pg_dump/pg_restore (p. ej. 17):
+# Atajos (Git Bash): bash scripts/bd.sh ayuda   |   psql: bash scripts/bd.sh psql   (la base se llama sql_adaptativo, NO sqladaptativo;
+# si usas psql a mano añade -d sql_adaptativo).
+# Versión de PostgreSQL: 18 por defecto. Para igualarla a tus clientes pg_dump/pg_restore (p. ej. 17):
 #   docker compose down -v && POSTGRES_VERSION=17 docker compose up -d db     (down -v borra los datos locales)
+# OJO: desde PostgreSQL 18 la imagen guarda los datos en /var/lib/postgresql/<versión>/docker, por eso el volumen
+# se monta en /var/lib/postgresql (y no en .../data). Si vienes de un volumen de la versión 16, hay que recrearlo (down -v).
 #
 # Si cambias POSTGRES_PORT, usa ese mismo puerto en las URLs de arriba.
 #
@@ -23,7 +27,7 @@
 # volumen. Si ya tenías el volumen: docker compose exec db createdb -U sqladaptativo sql_adaptativo_test
 services:
   db:
-    image: postgres:${POSTGRES_VERSION:-16}
+    image: postgres:${POSTGRES_VERSION:-18}
     container_name: sql_adaptativo_db
     restart: unless-stopped
     environment:
@@ -33,10 +37,10 @@ services:
     ports:
       - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"   # 5433 evita chocar con un PostgreSQL local o con puertos reservados de Windows
     volumes:
-      - sql_adaptativo_pgdata:/var/lib/postgresql/data
+      - sql_adaptativo_pgdata:/var/lib/postgresql
       - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sqladaptativo -d sql_adaptativo"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U sqladaptativo -d sql_adaptativo"]  # -h: por TCP, no por socket (ver bd.sh)
       interval: 5s
       timeout: 3s
       retries: 10

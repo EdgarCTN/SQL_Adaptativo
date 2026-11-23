@@ -63,11 +63,11 @@ cd frontend && npm run dev
 Por defecto el desarrollo usa SQLite. Para probar con PostgreSQL (el motor de producción):
 
 ```bash
-docker compose up -d db     # PostgreSQL en localhost:5433 (solo desarrollo; ver comentarios de docker-compose.yml)
-# en .env:
-# DATABASE_URL=postgresql+psycopg://sqladaptativo:sqladaptativo_dev@localhost:5433/sql_adaptativo
-cd backend && alembic upgrade head   # o deja que la app cree las tablas en desarrollo
+bash scripts/bd.sh todo      # levanta PostgreSQL 18, migra, siembra los datos iniciales y verifica que todo funciona
 ```
+
+`scripts/bd.sh` fija la URL de la base local por sí mismo, así que no depende de tu `.env`. Para que la **app** (uvicorn) use esa base, cambia en `.env`:
+`DATABASE_URL=postgresql+psycopg://sqladaptativo:sqladaptativo_dev@127.0.0.1:5433/sql_adaptativo`. Otros comandos (`bd.sh ayuda`): `psql`, `probar`, `pruebas`, `reiniciar`, `neon-probar`. Guía completa en [docs/PRUEBA_BASE_DE_DATOS.md](docs/PRUEBA_BASE_DE_DATOS.md).
 
 El sandbox de los desafíos y la validación del docente siguen usando SQLite en memoria aunque la base de la app sea PostgreSQL.
 
@@ -85,7 +85,7 @@ Las pruebas también pueden correr contra PostgreSQL local con `TEST_DATABASE_UR
 
 ```bash
 cd backend
-TEST_DATABASE_URL=postgresql+psycopg://sqladaptativo:sqladaptativo_dev@localhost:5433/sql_adaptativo_test python -m pytest -m "not solo_sqlite"
+TEST_DATABASE_URL=postgresql+psycopg://sqladaptativo:sqladaptativo_dev@127.0.0.1:5433/sql_adaptativo_test python -m pytest -m "not solo_sqlite"
 ```
 
 El flujo de CI (`.github/workflows/ci.yml`) ejecuta la suite en SQLite, en PostgreSQL con `alembic upgrade head` y `alembic check`, y el `npm run build` del frontend.

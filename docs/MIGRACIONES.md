@@ -30,6 +30,8 @@ cd backend
 alembic upgrade head      # en Render ya lo hace el buildCommand
 ```
 
+**Comprueba el motor en la primera línea del log:** debe decir `Context impl PostgresqlImpl`. Si dice `SQLiteImpl`, tu `DATABASE_URL` (en `.env` o en la sesión) sigue apuntando a SQLite y estás migrando la base equivocada. Para verificar a qué base apunta y que funciona: `python scripts/probar_bd.py` (o `bash scripts/bd.sh probar` para la local y `bash scripts/bd.sh neon-probar` para Neon).
+
 ## 3. BD existente que ya tiene las tablas (creadas con `create_all`)
 
 No ejecutes `upgrade` (intentaría crear tablas que ya existen). Marca la BD como al día, **solo si su esquema es idéntico al de los modelos**:

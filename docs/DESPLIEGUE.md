@@ -22,7 +22,7 @@ Documentos relacionados: [migraciones](MIGRACIONES.md) · [manual del administra
 ## 1. Neon (base de datos)
 
 1. Crea una cuenta en neon.com y un proyecto nuevo.
-2. **Versión de PostgreSQL:** elige la misma versión mayor que tus clientes `pg_dump`/`pg_restore` (por ejemplo 17).
+2. **Versión de PostgreSQL:** elige la misma versión mayor que tus clientes `pg_dump`/`pg_restore` (recomendado: 18; el proyecto usa PostgreSQL 18 en Docker local y en el CI).
 3. **Región:** AWS US East 2 (Ohio), la misma región que usa `render.yaml` (`region: ohio`), para reducir latencia.
 4. En el panel, botón **Connect**: copia la cadena de conexión **directa** (el host **sin** `-pooler`; si el panel ofrece la opción «Pooled connection», desactívala). Tiene esta forma:
 
@@ -151,7 +151,7 @@ Haz uno **antes de cada sesión con estudiantes, después de cada una** y antes 
 3. Si la copia es de un esquema anterior, aplica las migraciones: `cd backend && alembic upgrade head` (con la misma `DATABASE_URL`; ver [MIGRACIONES.md](MIGRACIONES.md)).
 4. En Render, **Resume** el servicio y comprueba `/api/v1/health`.
 
-**Ensayo recomendado antes del piloto:** restaura una copia en un PostgreSQL local (`docker compose up -d db`, con `DATABASE_URL` apuntando a `localhost:5433`) para comprobar que el `.dump` es utilizable sin tocar Neon.
+**Ensayo recomendado antes del piloto:** restaura una copia en un PostgreSQL local (`docker compose up -d db`, con `DATABASE_URL` apuntando a `127.0.0.1:5433`) para comprobar que el `.dump` es utilizable sin tocar Neon.
 
 ## 9. Checklist antes de usar con estudiantes
 

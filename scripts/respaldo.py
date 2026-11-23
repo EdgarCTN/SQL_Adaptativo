@@ -217,7 +217,7 @@ def _exigir_herramienta(nombre: str) -> str:
     if not ruta:
         raise ErrorRespaldo(
             f"No se encontró '{nombre}'. Instala los clientes de PostgreSQL (versión igual o mayor que la del "
-            "servidor; Neon usa 16 o 17) y comprueba que estén en el PATH."
+            "servidor; Neon admite 16, 17 y 18) y comprueba que estén en el PATH."
         )
     return ruta
 

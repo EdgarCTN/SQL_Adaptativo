@@ -29,13 +29,13 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: pytest
 
-  # Misma suite sobre PostgreSQL 16 (TEST_DATABASE_URL). Se omiten SOLO las pruebas marcadas solo_sqlite
+  # Misma suite sobre PostgreSQL 18 (TEST_DATABASE_URL). Se omiten SOLO las pruebas marcadas solo_sqlite
   # (dependen de que DATABASE_URL sea un archivo SQLite); el reporte las muestra como "skipped".
   backend-postgres:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16
+        image: postgres:18
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -43,7 +43,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres"
+          --health-cmd "pg_isready -h 127.0.0.1 -U postgres"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -59,8 +59,12 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: backend/requirements*.txt
-      - name: Clientes de PostgreSQL 16 (pg_dump/pg_restore para las pruebas de respaldo)
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client-16
+      - name: Clientes de PostgreSQL 18 (pg_dump/pg_restore para las pruebas de respaldo)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y postgresql-client-18
       - run: pip install -r requirements-dev.txt
       - name: Migraciones sobre PostgreSQL vacío (upgrade head + alembic check)
         env:

@@ -27,4 +27,6 @@ Para cada concepto tienes un nivel de ayuda (NS) de 0 a 3. Si te va bien, baja; 
 - **Perfil:** cambia tu nombre o tu contraseña. **Cerrar sesión** invalida tu sesión en el servidor.
 
 ## 6. Si algo no funciona
+**«Despertando el servidor…»:** esta plataforma usa un servidor gratuito que se apaga cuando no se usa. Si eres la primera persona en entrar en un rato, verás este aviso con un contador y puede tardar hasta 1 minuto. No es un error ni un problema de tu conexión: no cierres la página, continuará sola. Si lo que hiciste (por ejemplo, iniciar sesión) ya estaba pedido, se enviará cuando el servidor esté listo. Solo si aparece «No logramos despertar el servidor», pulsa **Reintentar**.
+
 Verás un mensaje en español y un botón **Reintentar**. Si una pantalla no carga, recarga la página; tu avance está guardado en el servidor. Si el problema sigue, avisa a tu docente con la hora y lo que estabas haciendo.

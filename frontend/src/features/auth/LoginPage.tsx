@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { ErrorApi } from "../../api/cliente";
+import { useEstadoServidor } from "../../api/servidor";
 import { useAuth } from "../../app/AuthContext";
 import { destinoTrasLogin } from "../../app/destinos";
 import CampoTexto from "../../components/CampoTexto";
@@ -21,6 +22,7 @@ export default function LoginPage() {
   const [errores, setErrores] = useState<Errores>({});
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const esperandoServidor = useEstadoServidor() === "despertando";
 
   const enviar = async (e: FormEvent) => {
     e.preventDefault();
@@ -79,10 +81,10 @@ export default function LoginPage() {
           />
           <button
             type="submit"
-            disabled={enviando}
+            disabled={enviando || esperandoServidor}
             className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
           >
-            {enviando ? "Entrando…" : "Entrar"}
+            {enviando ? "Entrando…" : esperandoServidor ? "Esperando al servidor…" : "Entrar"}
           </button>
         </form>
 

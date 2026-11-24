@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import { ErrorApi, MSG_RED } from "../../api/cliente";
+import { ErrorApi } from "../../api/cliente";
 import { enviarRespuestas } from "../../api/lineaBase";
 import type { Cuestionario, Parte, VerificacionInicial } from "../../api/tiposLineaBase";
 import type { Usuario } from "../../api/tipos";
@@ -106,7 +106,7 @@ export default function FormularioDiagnostico({ cuestionario, usuario, alRecarga
       setErrorEnvio(e.mensaje);
       return;
     }
-    setErrorEnvio(e instanceof ErrorApi && e.red ? `${MSG_RED} Tus respuestas siguen aquí.` : MSG_FALLO_ENVIO);
+    setErrorEnvio(e instanceof ErrorApi && e.red ? `${e.mensaje} Tus respuestas siguen aquí.` : MSG_FALLO_ENVIO);
   };
 
   const enviar = async () => {

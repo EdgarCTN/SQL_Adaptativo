@@ -117,15 +117,15 @@ Datos revisados en la documentación oficial el 22 de noviembre de 2026; los pla
 
 | Servicio | Límite | Efecto en el proyecto |
 |---|---|---|
-| **Render Free** | Se duerme tras 15 min sin tráfico entrante; despertar tarda alrededor de 1 minuto | La **primera visita tras la pausa es lenta** (arranque en frío de ~1 min: instala el entorno, comprueba el esquema y siembra). Mientras tanto Render muestra una página de carga |
+| **Render Free** | Se duerme tras 15 min sin tráfico entrante; despertar tarda alrededor de 1 minuto | La **primera visita tras la pausa es lenta** (arranque en frío de ~1 min: instala el entorno, comprueba el esquema y siembra). La app lo muestra como un estado esperado: el banner **«Despertando el servidor…»** con un contador, y la acción del usuario (iniciar sesión, registrarse) se envía sola cuando la API responde. Si pasan ~2 min sin respuesta, se avisa con un botón **Reintentar** |
 | | 750 horas de instancia al mes por cuenta; al agotarlas se suspenden los servicios gratuitos hasta el mes siguiente | Un solo servicio gratuito 24/7 cabe (~720 h); no crees más servicios gratuitos en esa cuenta sin revisar el consumo |
 | | Sistema de archivos efímero; puede reiniciarse en cualquier momento | No se guarda nada en disco (todo va a Neon); las sesiones sobreviven porque `SECRET_KEY` es fija |
 | | Render puede suspender un servicio gratuito con un volumen inusualmente alto de tráfico iniciado por el servicio (por ejemplo, hacia una base externa) | Con una clase de estudiantes no se espera, pero está documentado |
-| **Neon Free** | El cómputo se suspende tras 5 min sin consultas (fijo en el plan gratuito); al volver, reanuda normalmente en unos cientos de milisegundos | La primera consulta tras la pausa tarda un poco más; el pool usa `pool_pre_ping` y `pool_recycle` para no reutilizar conexiones muertas |
+| **Neon Free** | El cómputo se suspende tras 5 min sin consultas (fijo en el plan gratuito); al volver, reanuda normalmente en unos cientos de milisegundos | La primera consulta tras la pausa tarda un poco más; el pool usa `pool_pre_ping` y `pool_recycle` para no reutilizar conexiones muertas. Si `/health` responde pero con `base_datos` distinto de `ok`, la app lo trata como «despertando» y vuelve a comprobar |
 | | 100 CU-horas de cómputo por proyecto al mes, 1 GB de almacenamiento y 5 GB de transferencia pública | Si se agotan las CU-horas o la transferencia, el cómputo se suspende hasta el mes siguiente (los datos no se borran). Los respaldos cuentan para la transferencia |
 | **Vercel Hobby** | Solo uso personal y no comercial; 100 GB de transferencia al mes | Adecuado para una tesis; si el proyecto pasara a un uso comercial/institucional de pago, requiere plan Pro |
 
-**Recomendación para el día de una sesión:** abre `https://TU-SERVICIO.onrender.com/api/v1/health` unos 5 minutos antes para despertar la API y Neon. Si los estudiantes entran en tandas separadas por más de 15 minutos, la API vuelve a dormirse.
+**Recomendación para el día de una sesión:** aunque la app ahora muestra el banner «Despertando el servidor…» y espera sola, sigue siendo recomendable abrir `https://TU-SERVICIO.onrender.com/api/v1/health` unos 5 minutos antes para despertar la API y Neon, así los estudiantes no esperan. Si los estudiantes entran en tandas separadas por más de 15 minutos, la API vuelve a dormirse (y el banner volverá a aparecer).
 
 ## 8. Respaldos y restauración con Neon
 
@@ -177,6 +177,6 @@ Haz uno **antes de cada sesión con estudiantes, después de cada una** y antes 
 | La API no arranca: «La BD está en la revisión … y la app espera …» | La base no está migrada | `cd backend && alembic upgrade head` con la `DATABASE_URL` de Neon (o `alembic stamp head` si ya tenía las tablas; ver [MIGRACIONES.md](MIGRACIONES.md)) |
 | El navegador muestra error de red o CORS | `CORS_ORIGINS` incorrecto o `VITE_API_URL` sin `/api/v1` | Corrige y, si cambiaste `VITE_API_URL`, vuelve a desplegar en Vercel |
 | Al recargar una página interna de Vercel sale 404 | Falta la reescritura de la SPA | Confirma que `frontend/vercel.json` está desplegado y que el Root Directory es `frontend` |
-| Primera carga muy lenta | Arranque en frío de Render (y Neon despertando) | Normal en el plan gratuito; despierta la API antes de la sesión |
+| Primera carga muy lenta; aparece el banner «Despertando el servidor…» | Arranque en frío de Render (y Neon despertando) | Normal en el plan gratuito: la pantalla continúa sola (hasta ~1 min). Si aparece «No logramos despertar el servidor», pulsa **Reintentar** o revisa el servicio en Render. Para evitarlo, abre `/api/v1/health` unos 5 minutos antes de la sesión |
 | `pg_restore` falla con errores de versión o de parámetros desconocidos | Clientes de otra versión mayor que el servidor | Aplica la REGLA de versiones del punto 1 |
 | Las sesiones se cierran solas | `SECRET_KEY` cambió | No la regeneres; revisa que no se haya vuelto a crear el servicio |
